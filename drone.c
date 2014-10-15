@@ -1,20 +1,12 @@
-#include "lauxlib.h"
-#include "lua.h"
+#include "drone.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 
-#define PACKET_SIZE      256
-#define PORT_CMD         5556
-#define PORT_NAVDATA     5554
-#define TIMEOUT_CMD      30000
-#define TIMEOUT_NAVDATA  30000
-#define WIFI_ARDRONE_IP "192.168.1.1"
+
 
 /*commandes pour décoller et aterrir*/
 char ref_cmd[PACKET_SIZE];
@@ -39,11 +31,27 @@ int stopped = 1;      //Guard that stops any function if connection isn't initia
 struct sockaddr_in addr_drone, addr_client;
 int sock_cmd;
 
-/*Déclarer quelques fonctions à l'avance*/
-int send_cmd();
-int luaopen_drone(lua_State* L);
-int stop(lua_State* L);
 
+/*Change la commande courante : prend le nom de la commande
+et une chaîne avec les arguments*/
+void set_cmd(char* cmd_type, char* args) {
+	
+	cmd_current = cmd_type;
+	cmd_current_args = args;
+}
+
+/*Envoie la commande courante, et incrémente le compteur*/
+int send_cmd() {
+	if(cmd_current != NULL) {
+		memset(ref_cmd, 0, PACKET_SIZE);
+		snprintf(ref_cmd, PACKET_SIZE, "%s=%d,%s\r", cmd_current, cmd_no_sq, cmd_current_args);
+		cmd_no_sq++;
+		ref_cmd[PACKET_SIZE-1] = '\0';
+
+		return sendto(sock_cmd, ref_cmd, PACKET_SIZE, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone));
+	}
+	return 0;
+}
 
 /*Fonction de cmd_thread*/
 void* cmd_routine(void* args) {
@@ -77,7 +85,7 @@ int jakopter_connect(lua_State* L) {
 	
 	//stopper la com si elle est déjà initialisée
 	if(!stopped)
-		stop(L);
+		jakopter_disconnect(L);
 		
 	addr_drone.sin_family      = AF_INET;
 	addr_drone.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
@@ -116,28 +124,6 @@ int jakopter_connect(lua_State* L) {
 	
 	lua_pushnumber(L, 0);
 	return 1;
-}
-
-
-/*Change la commande courante : prend le nom de la commande
-et une chaîne avec les arguments*/
-void set_cmd(char* cmd_type, char* args) {
-	
-	cmd_current = cmd_type;
-	cmd_current_args = args;
-}
-
-/*Envoie la commande courante, et incrémente le compteur*/
-int send_cmd() {
-	if(cmd_current != NULL) {
-		memset(ref_cmd, 0, PACKET_SIZE);
-		snprintf(ref_cmd, PACKET_SIZE, "%s=%d,%s\r", cmd_current, cmd_no_sq, cmd_current_args);
-		cmd_no_sq++;
-		ref_cmd[PACKET_SIZE-1] = '\0';
-
-		return sendto(sock_cmd, ref_cmd, PACKET_SIZE, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone));
-	}
-	return 0;
 }
 
 /*faire décoller le drone (échoue si pas init).*/
