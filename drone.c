@@ -1,4 +1,6 @@
 #include "drone.h"
+#include "navdata.h"
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -13,9 +15,6 @@ char ref_cmd[PACKET_SIZE];
 char *ref_head = "AT*REF", 
 	 *takeoff_arg="290718208", 
 	 *land_arg="290717696";
-
-char *config_head = "AT*CONFIG", 
-	 *bootstrap_mode_arg="\"general:navdata_demo\",\"TRUE\"";
 
 /*N° de commande actuel*/
 int cmd_no_sq = 0;
@@ -65,19 +64,6 @@ void* cmd_routine(void* args) {
 	pthread_exit(NULL);
 }
 
-
-/*Fonction de navdata_thread*/
-void* navdata_routine(void* args) {
-	struct timespec itv = {0, TIMEOUT_NAVDATA};
-	while(!stopped) {
-		if(send_cmd() < 0)
-			perror("Erreur d'envoi au drone");
-		nanosleep(&itv, NULL);
-	}
-	
-	pthread_exit(NULL);
-}
-
 /*créer un socket + initialiser l'adresse du drone et du client ; remettre le nb de commandes à 1.
 Démarrer le thread de commande.
 Appelle stop si le thread est déjà en train de tourner.*/
@@ -113,6 +99,8 @@ int jakopter_connect(lua_State* L) {
 	cmd_no_sq = 1;
 	cmd_current = NULL;
 	cmd_current_args = NULL;
+	
+	navdata_connect(L);
 	
 	//démarrer le thread
 	if(pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {
@@ -163,6 +151,7 @@ int jakopter_disconnect(lua_State* L) {
 	if(!stopped) {
 		stopped = 1;
 		close(sock_cmd);
+		navdata_disconnect(L);
 		lua_pushnumber(L, pthread_join(cmd_thread, NULL));
 	}
 	else {
