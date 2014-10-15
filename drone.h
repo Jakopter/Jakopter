@@ -11,7 +11,7 @@
 #define PORT_VIDEO		5555
 #define PORT_NAVDATA	5554
 #define TIMEOUT_CMD		30000
-#define TIMEOUT_NAVDATA	30000
+#define NAVDATA_INTERVAL 	1/15 // interval in seconds
 #define WIFI_ARDRONE_IP	"192.168.1.1"
 
 int jakopter_connect(lua_State* L);
