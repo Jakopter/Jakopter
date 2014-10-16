@@ -19,14 +19,27 @@ struct sockaddr_in addr_drone, addr_client;
 int sock_cmd;
 
 int recv_cmd() {
-	return recvfrom(sock_cmd, &navdata_cmd, sizeof(navdata_t), 0, (struct sockaddr*)&addr_drone, (socklen_t *)sizeof(addr_drone));
+	socklen_t len = sizeof(addr_drone);
+	return recvfrom(sock_cmd, &navdata_cmd, sizeof(navdata_t), 0, (struct sockaddr*)&addr_drone, &len);
 }
 
 /*Fonction de navdata_thread*/
 void* navdata_routine(void* args) {
-	if(sendto(sock_cmd, "ABCDEFGH", 8, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone)) < 0) {
+	fd_set fds;
+	FD_ZERO(&fds);
+	FD_SET(sock_cmd, &fds);
+	struct timeval timeout;
+	timeout.tv_sec = 5;
+	timeout.tv_usec = 0;
+	
+	if(sendto(sock_cmd, "\x01", 1, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone)) < 0) {
 		perror("Erreur d'envoi 1er paquet navdata\n");
 		return 0;
+	}
+	
+	if(select(sock_cmd+1, &fds, NULL, NULL, &timeout) <= 0) {
+		perror("Pas de réponse 1er paquet ou erreur\n");
+		return 0;		
 	}
 	
 	if(recv_cmd() < 0) {
