@@ -1,4 +1,6 @@
 #include "drone.h"
+#include "navdata.h"
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -10,12 +12,9 @@
 
 /*commandes pour décoller et aterrir*/
 char ref_cmd[PACKET_SIZE];
-char *ref_head = "AT*REF", 
-	 *takeoff_arg="290718208", 
+char *ref_head = "AT*REF",
+	 *takeoff_arg="290718208",
 	 *land_arg="290717696";
-
-char *config_head = "AT*CONFIG", 
-	 *bootstrap_mode_arg="\"general:navdata_demo\",\"TRUE\"";
 
 /*N° de commande actuel*/
 int cmd_no_sq = 0;
@@ -35,7 +34,7 @@ int sock_cmd;
 /*Change la commande courante : prend le nom de la commande
 et une chaîne avec les arguments*/
 void set_cmd(char* cmd_type, char* args) {
-	
+
 	cmd_current = cmd_type;
 	cmd_current_args = args;
 }
@@ -61,20 +60,7 @@ void* cmd_routine(void* args) {
 			perror("Erreur d'envoi au drone");
 		nanosleep(&itv, NULL);
 	}
-	
-	pthread_exit(NULL);
-}
 
-
-/*Fonction de navdata_thread*/
-void* navdata_routine(void* args) {
-	struct timespec itv = {0, TIMEOUT_NAVDATA};
-	while(!stopped) {
-		if(send_cmd() < 0)
-			perror("Erreur d'envoi au drone");
-		nanosleep(&itv, NULL);
-	}
-	
 	pthread_exit(NULL);
 }
 
@@ -82,38 +68,40 @@ void* navdata_routine(void* args) {
 Démarrer le thread de commande.
 Appelle stop si le thread est déjà en train de tourner.*/
 int jakopter_connect(lua_State* L) {
-	
+
 	//stopper la com si elle est déjà initialisée
 	if(!stopped)
 		jakopter_disconnect(L);
-		
+
 	addr_drone.sin_family      = AF_INET;
 	addr_drone.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
 	addr_drone.sin_port        = htons(PORT_CMD);
-	
+
 	addr_client.sin_family      = AF_INET;
 	addr_client.sin_addr.s_addr = htonl(INADDR_ANY);
 	addr_client.sin_port        = htons(PORT_CMD);
-	
+
 	sock_cmd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if(sock_cmd < 0) {
 		fprintf(stderr, "Erreur, impossible d'établir le socket\n");
 		lua_pushnumber(L, -1);
 		return 1;
 	}
-	
+
 	//bind du socket client pour le forcer sur le port choisi
 	if(bind(sock_cmd, (struct sockaddr*)&addr_client, sizeof(addr_client)) < 0) {
 		fprintf(stderr, "Erreur : impossible de binder le socket au port %d\n", PORT_CMD);
 		lua_pushnumber(L, -1);
 		return 1;
 	}
-	
+
 	//réinitialiser les commandes
 	cmd_no_sq = 1;
 	cmd_current = NULL;
 	cmd_current_args = NULL;
-	
+
+	navdata_connect();
+
 	//démarrer le thread
 	if(pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {
 		perror("Erreur création thread");
@@ -121,24 +109,24 @@ int jakopter_connect(lua_State* L) {
 		return 1;
 	}
 	stopped = 0;
-	
+
 	lua_pushnumber(L, 0);
 	return 1;
 }
 
 /*faire décoller le drone (échoue si pas init).*/
 int jakopter_takeoff(lua_State* L) {
-	
+
 	//vérifier qu'on a initialisé
 	if(!cmd_no_sq || stopped) {
 		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
 		lua_pushnumber(L, -1);
 		return 1;
 	}
-	
+
 	//changer la commande
 	//takeoff = 0x11540200, land = 0x11540000
-	
+
 	set_cmd(ref_head, takeoff_arg);
 	lua_pushnumber(L, 0);
 	return 1;
@@ -152,7 +140,7 @@ int jakopter_land(lua_State* L) {
 		lua_pushnumber(L, -1);
 		return 1;
 	}
-	
+
 	set_cmd(ref_head, land_arg);
 	lua_pushnumber(L, 0);
 	return 1;
@@ -163,6 +151,7 @@ int jakopter_disconnect(lua_State* L) {
 	if(!stopped) {
 		stopped = 1;
 		close(sock_cmd);
+		navdata_disconnect();
 		lua_pushnumber(L, pthread_join(cmd_thread, NULL));
 	}
 	else {
