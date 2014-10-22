@@ -1,10 +1,5 @@
 #include "video.h"
-#include <pthread.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
+
 
 //adresses pour la com vidéo
 struct sockaddr_in addr_drone, addr_client;

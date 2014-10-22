@@ -1,8 +1,9 @@
 #ifndef NAVDATA_H
 #define NAVDATA_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "common.h"
+#define PORT_NAVDATA	5554
+#define NAVDATA_INTERVAL 	1/15 // interval in seconds
 
 typedef struct _navdata_option_t {
 	uint16_t  tag;
