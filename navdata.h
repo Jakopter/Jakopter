@@ -20,7 +20,7 @@ typedef struct _navdata_t {
 	navdata_option_t  options[1];
 } __attribute__ ((packed)) navdata_t;
 
-int navdata_connect(lua_State* L);
-int navdata_disconnect(lua_State* L);
+int navdata_connect();
+int navdata_disconnect();
 
 #endif
