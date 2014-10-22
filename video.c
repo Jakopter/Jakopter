@@ -9,6 +9,7 @@ int sock_video;
 pthread_t video_thread;
 fd_set vid_fd_set;
 struct timeval video_timeout = {4, 0};
+static volatile int stopped = 1;
 
 char[TCP_VIDEO_BUF_SIZE] tcp_buf;
 
@@ -24,11 +25,21 @@ void* video_routine(void* args) {
 		else if(FD_ISSET(sock_video, &vid_fd_set)) {
 			//recevoir le paquet du drone
 			pack_size = recv(sock_video, tcp_buf, TCP_BUF_SIZE, 0);
-			
+			if (pack_size < 0)
+				perror("Erreur recv()");
+			printf("Reçu %d octets de vidéo.\n");
+		}
+		else {
+			printf("Timeout : aucune donnée vidéo reçue.\n");
+			stopped = 1;
+		}
+	}
+	pthread_exit(NULL);
+}
 		
 		
 
-int jakopter_init_video() {
+int jakopter_init_video(lua_State* L) {
 /*
 	addr_drone.sin_family      = AF_INET;
 	addr_drone.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
@@ -56,9 +67,22 @@ int jakopter_init_video() {
 	//ajouter le socket au set pour select
 	FD_SET(sock_video, &vid_fd_set);
 	
+	stopped = 0;
 	//démarrer la réception des packets vidéo
 	if(pthread_create(&video_thread, NULL, video_routine, NULL) < 0) {
 		perror("Erreur création thread");
+		stopped = 1;
 		lua_pushnumber(L, -1);
 		return 1;
 	}
+	
+	lua_pushnumber(L, 0);
+	return 1;
+}
+
+int jakopter_stop_video(lua_State* L) {
+	stopped = 1;
+	close(sock_video);
+	lua_pushnumber(L, pthread_join(video_thread, NULL));
+}
+
