@@ -1,15 +1,6 @@
 #include "drone.h"
 #include "navdata.h"
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
-
-
 /*commandes pour décoller et aterrir*/
 char ref_cmd[PACKET_SIZE];
 char *ref_head = "AT*REF",
@@ -24,6 +15,7 @@ char *cmd_current = NULL, *cmd_current_args = NULL;
 /*Thread qui se charge d'envoyer régulièrement des commandes pour rester co avec le drone*/
 pthread_t cmd_thread;
 int stopped = 1;      //Guard that stops any function if connection isn't initialized.
+static pthread_mutex_t mutex_cmd = PTHREAD_MUTEX_INITIALIZER;
 
 /*Infos réseau pour la connexion au drone*/
 //adresse du drone + adresse du client (nécessaire pour forcer le n° de port)
@@ -34,21 +26,29 @@ int sock_cmd;
 /*Change la commande courante : prend le nom de la commande
 et une chaîne avec les arguments*/
 void set_cmd(char* cmd_type, char* args) {
-
+	pthread_mutex_lock(&mutex_cmd);
 	cmd_current = cmd_type;
 	cmd_current_args = args;
+	pthread_mutex_unlock(&mutex_cmd);
 }
 
 /*Envoie la commande courante, et incrémente le compteur*/
 int send_cmd() {
+	pthread_mutex_lock(&mutex_cmd);
 	if(cmd_current != NULL) {
 		memset(ref_cmd, 0, PACKET_SIZE);
 		snprintf(ref_cmd, PACKET_SIZE, "%s=%d,%s\r", cmd_current, cmd_no_sq, cmd_current_args);
 		cmd_no_sq++;
 		ref_cmd[PACKET_SIZE-1] = '\0';
 
-		return sendto(sock_cmd, ref_cmd, PACKET_SIZE, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone));
+		int ret = sendto(sock_cmd, ref_cmd, PACKET_SIZE, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone));
+		pthread_mutex_unlock(&mutex_cmd);
+
+		return ret;
 	}
+
+	pthread_mutex_unlock(&mutex_cmd);
+
 	return 0;
 }
 
@@ -100,7 +100,7 @@ int jakopter_connect(lua_State* L) {
 	cmd_current = NULL;
 	cmd_current_args = NULL;
 
-	navdata_connect();
+	//navdata_connect();
 
 	//démarrer le thread
 	if(pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {

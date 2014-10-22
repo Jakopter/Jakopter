@@ -1,3 +1,8 @@
+#ifndef JAKOPTER_VIDEO_H
+#define JAKOPTER_VIDEO_H
+
+#include "common.h"
+#define PORT_VIDEO		5555
 
 typedef struct {
 	uint8_t signature[4];	/* "PaVE" - used to identify the start of frame */
@@ -60,3 +65,5 @@ typedef struct {
 	uint8_t reserved3[12];
 	/* Padding to align on 64 bytes */
 } __attribute__ ((packed)) parrot_video_encapsulation_t;
+
+#endif
