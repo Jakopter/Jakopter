@@ -27,7 +27,8 @@ void* video_routine(void* args) {
 			pack_size = recv(sock_video, tcp_buf, TCP_VIDEO_BUF_SIZE, 0);
 			if (pack_size < 0)
 				perror("Erreur recv()");
-			printf("Reçu %u octets de vidéo.\n", (unsigned int)pack_size);
+
+			printf("Reçu %zd octets de vidéo.\n", pack_size);
 		}
 		else {
 			printf("Timeout : aucune donnée vidéo reçue. Nouvel essai.\n");
