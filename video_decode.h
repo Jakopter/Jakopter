@@ -1,6 +1,11 @@
+#ifndef JAKOPTER_VIDEO_DECODE_H
+#define JAKOPTER_VIDEO_DECODE_H
+
 #include <libavcodec/avcodec.h>
 #include "video.h"
 
+//The actual buffer must be a bit larger because some codecs could read over the end,
+//see FFmpeg doc.
 #define TCP_VIDEO_BUF_SIZE BASE_VIDEO_BUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE
 
 /*Load up the h264 codec needed for video decoding.
@@ -14,7 +19,9 @@ Returns:
 	> 0 : decoded n images.
 	-1 : error while decoding.
 */
-int video_decode_packet(char* buffer, int buf_size);
+int video_decode_packet(uint8_t* buffer, int buf_size);
 
-/*Free the decoder.*/
-void video_close_decoder();
+/*Free the decoder and its associated structures.*/
+void video_stop_decoder();
+
+#endif
