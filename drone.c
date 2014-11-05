@@ -217,6 +217,8 @@ static const luaL_Reg jakopterlib[] = {
 	{"get_no_sq", jakopter_get_no_sq},
 	{"connect_video", jakopter_init_video},
 	{"stop_video", jakopter_stop_video},
+	{"is_flying", jakopter_is_flying},
+	{"height", jakopter_height},
 	{NULL, NULL}
 };
 

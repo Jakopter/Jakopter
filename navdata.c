@@ -3,7 +3,7 @@
 
 
 /*commandes*/
-navdata_t navdata_cmd;
+static navdata_t navdata_cmd;
 
 
 
@@ -72,15 +72,17 @@ void* navdata_routine(void* args) {
 			perror("Erreur d'envoi au drone");
 		usleep(NAVDATA_INTERVAL*1000);
 
+		if(sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
+			perror("Erreur d'envoi 1er paquet navdata\n");
+			pthread_exit(NULL);
+		}
+
 		pthread_mutex_lock(&mutex_stopped);
 	}
 	pthread_mutex_unlock(&mutex_stopped);
 
 	//decryptage donnees
 
-	pthread_mutex_lock(&mutex_navdata);
-	printf("%d\n",navdata_cmd.ardrone_state);
-	pthread_mutex_unlock(&mutex_navdata);
 
 	pthread_exit(NULL);
 }
@@ -122,6 +124,28 @@ int navdata_connect() {
 	}
 
 	return 0;
+}
+
+int jakopter_is_flying(lua_State* L) {
+	int flyState = -1;
+	pthread_mutex_lock(&mutex_navdata);
+	flyState = navdata_cmd.ardrone_state & 0x0001;
+	pthread_mutex_unlock(&mutex_navdata);
+	lua_pushnumber(L, flyState);
+	//Nombre de valeurs retournées
+	return 1;
+}
+
+int jakopter_height(lua_State* L) {
+	int height = -1;
+	pthread_mutex_lock(&mutex_navdata);
+	navdata_option_t option = navdata_cmd.options[0];
+
+	height = option.data[24];
+	pthread_mutex_unlock(&mutex_navdata);
+	lua_pushnumber(L, height);
+	//Nombre de valeurs retournées
+	return 1;
 }
 
 
