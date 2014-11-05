@@ -17,6 +17,9 @@ static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 //extra size needed for decoding (see video_decode.h).
 uint8_t tcp_buf[TCP_VIDEO_BUF_SIZE];
 
+//clean things that have been initiated/created by init_video and need manual cleaning.
+static void video_clean();
+
 //cette fonction est un thread, ne pas l'appeler !
 void* video_routine(void* args) {
 	ssize_t pack_size = 0;
@@ -38,7 +41,7 @@ void* video_routine(void* args) {
 
 			//printf("Reçu %zd octets de vidéo.\n", pack_size);
 			nb_img = video_decode_packet(tcp_buf, pack_size);
-			printf("Decoded %d frames(s)\n", nb_img);
+			printf("Decoded %d frame(s)\n", nb_img);
 		}
 		else {
 			printf("Video : data reception has timed out. Ending the video thread now.\n");
@@ -50,6 +53,8 @@ void* video_routine(void* args) {
 		pthread_mutex_lock(&mutex_stopped);
 	}
 	pthread_mutex_unlock(&mutex_stopped);
+	//there's no reason to keep stuff that's needed for our video thread once it's ended, so clean it now.
+	video_clean();
 	pthread_exit(NULL);
 }
 
@@ -111,13 +116,21 @@ int jakopter_init_video(lua_State* L) {
 	return 1;
 }
 
+
+void video_clean() {
+	close(sock_video);
+	video_stop_decoder();
+}
+
+/*
+End the video thread and clean the required structures
+*/
 int jakopter_stop_video(lua_State* L) {
 
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
+		stopped = 1;
 		pthread_mutex_unlock(&mutex_stopped);
-		close(sock_video);
-		video_stop_decoder();
 		lua_pushnumber(L, pthread_join(video_thread, NULL));
 	}
 	else {
