@@ -2,7 +2,7 @@
 #include "navdata.h"
 #include "video.h"
 
-/*commandes pour décoller et aterrir*/
+/*commandes pour décoller et atterrir*/
 char ref_cmd[PACKET_SIZE];
 char *ref_head = "AT*REF",
 	 *takeoff_arg="290718208",
@@ -17,15 +17,16 @@ char *cmd_current = NULL, *cmd_current_args = NULL;
 pthread_t cmd_thread;
 int stopped = 1;      //Guard that stops any function if connection isn't initialized.
 static pthread_mutex_t mutex_cmd = PTHREAD_MUTEX_INITIALIZER;
-
-/*Infos réseau pour la connexion au drone*/
-//adresse du drone + adresse du client (nécessaire pour forcer le n° de port)
-struct sockaddr_in addr_drone, addr_client;
-int sock_cmd;
+static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 
 
-/*Change la commande courante : prend le nom de la commande
-et une chaîne avec les arguments*/
+
+
+/* Change la commande courante : prend le nom de la commande
+et une chaîne avec les arguments
+ * \param cmd_type header de la forme AT*SOMETHING
+ * \param args code commande à transmettre (takeoff_arg)
+*/
 void set_cmd(char* cmd_type, char* args) {
 	pthread_mutex_lock(&mutex_cmd);
 	cmd_current = cmd_type;
@@ -56,11 +57,17 @@ int send_cmd() {
 /*Fonction de cmd_thread*/
 void* cmd_routine(void* args) {
 	struct timespec itv = {0, TIMEOUT_CMD};
+	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+
 		if(send_cmd() < 0)
 			perror("Erreur d'envoi au drone");
 		nanosleep(&itv, NULL);
+
+		pthread_mutex_lock(&mutex_stopped);
 	}
+	pthread_mutex_unlock(&mutex_stopped);
 
 	pthread_exit(NULL);
 }
@@ -71,8 +78,14 @@ Appelle stop si le thread est déjà en train de tourner.*/
 int jakopter_connect(lua_State* L) {
 
 	//stopper la com si elle est déjà initialisée
-	if(!stopped)
+	pthread_mutex_lock(&mutex_stopped);
+	if(!stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
 		jakopter_disconnect(L);
+		
+	}
+	else
+		pthread_mutex_unlock(&mutex_stopped);
 
 	addr_drone.sin_family      = AF_INET;
 	addr_drone.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
@@ -97,11 +110,17 @@ int jakopter_connect(lua_State* L) {
 	}
 
 	//réinitialiser les commandes
+	pthread_mutex_lock(&mutex_cmd);
 	cmd_no_sq = 1;
 	cmd_current = NULL;
 	cmd_current_args = NULL;
+	pthread_mutex_unlock(&mutex_cmd);
 
-	//navdata_connect();
+	pthread_mutex_lock(&mutex_stopped);
+	stopped = 0;
+	pthread_mutex_unlock(&mutex_stopped);
+
+	navdata_connect();
 
 	//démarrer le thread
 	if(pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {
@@ -109,7 +128,6 @@ int jakopter_connect(lua_State* L) {
 		lua_pushnumber(L, -1);
 		return 1;
 	}
-	stopped = 0;
 
 	lua_pushnumber(L, 0);
 	return 1;
@@ -119,11 +137,15 @@ int jakopter_connect(lua_State* L) {
 int jakopter_takeoff(lua_State* L) {
 
 	//vérifier qu'on a initialisé
+	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
 		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
 		lua_pushnumber(L, -1);
 		return 1;
 	}
+	else
+		pthread_mutex_unlock(&mutex_stopped);
 
 	//changer la commande
 	//takeoff = 0x11540200, land = 0x11540000
@@ -136,11 +158,16 @@ int jakopter_takeoff(lua_State* L) {
 /*faire atterrir le drone*/
 int jakopter_land(lua_State* L) {
 	//vérifier qu'on a initialisé
+	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+
 		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
 		lua_pushnumber(L, -1);
 		return 1;
 	}
+	else
+		pthread_mutex_unlock(&mutex_stopped);
 
 	set_cmd(ref_head, land_arg);
 	lua_pushnumber(L, 0);
@@ -149,13 +176,18 @@ int jakopter_land(lua_State* L) {
 
 /*Arrêter le thread principal (fin de la co au drone)*/
 int jakopter_disconnect(lua_State* L) {
+	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
 		stopped = 1;
+		pthread_mutex_unlock(&mutex_stopped);
+
 		close(sock_cmd);
 		navdata_disconnect();
 		lua_pushnumber(L, pthread_join(cmd_thread, NULL));
 	}
 	else {
+		pthread_mutex_unlock(&mutex_stopped);
+		
 		fprintf(stderr, "Erreur : la communication est déjà stoppée\n");
 		lua_pushnumber(L, -1);
 	}
