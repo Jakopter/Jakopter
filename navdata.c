@@ -76,6 +76,12 @@ void* navdata_routine(void* args) {
 	}
 	pthread_mutex_unlock(&mutex_stopped);
 
+	//decryptage donnees
+
+	pthread_mutex_lock(&mutex_navdata);
+	printf("%d\n",navdata_cmd.ardrone_state);
+	pthread_mutex_unlock(&mutex_navdata);
+
 	pthread_exit(NULL);
 }
 
