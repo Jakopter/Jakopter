@@ -27,11 +27,12 @@ void* video_routine(void* args) {
 			pack_size = recv(sock_video, tcp_buf, TCP_VIDEO_BUF_SIZE, 0);
 			if (pack_size < 0)
 				perror("Erreur recv()");
+
 			printf("Reçu %zd octets de vidéo.\n", pack_size);
 		}
 		else {
-			printf("Timeout : aucune donnée vidéo reçue.\n");
-			stopped = 1;
+			printf("Timeout : aucune donnée vidéo reçue. Nouvel essai.\n");
+			//stopped = 1;
 		}
 	}
 	pthread_exit(NULL);
@@ -84,6 +85,5 @@ int jakopter_stop_video(lua_State* L) {
 	stopped = 1;
 	close(sock_video);
 	lua_pushnumber(L, pthread_join(video_thread, NULL));
-
 	return 1;
 }
