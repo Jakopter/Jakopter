@@ -120,7 +120,13 @@ int jakopter_connect(lua_State* L) {
 	stopped = 0;
 	pthread_mutex_unlock(&mutex_stopped);
 
-	navdata_connect();
+	int navdata_status = navdata_connect();
+	if(navdata_status == -1) {
+		perror("Erreur de connexion navdata");
+		lua_pushnumber(L, -1);
+		return 1;
+	}
+
 
 	//démarrer le thread
 	if(pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {
