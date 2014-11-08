@@ -6,7 +6,7 @@
 #include "common.h"
 
 #define VIDEO_TIMEOUT 4
-#define TCP_VIDEO_BUF_SIZE 1024
+#define BASE_VIDEO_BUF_SIZE 1024
 #define PORT_VIDEO		5555
 
 
