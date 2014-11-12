@@ -10,8 +10,10 @@ Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder() {
 
 	//try to load h264
-	codec = avcodec_find_decoder(CODEC_ID_H264);
-	if(!codec) {
+	codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+	if(codec == NULL)
+        codec = avcodec_find_decoder(CODEC_ID_H264);
+	if(codec == NULL) {
 		fprintf(stderr, "FFmpeg error : Counldn't find needed codec H264 for video decoding.\n");
 		return -1;
 	}
@@ -43,10 +45,10 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 
 	if(buf_size <= 0 || buffer == NULL)
 		return 0;
-	
+
 	video_packet.size = buf_size;
 	video_packet.data = buffer;
-	
+
 	//send the packet's data to the decoder until it's completely processed.
 	while(video_packet.size > 0) {
 		//1. feed the decoder our data.
@@ -58,12 +60,12 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 		//2. did we get a new complete frame ?
 		if(complete_frame)
 			nb_frames++;
-		
+
 		//3. modify our packet's data offset to reflect the decoder's progression
 		video_packet.size -= decodedLen;
 		video_packet.data += decodedLen;
 	}
-	
+
 	return nb_frames;
 }
 

@@ -60,32 +60,30 @@ void* video_routine(void* args) {
 
 
 
-int jakopter_init_video(lua_State* L) {
+int jakopter_init_video() {
 
 	addr_drone_video.sin_family      = AF_INET;
 	addr_drone_video.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
 	addr_drone_video.sin_port        = htons(PORT_VIDEO);
-	
+
 	//initialiser le fdset
 	FD_ZERO(&vid_fd_set);
 
 	sock_video = socket(AF_INET, SOCK_STREAM, 0);
 	if(sock_video < 0) {
 		fprintf(stderr, "Error : couldn't bind TCP socket.\n");
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
 
 	//bind du socket client pour le forcer sur le port choisi
 	if(connect(sock_video, (struct sockaddr*)&addr_drone_video, sizeof(addr_drone_video)) < 0) {
 		perror("Error connecting to video stream");
 		close(sock_video);
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
 	//ajouter le socket au set pour select
 	FD_SET(sock_video, &vid_fd_set);
-	
+
 	//initialize the video buffer's extremity to zero to prevent
 	//possible errors during the decoding process by ffmpeg.
 	//Do not reference FF_INPUT_BUFFER_PADDING_SIZE directly to keep tasks as separated as possible.
@@ -95,10 +93,9 @@ int jakopter_init_video(lua_State* L) {
 	if(video_init_decoder() < 0) {
 		fprintf(stderr, "Error initializing decoder, aborting.\n");
 		close(sock_video);
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
-	
+
 	pthread_mutex_lock(&mutex_stopped);
 	stopped = 0;
 	pthread_mutex_unlock(&mutex_stopped);
@@ -108,12 +105,10 @@ int jakopter_init_video(lua_State* L) {
 		stopped = 1;
 		close(sock_video);
 		video_stop_decoder();
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
 
-	lua_pushnumber(L, 0);
-	return 1;
+	return 0;
 }
 
 
@@ -125,18 +120,17 @@ void video_clean() {
 /*
 End the video thread and clean the required structures
 */
-int jakopter_stop_video(lua_State* L) {
+int jakopter_stop_video() {
 
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
 		stopped = 1;
 		pthread_mutex_unlock(&mutex_stopped);
-		lua_pushnumber(L, pthread_join(video_thread, NULL));
+		return pthread_join(video_thread, NULL);
 	}
 	else {
 		pthread_mutex_unlock(&mutex_stopped);
 		fprintf(stderr, "Video thread is already shut down.\n");
-		lua_pushnumber(L, -1);
+		return -1;
 	}
-	return 1;
 }
