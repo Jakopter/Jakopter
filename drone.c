@@ -80,7 +80,7 @@ int jakopter_connect() {
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
-		jakopter_disconnect(L);
+		jakopter_disconnect();
 
 	}
 	else

@@ -9,6 +9,8 @@ static AVFrame* current_frame;
 Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder() {
 
+	//initialize libavcodec
+	avcodec_register_all();
 	//try to load h264
 	codec = avcodec_find_decoder(AV_CODEC_ID_H264);
 	if(codec == NULL)
@@ -31,7 +33,7 @@ int video_init_decoder() {
 /*
 Decode a video buffer.
 Returns:
-	0 : buffer decoded, but no image produce (incomplete).
+	0 : buffer decoded, but no image produced (incomplete).
 	> 0 : decoded n images.
 	-1 : error while decoding.
 */
