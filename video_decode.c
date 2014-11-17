@@ -19,6 +19,7 @@ int video_init_decoder() {
 		fprintf(stderr, "FFmpeg error : Counldn't find needed codec H264 for video decoding.\n");
 		return -1;
 	}
+
 	//itilialize the ffmpeg codec context
 	context = avcodec_alloc_context3(codec);
 	if(avcodec_open2(context, codec, NULL) < 0) {

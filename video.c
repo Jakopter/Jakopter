@@ -69,6 +69,18 @@ int jakopter_init_video() {
 	//initialiser le fdset
 	FD_ZERO(&vid_fd_set);
 
+	//initialize the video buffer's extremity to zero to prevent
+	//possible errors during the decoding process by ffmpeg.
+	//Do not reference FF_INPUT_BUFFER_PADDING_SIZE directly to keep tasks as separated as possible.
+	memset(tcp_buf+BASE_VIDEO_BUF_SIZE, 0, TCP_VIDEO_BUF_SIZE-BASE_VIDEO_BUF_SIZE);
+
+	//initialize the video decoder
+	if(video_init_decoder() < 0) {
+		fprintf(stderr, "Error initializing decoder, aborting.\n");
+		close(sock_video);
+		return -1;
+	}
+	
 	sock_video = socket(AF_INET, SOCK_STREAM, 0);
 	if(sock_video < 0) {
 		fprintf(stderr, "Error : couldn't bind TCP socket.\n");
@@ -84,17 +96,6 @@ int jakopter_init_video() {
 	//ajouter le socket au set pour select
 	FD_SET(sock_video, &vid_fd_set);
 
-	//initialize the video buffer's extremity to zero to prevent
-	//possible errors during the decoding process by ffmpeg.
-	//Do not reference FF_INPUT_BUFFER_PADDING_SIZE directly to keep tasks as separated as possible.
-	memset(tcp_buf+BASE_VIDEO_BUF_SIZE, 0, TCP_VIDEO_BUF_SIZE-BASE_VIDEO_BUF_SIZE);
-
-	//initialize the video decoder
-	if(video_init_decoder() < 0) {
-		fprintf(stderr, "Error initializing decoder, aborting.\n");
-		close(sock_video);
-		return -1;
-	}
 
 	pthread_mutex_lock(&mutex_stopped);
 	stopped = 0;
