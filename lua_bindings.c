@@ -21,6 +21,26 @@ int jakopter_land_lua(lua_State* L) {
     return 1;
 }
 
+int jakopter_rotate_left_lua(lua_State* L) {
+    lua_pushnumber(L, jakopter_rotate_left());
+    return 1;
+}
+
+int jakopter_rotate_right_lua(lua_State* L) {
+    lua_pushnumber(L, jakopter_rotate_right());
+    return 1;
+}
+
+int jakopter_forward_lua(lua_State* L) {
+    lua_pushnumber(L, jakopter_forward());
+    return 1;
+}
+
+int jakopter_backward_lua(lua_State* L) {
+    lua_pushnumber(L, jakopter_backward());
+    return 1;
+}
+
 int jakopter_disconnect_lua(lua_State* L) {
     lua_pushnumber(L, jakopter_disconnect());
     return 1;
@@ -48,6 +68,10 @@ static const luaL_Reg jakopterlib[] = {
 	{"connect", jakopter_connect_lua},
 	{"takeoff", jakopter_takeoff_lua},
 	{"land", jakopter_land_lua},
+	{"left", jakopter_rotate_left},
+	{"right", jakopter_rotate_right},
+	{"forward", jakopter_forward},
+	{"backward", jakopter_backward},
 	{"disconnect", jakopter_disconnect_lua},
 	{"get_no_sq", jakopter_get_no_sq_lua},
 	{"connect_video", jakopter_init_video_lua},

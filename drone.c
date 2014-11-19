@@ -6,6 +6,11 @@ char ref_cmd[PACKET_SIZE];
 char *ref_head = "AT*REF",
 	 *takeoff_arg="290718208",
 	 *land_arg="290717696";
+char *pcmd_head = "AT*PCMD",
+	 *rotate_left_arg="1,0,0,0,-1085485875",
+	 *rotate_right_arg="1,0,0,0,1061997773",
+	 *forward_arg="1,0,-1102263091,0,O",
+	 *backward_arg="1,0,0,104522055,O,0";
 
 /*N° de commande actuel*/
 int cmd_no_sq = 0;
@@ -167,6 +172,70 @@ int jakopter_land() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	set_cmd(ref_head, land_arg);
+	return 0;
+}
+
+int jakopter_rotate_left() {
+	//vérifier qu'on a initialisé
+	pthread_mutex_lock(&mutex_stopped);
+	if(!cmd_no_sq || stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+
+		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+		return -1;
+	}
+	else
+		pthread_mutex_unlock(&mutex_stopped);
+
+	set_cmd(ref_head, rotate_left_arg);
+	return 0;
+}
+
+int jakopter_rotate_right() {
+	//vérifier qu'on a initialisé
+	pthread_mutex_lock(&mutex_stopped);
+	if(!cmd_no_sq || stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+
+		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+		return -1;
+	}
+	else
+		pthread_mutex_unlock(&mutex_stopped);
+
+	set_cmd(ref_head, rotate_right_arg);
+	return 0;
+}
+
+int jakopter_forward() {
+	//vérifier qu'on a initialisé
+	pthread_mutex_lock(&mutex_stopped);
+	if(!cmd_no_sq || stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+
+		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+		return -1;
+	}
+	else
+		pthread_mutex_unlock(&mutex_stopped);
+
+	set_cmd(ref_head, forward_arg);
+	return 0;
+}
+
+int jakopter_backward() {
+	//vérifier qu'on a initialisé
+	pthread_mutex_lock(&mutex_stopped);
+	if(!cmd_no_sq || stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+
+		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+		return -1;
+	}
+	else
+		pthread_mutex_unlock(&mutex_stopped);
+
+	set_cmd(ref_head, backward_arg);
 	return 0;
 }
 
