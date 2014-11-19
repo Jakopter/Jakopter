@@ -42,7 +42,7 @@ int video_init_decoder() {
 	current_frame = av_frame_alloc();
 	frameOffset = 0;
 	
-	//open a file to write the frames to
+	//open a file to write the decoded frames to
 	outfd = open("frames.yuv", O_WRONLY | O_TRUNC | O_CREAT, 0666);
 	if(outfd < 0)	perror("Failed to open file");
 	framesToRec = 30;
@@ -119,5 +119,6 @@ void video_stop_decoder() {
 	av_parser_close(cpContext);
 	avcodec_free_context(&context);
 	av_frame_free(&current_frame);
+	free(tempBuffer);
 	close(outfd);
 }
