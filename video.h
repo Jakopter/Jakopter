@@ -1,8 +1,6 @@
 #ifndef JAKOPTER_VIDEO_H
 #define JAKOPTER_VIDEO_H
 
-#include "lauxlib.h"
-#include "lua.h"
 #include "common.h"
 
 #define VIDEO_TIMEOUT 4
@@ -76,11 +74,11 @@ typedef struct {
 /*
 Lancer le thread qui reçoit des paquets vidéo sur le port 5555
 */
-int jakopter_init_video(lua_State* L);
+int jakopter_init_video();
 /*
 Fermer la connexion au port et arrêter le thread.
 */
-int jakopter_stop_video(lua_State* L);
+int jakopter_stop_video();
 
 #endif
 
