@@ -7,13 +7,14 @@ static AVCodecContext* context;
 static AVCodecParserContext* cpContext;
 static AVPacket video_packet;
 static AVFrame* current_frame;
-//offset in bytes when parsing a frame
+//offset in bytes when parsing a frame (might be useless, needs more testing)
 static int frameOffset;
-
+//buffer to write the raw decoded frame.
 static int tempBufferSize;
 static unsigned char* tempBuffer;
-
+//file descriptor pointing to a location where we will dump raw decoded frames.
 static int outfd;
+//how many frames at most do we want to dump to this FD ?
 static int framesToRec;
 
 /*Load up the h264 codec needed for video decoding.
@@ -92,9 +93,10 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 			//If we get there, we should've decoded a frame.
 			if(complete_frame) {
 				nb_frames++;
-				//dump frame
+				//write the raw frame data in our temporary buffer...
 				int picsize = avpicture_layout((const AVPicture*)current_frame, current_frame->format, 
 				current_frame->width, current_frame->height, tempBuffer, tempBufferSize);
+				//...that we then dump into our file.
 				if(framesToRec-- > 0) write(outfd, tempBuffer, picsize);
 				printf("Decoded frame : %d bytes, format : %d, size : %dx%d\n", picsize, current_frame->format, current_frame->width, current_frame->height);
 				//free the frame's references for reuse
@@ -104,11 +106,7 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 			//reinit frame offset for next frame
 			frameOffset = 0;
 		}
-		/*
-		//3. modify our packet's data offset to reflect the decoder's progression
-		video_packet.size -= decodedLen;
-		video_packet.data += decodedLen;
-		*/
+
 	}
 
 	return nb_frames;
@@ -116,8 +114,9 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 
 void video_stop_decoder() {
 	avcodec_close(context);
+	//quite recent and not very useful for us, always use avcodec_close for now.
+	//avcodec_free_context(&context);
 	av_parser_close(cpContext);
-	avcodec_free_context(&context);
 	av_frame_free(&current_frame);
 	free(tempBuffer);
 	close(outfd);
