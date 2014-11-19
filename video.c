@@ -14,7 +14,7 @@ static volatile int stopped = 1;
 static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 
 //TPC_VIDEO_BUF_SIZE = base size (defined in video.h) +
-//extra size needed for decoding (see video_decode.h).
+//extra size needed for decoding (see video_decode.h). (might be useless now that we use a frame parser)
 uint8_t tcp_buf[TCP_VIDEO_BUF_SIZE];
 
 //clean things that have been initiated/created by init_video and need manual cleaning.
@@ -24,6 +24,7 @@ static void video_clean();
 void* video_routine(void* args) {
 	ssize_t pack_size = 0;
 	int nb_img = 0;
+	long int nb_tours = 0;
 	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
@@ -34,22 +35,29 @@ void* video_routine(void* args) {
 		}
 		else if(FD_ISSET(sock_video, &vid_fd_set)) {
 			//receive the video data from the drone. Remember to leave some room
-			//at the end of the buffer.
+			//at the end of the buffer. (not needed now ?)
 			pack_size = recv(sock_video, tcp_buf, BASE_VIDEO_BUF_SIZE, 0);
-			if (pack_size < 0)
+			if(pack_size == 0) {
+				printf("Stream ended by server. Ending the video thread.\n");
+				stopped = 1;
+			}
+			else if(pack_size < 0)
 				perror("Error recv()");
-
-			//printf("Reçu %zd octets de vidéo.\n", pack_size);
-			nb_img = video_decode_packet(tcp_buf, pack_size);
-			printf("Decoded %d frame(s)\n", nb_img);
+			else {
+				//we actually got some data, send it for decoding !
+				nb_img = video_decode_packet(tcp_buf, pack_size);
+				//printf("Decoded %d frame(s), %ld tours, taille %zd\n", nb_img, nb_tours, pack_size);
+			}
 		}
 		else {
 			printf("Video : data reception has timed out. Ending the video thread now.\n");
-			//printf("Timeout : aucune donnée vidéo reçue. Nouvel essai.\n");
 			stopped = 1;
 		}
-		//reset the timeout
+		//reset the timeout and the FDSET entry
 		video_timeout.tv_sec = VIDEO_TIMEOUT;
+		FD_ZERO(&vid_fd_set);
+		FD_SET(sock_video, &vid_fd_set);
+		nb_tours++;
 		pthread_mutex_lock(&mutex_stopped);
 	}
 	pthread_mutex_unlock(&mutex_stopped);
