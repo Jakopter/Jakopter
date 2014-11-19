@@ -14,6 +14,7 @@ static int tempBufferSize;
 static unsigned char* tempBuffer;
 
 static int outfd;
+static int framesToRec;
 
 /*Load up the h264 codec needed for video decoding.
 Perform the initialization steps required by FFmpeg.*/
@@ -44,9 +45,10 @@ int video_init_decoder() {
 	//open a file to write the frames to
 	outfd = open("frames.yuv", O_WRONLY | O_TRUNC | O_CREAT, 0666);
 	if(outfd < 0)	perror("Failed to open file");
+	framesToRec = 30;
 	
 	//temp buffer to store raw frame
-	tempBufferSize = avpicture_get_size(AV_PIX_FMT_YUV420P, 1280, 720);
+	tempBufferSize = avpicture_get_size(AV_PIX_FMT_YUV420P, JAKO_VIDEO_WIDTH, JAKO_VIDEO_HEIGHT);
 	tempBuffer = calloc(tempBufferSize, 1);
 	return 0;
 }
@@ -71,7 +73,8 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 	//parse the video packet. If the parser returns a frame, decode it.
 	while(buf_size > 0) {
 		//1. parse the newly-received packet. If the parser has assembled a whole frame, store it in the video_packet structure.
-		parsedLen = av_parser_parse2(cpContext, context, &video_packet.data, &video_packet.size, buffer, buf_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, frameOffset);
+		//TODO: confirm/infirm usefulness of frameOffset
+		parsedLen = av_parser_parse2(cpContext, context, &video_packet.data, &video_packet.size, buffer, buf_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
 		
 		//2. modify our buffer's data offset to reflect the parser's progression.
 		buffer += parsedLen;
@@ -92,14 +95,15 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 				//dump frame
 				int picsize = avpicture_layout((const AVPicture*)current_frame, current_frame->format, 
 				current_frame->width, current_frame->height, tempBuffer, tempBufferSize);
-                write(outfd, tempBuffer, picsize);
+				if(framesToRec-- > 0) write(outfd, tempBuffer, picsize);
+				printf("Decoded frame : %d bytes, format : %d, size : %dx%d\n", picsize, current_frame->format, current_frame->width, current_frame->height);
+				//free the frame's references for reuse
+				av_frame_unref(current_frame);
 			}
 			
 			//reinit frame offset for next frame
 			frameOffset = 0;
 		}
-		//free the frame's references for reuse
-		av_frame_unref(current_frame);
 		/*
 		//3. modify our packet's data offset to reflect the decoder's progression
 		video_packet.size -= decodedLen;

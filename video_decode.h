@@ -8,6 +8,10 @@
 //see FFmpeg doc.
 #define TCP_VIDEO_BUF_SIZE BASE_VIDEO_BUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE
 
+//Dimensions of the video stream
+#define JAKO_VIDEO_WIDTH	640
+#define JAKO_VIDEO_HEIGHT	360
+
 /*Load up the h264 codec needed for video decoding.
 Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder();
