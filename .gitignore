@@ -1,1 +1,4 @@
-drone.so
+Makefile
+*.so
+*.o
+*.d
