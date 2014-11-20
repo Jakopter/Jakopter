@@ -1,3 +1,4 @@
+
 LIBS+= `pkg-config lua5.2 --libs`  `pkg-config libavcodec --libs` -pthread
 LDFLAGS+= -shared
 CFLAGS+= -c -std=gnu99 -Wall -fpic `pkg-config lua5.2 --cflags` `pkg-config libavcodec --cflags` 

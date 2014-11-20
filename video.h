@@ -1,3 +1,12 @@
+#ifndef JAKOPTER_VIDEO_H
+#define JAKOPTER_VIDEO_H
+
+#include "common.h"
+
+#define VIDEO_TIMEOUT 4
+#define BASE_VIDEO_BUF_SIZE 1024
+#define PORT_VIDEO		5555
+
 
 typedef struct {
 	uint8_t signature[4];	/* "PaVE" - used to identify the start of frame */
@@ -60,3 +69,16 @@ typedef struct {
 	uint8_t reserved3[12];
 	/* Padding to align on 64 bytes */
 } __attribute__ ((packed)) parrot_video_encapsulation_t;
+
+
+/*
+Lancer le thread qui reçoit des paquets vidéo sur le port 5555
+*/
+int jakopter_init_video();
+/*
+Fermer la connexion au port et arrêter le thread.
+*/
+int jakopter_stop_video();
+
+#endif
+
