@@ -45,8 +45,10 @@ void* video_routine(void* args) {
 			else {
 				//we actually got some data, send it for decoding !
 				nb_img = video_decode_packet(tcp_buf, pack_size);
-				if(nb_img < 0)
-					fprintf(stderr, "Error decoding frame !\n");
+				if(nb_img < 0) {
+					fprintf(stderr, "Error processing frame !\n");
+					stopped = 1;
+				}
 			}
 		}
 		else {
