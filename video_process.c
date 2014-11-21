@@ -32,6 +32,8 @@ int jako_dumpFrameToFile(uint8_t* buffer, int width, int height, int size) {
 		nbFramesToDump = JAKO_FRAMEDUMP_COUNT;
 		isInitialized = 1;
 		printf("Dumping frames to file %s...\n", JAKO_FRAMEDUMP_FILENAME);
+		if(nbFramesToDump < 0)
+			printf("Warning : the frame count is unlimited ! The file is going to grow big real fast !\n");
 	}
 	
 	//dump the frame into the file
