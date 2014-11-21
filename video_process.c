@@ -1,4 +1,5 @@
 #include "video_process.h"
+#include "video.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -30,12 +31,17 @@ int jako_dumpFrameToFile(uint8_t* buffer, int width, int height, int size) {
 		}
 		nbFramesToDump = JAKO_FRAMEDUMP_COUNT;
 		isInitialized = 1;
+		printf("Dumping frames to file %s...\n", JAKO_FRAMEDUMP_FILENAME);
 	}
 	
 	//dump the frame into the file
 	if(nbFramesToDump != 0) {
 		write(outfd, buffer, size);
 		nbFramesToDump--;
+	}
+	else {
+		printf("We're done dumping the stream !\n");
+		jakopter_stop_video();
 	}
 	
 	return 0;

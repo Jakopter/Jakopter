@@ -9,7 +9,8 @@
 * in order to process video frames received from the drone.
 */
 
-/*Dump the video frame to a file.*/
+/*Dump the video frame to a file.
+Ends the video thread once it's reached its limit (see below).*/
 int jako_dumpFrameToFile(uint8_t* frame, int width, int height, int size);
 
 //Name of the file where frames will be dumped

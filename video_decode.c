@@ -93,7 +93,7 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 		
 		//3. do we have a frame to decode ?
 		if(video_packet.size > 0) {
-			printf("Packet size : %d\n", video_packet.size);
+			//printf("Packet size : %d\n", video_packet.size);
 			decodedLen = avcodec_decode_video2(context, current_frame, &complete_frame, &video_packet);
 			if(decodedLen < 0) {
 				fprintf(stderr, "Error : couldn't decode frame.\n");
