@@ -9,8 +9,8 @@ char *ref_head = "AT*REF",
 char *pcmd_head = "AT*PCMD",
 	 *rotate_left_arg="1,0,0,0,-1085485875",
 	 *rotate_right_arg="1,0,0,0,1061997773",
-	 *forward_arg="1,0,-1102263091,0,O",
-	 *backward_arg="1,0,0,104522055,O,0";
+	 *forward_arg="1,0,-1102263091,0,0",
+	 *backward_arg="1,0,1045220557,0,0";
 char *config_head = "AT*CONFIG";
 
 /*N° de commande actuel*/
