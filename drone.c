@@ -186,8 +186,6 @@ int jakopter_land(lua_State* L) {
 	return 1;
 }
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 int jakopter_rotate_left() {
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
@@ -252,13 +250,8 @@ int jakopter_backward() {
 	return 0;
 }
 
-/*Arrêter le thread principal (fin de la co au drone)*/
-=======
+
 /* Arrêter le thread principal (fin de la co au drone) */
->>>>>>> Stashed changes
-=======
-/* Arrêter le thread principal (fin de la co au drone) */
->>>>>>> Stashed changes
 int jakopter_disconnect(lua_State* L) {
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
