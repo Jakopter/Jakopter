@@ -1,6 +1,7 @@
 #ifndef JAKOPTER_VIDEO_H
 #define JAKOPTER_VIDEO_H
 
+
 #include "common.h"
 
 #define VIDEO_TIMEOUT 4
