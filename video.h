@@ -6,7 +6,7 @@
 #include "common.h"
 
 #define VIDEO_TIMEOUT 4
-#define BASE_VIDEO_BUF_SIZE 1448
+#define BASE_VIDEO_BUF_SIZE 1024
 #define PORT_VIDEO		5555
 
 
@@ -76,11 +76,11 @@ typedef struct {
 /*
 Lancer le thread qui reçoit des paquets vidéo sur le port 5555
 */
-int jakopter_init_video(lua_State* L);
+int jakopter_init_video();
 /*
 Fermer la connexion au port et arrêter le thread.
 */
-int jakopter_stop_video(lua_State* L);
+int jakopter_stop_video();
 
 #endif
 

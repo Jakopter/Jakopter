@@ -31,8 +31,6 @@ static int (*frame_processing_callback)(uint8_t*, int, int, int);
 Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder() {
 
-	codec = NULL;
-
 	avcodec_register_all();
 
 	//try to load h264
@@ -41,12 +39,16 @@ int video_init_decoder() {
 		fprintf(stderr, "FFmpeg error : Counldn't find needed codec H264 for video decoding.\n");
 		return -1;
 	}
-	//itilialize the ffmpeg codec context
+
+	//inilialize the ffmpeg codec context
 	context = avcodec_alloc_context3(codec);
 	if(avcodec_open2(context, codec, NULL) < 0) {
 		fprintf(stderr, "FFmpeg error : Couldn't open codec.\n");
 		return -1;
 	}
+
+	//initialize the frame parser (needed to get a whole frame from several packets)
+	cpContext = av_parser_init(AV_CODEC_ID_H264);
 	//initialize the video packet and frame structures
 	av_init_packet(&video_packet);
 	current_frame = av_frame_alloc();
@@ -63,13 +65,13 @@ int video_init_decoder() {
 /*
 Decode a video buffer.
 Returns:
-	0 : buffer decoded, but no image produce (incomplete).
+	0 : buffer decoded, but no image produced (incomplete).
 	> 0 : decoded n images.
 	-1 : error while decoding.
 */
 int video_decode_packet(uint8_t* buffer, int buf_size) {
-	//number of bytes processed by the decoder
-	int decodedLen = 0;
+	//number of bytes processed by the frame parser and the decoder
+	int parsedLen, decodedLen = 0;
 	//do we have a whole frame ?
 	int complete_frame = 0;
 	//how many frames have we decoded ?
@@ -77,9 +79,6 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 
 	if(buf_size <= 0 || buffer == NULL)
 		return 0;
-	
-	video_packet.size = buf_size;
-	video_packet.data = buffer;
 
 	//parse the video packet. If the parser returns a frame, decode it.
 	while(buf_size > 0) {
@@ -118,7 +117,6 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 			frameOffset = 0;
 		}
 	}
-	
 	return nb_frames;
 }
 

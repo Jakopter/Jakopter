@@ -86,7 +86,7 @@ int jakopter_connect() {
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
-		jakopter_disconnect(L);
+		jakopter_disconnect();
 		
 	}
 	else
@@ -240,7 +240,6 @@ int jakopter_backward() {
 	return 0;
 }
 
-
 /* Arrêter le thread principal (fin de la co au drone) */
 int jakopter_disconnect() {
 	pthread_mutex_lock(&mutex_stopped);
@@ -253,12 +252,9 @@ int jakopter_disconnect() {
 		return pthread_join(cmd_thread, NULL);
 	}
 	else {
-		pthread_mutex_unlock(&mutex_stopped);
-		
+		pthread_mutex_unlock(&mutex_stopped);	
 		fprintf(stderr, "Erreur : la communication est déjà stoppée\n");
-		
 		return -1;
-
 	}
 }
 
@@ -267,4 +263,3 @@ int jakopter_disconnect() {
 int jakopter_get_no_sq() {
 	return cmd_no_sq;
 }
-
