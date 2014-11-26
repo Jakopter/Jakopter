@@ -24,7 +24,6 @@ static void video_clean();
 void* video_routine(void* args) {
 	ssize_t pack_size = 0;
 	int nb_img = 0;
-	long int nb_tours = 0;
 	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
@@ -34,8 +33,8 @@ void* video_routine(void* args) {
 			stopped = 1;
 		}
 		else if(FD_ISSET(sock_video, &vid_fd_set)) {
-			//receive the video data from the drone. Remember to leave some room
-			//at the end of the buffer. (not needed now ?)
+			/*receive the video data from the drone. Only BASE_SIZE, since
+			TCP_SIZE may be larger on purpose.*/
 			pack_size = recv(sock_video, tcp_buf, BASE_VIDEO_BUF_SIZE, 0);
 			if(pack_size == 0) {
 				printf("Stream ended by server. Ending the video thread.\n");
@@ -46,7 +45,10 @@ void* video_routine(void* args) {
 			else {
 				//we actually got some data, send it for decoding !
 				nb_img = video_decode_packet(tcp_buf, pack_size);
-				//printf("Decoded %d frame(s), %ld tours, taille %zd\n", nb_img, nb_tours, pack_size);
+				if(nb_img < 0) {
+					fprintf(stderr, "Error processing frame !\n");
+					stopped = 1;
+				}
 			}
 		}
 		else {
@@ -57,7 +59,7 @@ void* video_routine(void* args) {
 		video_timeout.tv_sec = VIDEO_TIMEOUT;
 		FD_ZERO(&vid_fd_set);
 		FD_SET(sock_video, &vid_fd_set);
-		nb_tours++;
+
 		pthread_mutex_lock(&mutex_stopped);
 	}
 	pthread_mutex_unlock(&mutex_stopped);
