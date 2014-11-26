@@ -1,8 +1,7 @@
 #ifndef JAKOPTER_VIDEO_H
 #define JAKOPTER_VIDEO_H
 
-#include "lauxlib.h"
-#include "lua.h"
+
 #include "common.h"
 
 #define VIDEO_TIMEOUT 4

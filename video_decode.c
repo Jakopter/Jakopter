@@ -4,6 +4,7 @@
 
 static AVCodec* codec;
 static AVCodecContext* context;
+static AVCodecParserContext* cpContext;
 static AVPacket video_packet;
 static AVFrame* current_frame;
 //offset in bytes when parsing a frame (might be useless, needs more testing)
@@ -30,7 +31,7 @@ static int (*frame_processing_callback)(uint8_t*, int, int, int);
 /*Load up the h264 codec needed for video decoding.
 Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder() {
-
+	//initialize libavcodec
 	avcodec_register_all();
 
 	//try to load h264
@@ -71,7 +72,7 @@ Returns:
 */
 int video_decode_packet(uint8_t* buffer, int buf_size) {
 	//number of bytes processed by the frame parser and the decoder
-	int parsedLen, decodedLen = 0;
+	int parsedLen = 0, decodedLen = 0;
 	//do we have a whole frame ?
 	int complete_frame = 0;
 	//how many frames have we decoded ?

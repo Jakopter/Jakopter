@@ -2,8 +2,6 @@
 #define JAKOPTER_DRONE_H
 
 #include "common.h"
-#include "lauxlib.h"
-#include "lua.h"
 
 #define PACKET_SIZE		256
 #define PORT_CMD		5556
