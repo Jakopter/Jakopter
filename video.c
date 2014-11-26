@@ -67,6 +67,7 @@ void* video_routine(void* args) {
 	pthread_mutex_unlock(&mutex_stopped);
 	//there's no reason to keep stuff that's needed for our video thread once it's ended, so clean it now.
 	video_clean();
+	printf("Video thread terminated.\n");
 	pthread_exit(NULL);
 }
 
@@ -130,19 +131,35 @@ void video_clean() {
 	video_stop_decoder();
 }
 
+/*Ask the video thread to stop without joining with it.
+Useful for stopping it from the inside.
+@return 0 if stopped was 0, 1 if it wasn't.*/
+int video_set_stopped() {
+	pthread_mutex_lock(&mutex_stopped);
+	if(!stopped) {
+		stopped = 1;
+		pthread_mutex_unlock(&mutex_stopped);
+		return 0;
+	}
+	else {
+		pthread_mutex_unlock(&mutex_stopped);
+		return 1;
+	}
+}
+
 /*
 End the video thread and clean the required structures
 */
 int jakopter_stop_video() {
 
-	pthread_mutex_lock(&mutex_stopped);
-	if(!stopped) {
-		stopped = 1;
-		pthread_mutex_unlock(&mutex_stopped);
-		return pthread_join(video_thread, NULL);
+	int ret;
+	if(!video_set_stopped()) {
+		ret = pthread_join(video_thread, NULL);
+		if(ret != 0)
+			fprintf(stderr, "Error stopping video thread.\n");
+		return ret;
 	}
 	else {
-		pthread_mutex_unlock(&mutex_stopped);
 		fprintf(stderr, "Video thread is already shut down.\n");
 		return -1;
 	}
