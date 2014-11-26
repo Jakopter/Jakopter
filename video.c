@@ -109,12 +109,6 @@ int jakopter_init_video() {
 	//ajouter le socket au set pour select
 	FD_SET(sock_video, &vid_fd_set);
 	
-	//initialize the video buffer's extremity to zero to prevent
-	//possible errors during the decoding process by ffmpeg.
-	//Do not reference FF_INPUT_BUFFER_PADDING_SIZE directly to keep tasks as separated as possible.
-	memset(tcp_buf+BASE_VIDEO_BUF_SIZE, 0, TCP_VIDEO_BUF_SIZE-BASE_VIDEO_BUF_SIZE);
-
-	
 	pthread_mutex_lock(&mutex_stopped);
 	stopped = 0;
 	pthread_mutex_unlock(&mutex_stopped);
