@@ -4,9 +4,16 @@
 #include <libavcodec/avcodec.h>
 #include "video.h"
 
-//The actual buffer must be a bit larger because some codecs could read over the end,
-//see FFmpeg doc.
-#define TCP_VIDEO_BUF_SIZE BASE_VIDEO_BUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE
+/*The actual size of the buffer that will receive video data through TCP.
+Now that we use a frame parser before decoding, we don't need to pad it.*/
+#define TCP_VIDEO_BUF_SIZE BASE_VIDEO_BUF_SIZE
+
+/*Deal with libavcodec API changes*/
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,1)
+	#define av_frame_alloc	avcodec_alloc_frame
+	#define av_frame_unref	avcodec_get_frame_defaults
+	#define av_frame_free	avcodec_free_frame
+#endif
 
 //Dimensions of the video stream
 #define JAKO_VIDEO_WIDTH	640

@@ -1,20 +1,32 @@
 #include "video_decode.h"
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "video_process.h"
+
 
 static AVCodec* codec;
 static AVCodecContext* context;
 static AVCodecParserContext* cpContext;
 static AVPacket video_packet;
 static AVFrame* current_frame;
-//offset in bytes when parsing a frame
+//offset in bytes when parsing a frame (might be useless, needs more testing)
 static int frameOffset;
-
+//buffer to write the raw decoded frame.
 static int tempBufferSize;
 static unsigned char* tempBuffer;
 
-static int outfd;
-static int framesToRec;
+
+/*callback to which is sent every decoded frame.
+Parameters:
+	buffer containing the raw frame data, encoded in YUV420p.
+		A value of NULL for this parameter means the video stream has ended.
+	frame width
+	frame height
+	size of the buffer in bytes
+Return value:
+	the return value of the callback will be checked by the decoding routine.
+	LESS THAN 0 : the video thread will stop.
+	Anything else : no effect.
+*/
+static int (*frame_processing_callback)(uint8_t*, int, int, int);
 
 /*Load up the h264 codec needed for video decoding.
 Perform the initialization steps required by FFmpeg.*/
@@ -42,10 +54,8 @@ int video_init_decoder() {
 	current_frame = av_frame_alloc();
 	frameOffset = 0;
 	
-	//open a file to write the frames to
-	outfd = open("frames.yuv", O_WRONLY | O_TRUNC | O_CREAT, 0666);
-	if(outfd < 0)	perror("Failed to open file");
-	framesToRec = 30;
+	//for now, use the example "dump to file" callback for frame processing.
+	frame_processing_callback = jako_dumpFrameToFile;
 	
 	//temp buffer to store raw frame
 	tempBufferSize = avpicture_get_size(AV_PIX_FMT_YUV420P, JAKO_VIDEO_WIDTH, JAKO_VIDEO_HEIGHT);
@@ -83,20 +93,22 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 		
 		//3. do we have a frame to decode ?
 		if(video_packet.size > 0) {
-			printf("Packet size : %d\n", video_packet.size);
+			//printf("Packet size : %d\n", video_packet.size);
 			decodedLen = avcodec_decode_video2(context, current_frame, &complete_frame, &video_packet);
 			if(decodedLen < 0) {
 				fprintf(stderr, "Error : couldn't decode frame.\n");
-				return -1;
+				return 0;
 			}
 			//If we get there, we should've decoded a frame.
 			if(complete_frame) {
 				nb_frames++;
-				//dump frame
+				//write the raw frame data in our temporary buffer...
 				int picsize = avpicture_layout((const AVPicture*)current_frame, current_frame->format, 
 				current_frame->width, current_frame->height, tempBuffer, tempBufferSize);
-				if(framesToRec-- > 0) write(outfd, tempBuffer, picsize);
-				printf("Decoded frame : %d bytes, format : %d, size : %dx%d\n", picsize, current_frame->format, current_frame->width, current_frame->height);
+				//...that we then pass to the processing callback.
+				if(frame_processing_callback(tempBuffer, current_frame->width, current_frame->height, picsize) < 0)
+					return -1;
+				//printf("Decoded frame : %d bytes, format : %d, size : %dx%d\n", picsize, current_frame->format, current_frame->width, current_frame->height);
 				//free the frame's references for reuse
 				av_frame_unref(current_frame);
 			}
@@ -104,20 +116,20 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 			//reinit frame offset for next frame
 			frameOffset = 0;
 		}
-		/*
-		//3. modify our packet's data offset to reflect the decoder's progression
-		video_packet.size -= decodedLen;
-		video_packet.data += decodedLen;
-		*/
+
 	}
 
 	return nb_frames;
 }
 
 void video_stop_decoder() {
+	//Send a NULL buffer to the callback to indicate that we're done.
+	frame_processing_callback(NULL, 0, 0, 0);
+
 	avcodec_close(context);
+	//quite recent and not very useful for us, always use avcodec_close for now.
+	//avcodec_free_context(&context);
 	av_parser_close(cpContext);
-	avcodec_free_context(&context);
 	av_frame_free(&current_frame);
-	close(outfd);
+	free(tempBuffer);
 }

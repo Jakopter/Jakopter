@@ -1,6 +1,6 @@
-LIBS+= `pkg-config lua --libs` `pkg-config libavcodec --libs` -pthread
+LIBS+= `pkg-config lua libavcodec --libs` -pthread
 LDFLAGS+= -shared
-CFLAGS+= -c -std=gnu99 -Wall -fpic `pkg-config lua --cflags` `pkg-config libavcodec --cflags`
+CFLAGS+= -c -std=gnu99 -Wall -fpic `pkg-config lua libavcodec --cflags`
 
 SRCS= $(wildcard *.c)
 OBJS= $(SRCS:.c=.o)
