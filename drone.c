@@ -1,6 +1,5 @@
 #include "drone.h"
 #include "navdata.h"
-#include "video.h"
 
 /*commandes pour décoller et atterrir*/
 char ref_cmd[PACKET_SIZE];
@@ -81,7 +80,7 @@ void* cmd_routine(void* args) {
 /*créer un socket + initialiser l'adresse du drone et du client ; remettre le nb de commandes à 1.
 Démarrer le thread de commande.
 Appelle stop si le thread est déjà en train de tourner.*/
-int jakopter_connect(lua_State* L) {
+int jakopter_connect() {
 
 	//stopper la com si elle est déjà initialisée
 	pthread_mutex_lock(&mutex_stopped);
@@ -104,15 +103,13 @@ int jakopter_connect(lua_State* L) {
 	sock_cmd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if(sock_cmd < 0) {
 		fprintf(stderr, "Erreur, impossible d'établir le socket\n");
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
 
 	//bind du socket client pour le forcer sur le port choisi
 	if(bind(sock_cmd, (struct sockaddr*)&addr_client, sizeof(addr_client)) < 0) {
 		fprintf(stderr, "Erreur : impossible de binder le socket au port %d\n", PORT_CMD);
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
 
 	//réinitialiser les commandes
@@ -129,32 +126,28 @@ int jakopter_connect(lua_State* L) {
 	int navdata_status = navdata_connect();
 	if(navdata_status == -1) {
 		perror("Erreur de connexion navdata");
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
 
 
 	//démarrer le thread
 	if(pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {
 		perror("Erreur création thread");
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
 
-	lua_pushnumber(L, 0);
-	return 1;
+	return 0;
 }
 
 /*faire décoller le drone (échoue si pas init).*/
-int jakopter_takeoff(lua_State* L) {
+int jakopter_takeoff() {
 
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
 		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
 	else
 		pthread_mutex_unlock(&mutex_stopped);
@@ -163,27 +156,24 @@ int jakopter_takeoff(lua_State* L) {
 	//takeoff = 0x11540200, land = 0x11540000
 
 	set_cmd(ref_head, takeoff_arg);
-	lua_pushnumber(L, 0);
-	return 1;
+	return 0;
 }
 
 /*faire atterrir le drone*/
-int jakopter_land(lua_State* L) {
+int jakopter_land() {
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
 
 		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
-		lua_pushnumber(L, -1);
-		return 1;
+		return -1;
 	}
 	else
 		pthread_mutex_unlock(&mutex_stopped);
 
 	set_cmd(ref_head, land_arg);
-	lua_pushnumber(L, 0);
-	return 1;
+	return 0;
 }
 
 int jakopter_rotate_left() {
@@ -252,54 +242,29 @@ int jakopter_backward() {
 
 
 /* Arrêter le thread principal (fin de la co au drone) */
-int jakopter_disconnect(lua_State* L) {
+int jakopter_disconnect() {
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
 		stopped = 1;
 		pthread_mutex_unlock(&mutex_stopped);
 
-		navdata_disconnect();
-		lua_pushnumber(L, pthread_join(cmd_thread, NULL));
 		close(sock_cmd);
+		navdata_disconnect();
+		return pthread_join(cmd_thread, NULL);
 	}
 	else {
 		pthread_mutex_unlock(&mutex_stopped);
 		
 		fprintf(stderr, "Erreur : la communication est déjà stoppée\n");
-		lua_pushnumber(L, -1);
+		
+		return -1;
+
 	}
-	return 1;
 }
 
 
 /*Obtenir le nombre actuel de commandes*/
-int jakopter_get_no_sq(lua_State* L) {
-	lua_pushnumber(L, cmd_no_sq);
-	return 1;
+int jakopter_get_no_sq() {
+	return cmd_no_sq;
 }
 
-//enregistrer les fonctions pour lua
-//ou luaL_reg
-static const luaL_Reg jakopterlib[] = {
-	{"connect", jakopter_connect},
-	{"takeoff", jakopter_takeoff},
-	{"land", jakopter_land},
-	{"disconnect", jakopter_disconnect},
-	{"get_no_sq", jakopter_get_no_sq},
-	{"connect_video", jakopter_init_video},
-	{"stop_video", jakopter_stop_video},
-	{"is_flying", jakopter_is_flying},
-	{"height", jakopter_height},
-	{NULL, NULL}
-};
-
-int luaopen_drone(lua_State* L) {
-	//lua 5.1 et 5.2 incompatibles...
-#if LUA_VERSION_NUM <= 501
-	luaL_register(L, "jakopter", jakopterlib);
-#else
-	lua_newtable(L);
-	luaL_setfuncs(L, jakopterlib, 0);
-#endif
-	return 1;
-}

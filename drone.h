@@ -11,17 +11,17 @@
 #define TIMEOUT_CMD		30000
 
 
-int jakopter_connect(lua_State* L);
-int jakopter_takeoff(lua_State* L);
-int jakopter_land(lua_State* L);
-int jakopter_disconnect(lua_State* L);
-int jakopter_rotate_left(lua_State* L);
-int jakopter_rotate_right(lua_State* L);
-int jakopter_forward(lua_State* L);
-int jakopter_backward(lua_State* L);
+int jakopter_connect();
+int jakopter_takeoff();
+int jakopter_land();
+int jakopter_disconnect();
+int jakopter_rotate_left();
+int jakopter_rotate_right();
+int jakopter_forward();
+int jakopter_backward();
 
 //DEBUG
-int jakopter_get_no_sq(lua_State* L);
+int jakopter_get_no_sq();
 
 
 #endif
