@@ -15,6 +15,11 @@ int jakopter_connect(lua_State* L);
 int jakopter_takeoff(lua_State* L);
 int jakopter_land(lua_State* L);
 int jakopter_disconnect(lua_State* L);
+int jakopter_rotate_left(lua_State* L);
+int jakopter_rotate_right(lua_State* L);
+int jakopter_forward(lua_State* L);
+int jakopter_backward(lua_State* L);
+
 //DEBUG
 int jakopter_get_no_sq(lua_State* L);
 
