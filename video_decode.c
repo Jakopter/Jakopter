@@ -9,9 +9,13 @@ static AVFrame* current_frame;
 Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder() {
 
+	codec = NULL;
+
+	avcodec_register_all();
+
 	//try to load h264
-	codec = avcodec_find_decoder(CODEC_ID_H264);
-	if(!codec) {
+	codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+	if(codec == NULL) {
 		fprintf(stderr, "FFmpeg error : Counldn't find needed codec H264 for video decoding.\n");
 		return -1;
 	}
@@ -46,11 +50,14 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 	
 	video_packet.size = buf_size;
 	video_packet.data = buffer;
+
+	printf("[~] Buf: %d\n",buf_size);
 	
 	//send the packet's data to the decoder until it's completely processed.
 	while(video_packet.size > 0) {
 		//1. feed the decoder our data.
 		decodedLen = avcodec_decode_video2(context, current_frame, &complete_frame, &video_packet);
+		printf("[~] Decode: %d\n",decodedLen);
 		if(decodedLen < 0) {
 			fprintf(stderr, "Error : couldn't decode frame.\n");
 			return -1;

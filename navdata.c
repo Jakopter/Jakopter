@@ -141,7 +141,11 @@ int jakopter_height(lua_State* L) {
 	pthread_mutex_lock(&mutex_navdata);
 	navdata_option_t option = navdata_cmd.options[0];
 
-	height = option.data[24];
+	int i;
+	for ( i = 0; i < 16;i++) {
+		printf("%d\n",option.data[i]);
+	}
+	//height = option.data[24];
 	pthread_mutex_unlock(&mutex_navdata);
 	lua_pushnumber(L, height);
 	//Nombre de valeurs retournées
@@ -154,10 +158,11 @@ int navdata_disconnect() {
 	if(!stopped_navdata) {
 		stopped_navdata = true;
 		pthread_mutex_unlock(&mutex_stopped);
+		int ret = pthread_join(navdata_thread, NULL);
 
 		close(sock_navdata);
 
-		return pthread_join(navdata_thread, NULL);
+		return ret;
 	}
 	else {
 		pthread_mutex_unlock(&mutex_stopped);

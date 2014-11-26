@@ -6,7 +6,8 @@
 char ref_cmd[PACKET_SIZE];
 char *ref_head = "AT*REF",
 	 *takeoff_arg="290718208",
-	 *land_arg="290717696";
+	 *land_arg="290717696",
+	 *config_head = "AT*CONFIG";
 char *pcmd_head = "AT*PCMD",
 	 *rotate_left_arg="1,0,0,0,-1085485875",
 	 *rotate_right_arg="1,0,0,0,1061997773",
@@ -185,6 +186,7 @@ int jakopter_land(lua_State* L) {
 	return 1;
 }
 
+<<<<<<< Updated upstream
 int jakopter_rotate_left() {
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
@@ -250,15 +252,18 @@ int jakopter_backward() {
 }
 
 /*Arrêter le thread principal (fin de la co au drone)*/
+=======
+/* Arrêter le thread principal (fin de la co au drone) */
+>>>>>>> Stashed changes
 int jakopter_disconnect(lua_State* L) {
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
 		stopped = 1;
 		pthread_mutex_unlock(&mutex_stopped);
 
-		close(sock_cmd);
 		navdata_disconnect();
 		lua_pushnumber(L, pthread_join(cmd_thread, NULL));
+		close(sock_cmd);
 	}
 	else {
 		pthread_mutex_unlock(&mutex_stopped);
