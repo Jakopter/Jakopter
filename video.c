@@ -30,7 +30,7 @@ void* video_routine(void* args) {
 		//Wait for the drone to send data on the video socket
 		if (select(sock_video+1, &vid_fd_set, NULL, NULL, &video_timeout) < 0) {
 			perror("Error select()");
-			stopped = 1;
+			video_set_stopped();
 		}
 		else if(FD_ISSET(sock_video, &vid_fd_set)) {
 
@@ -39,7 +39,7 @@ void* video_routine(void* args) {
 			pack_size = recv(sock_video, tcp_buf, BASE_VIDEO_BUF_SIZE, 0);
 			if(pack_size == 0) {
 				printf("Stream ended by server. Ending the video thread.\n");
-				stopped = 1;
+				video_set_stopped();
 			}
 			else if(pack_size < 0)
 				perror("Error recv()");
@@ -48,14 +48,14 @@ void* video_routine(void* args) {
 				nb_img = video_decode_packet(tcp_buf, pack_size);
 				if(nb_img < 0) {
 					fprintf(stderr, "Error processing frame !\n");
-					stopped = 1;
+					video_set_stopped();
 				}
 			}
 		}
 		else {
 			printf("Video : data reception has timed out. Ending the video thread now.\n");
 			//printf("Timeout : aucune donnée vidéo reçue. Nouvel essai.\n");
-			stopped = 1;
+			video_set_stopped();
 		}
 		//reset the timeout and the FDSET entry
 		video_timeout.tv_sec = VIDEO_TIMEOUT;
@@ -74,6 +74,14 @@ void* video_routine(void* args) {
 
 
 int jakopter_init_video() {
+	//keep the lock until we're done initializing.
+	pthread_mutex_lock(&mutex_stopped);
+	//do not try to initialize the thread if it's already running !
+	if(!stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+		fprintf(stderr, "Video thread already running.\n");
+		return -1;
+	}
 
 	addr_drone_video.sin_family      = AF_INET;
 	addr_drone_video.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
@@ -81,16 +89,17 @@ int jakopter_init_video() {
 	
 	//initialiser le fdset
 	FD_ZERO(&vid_fd_set);
-
+	
+	/* NOT NEEDED NOW
 	//initialize the video buffer's extremity to zero to prevent
 	//possible errors during the decoding process by ffmpeg.
 	//Do not reference FF_INPUT_BUFFER_PADDING_SIZE directly to keep tasks as separated as possible.
 	memset(tcp_buf+BASE_VIDEO_BUF_SIZE, 0, TCP_VIDEO_BUF_SIZE-BASE_VIDEO_BUF_SIZE);
+	*/
 	
 	//initialize the video decoder
 	if(video_init_decoder() < 0) {
 		fprintf(stderr, "Error initializing decoder, aborting.\n");
-		close(sock_video);
 		return -1;
 	}
 
@@ -110,9 +119,7 @@ int jakopter_init_video() {
 	//ajouter le socket au set pour select
 	FD_SET(sock_video, &vid_fd_set);
 	
-	pthread_mutex_lock(&mutex_stopped);
 	stopped = 0;
-	pthread_mutex_unlock(&mutex_stopped);
 	//démarrer la réception des packets vidéo
 	if(pthread_create(&video_thread, NULL, video_routine, NULL) < 0) {
 		perror("Error creating the main video thread");
@@ -121,13 +128,15 @@ int jakopter_init_video() {
 		video_stop_decoder();
 		return -1;
 	}
-
+	//now that we're done initializing, release the lock.
+	pthread_mutex_unlock(&mutex_stopped);
 	return 0;
 }
 
 
 void video_clean() {
-	close(sock_video);
+	if(close(sock_video) < 0)
+		perror("Error stopping video connection");
 	video_stop_decoder();
 }
 
