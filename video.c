@@ -18,6 +18,9 @@ static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 static volatile int terminated = 1;
 static pthread_mutex_t mutex_terminated = PTHREAD_MUTEX_INITIALIZER;
 
+//the init function needs to be synchronized
+static pthread_mutex_t mutex_init = PTHREAD_MUTEX_INITIALIZER;
+
 //TPC_VIDEO_BUF_SIZE = base size (defined in video.h) +
 //extra size needed for decoding (see video_decode.h). (is useless now that we use a frame parser)
 uint8_t tcp_buf[TCP_VIDEO_BUF_SIZE];
@@ -59,7 +62,6 @@ void* video_routine(void* args) {
 		}
 		else {
 			printf("Video : data reception has timed out. Ending the video thread now.\n");
-			//printf("Timeout : aucune donnée vidéo reçue. Nouvel essai.\n");
 			video_set_stopped();
 		}
 		//reset the timeout and the FDSET entry
@@ -72,9 +74,9 @@ void* video_routine(void* args) {
 	pthread_mutex_unlock(&mutex_stopped);
 	//there's no reason to keep stuff that's needed for our video thread once it's ended, so clean it now.
 	video_clean();
-	printf("Video thread terminated.\n");
 	pthread_mutex_lock(&mutex_terminated);
 	terminated = 1;
+	printf("Video thread terminated.\n");
 	pthread_mutex_unlock(&mutex_terminated);
 	pthread_exit(NULL);
 }
@@ -82,16 +84,16 @@ void* video_routine(void* args) {
 
 
 int jakopter_init_video() {
-	//keep both locks until we're done initializing.
-	pthread_mutex_lock(&mutex_stopped);
-	pthread_mutex_lock(&mutex_terminated);
+	pthread_mutex_lock(&mutex_init);
 	//do not try to initialize the thread if it's already running !
+	pthread_mutex_lock(&mutex_terminated);
 	if(!terminated) {
-		pthread_mutex_unlock(&mutex_stopped);
 		pthread_mutex_unlock(&mutex_terminated);
 		fprintf(stderr, "Video thread already running.\n");
+		pthread_mutex_unlock(&mutex_init);
 		return -1;
 	}
+	pthread_mutex_unlock(&mutex_terminated);
 	
 	//make the thread detached so that it can close itself without us having
 	//to join with it in order to free its resources.
@@ -117,27 +119,25 @@ int jakopter_init_video() {
 	if(video_init_decoder() < 0) {
 		fprintf(stderr, "Error initializing decoder, aborting.\n");
 		pthread_attr_destroy(&thread_attribs);
-		pthread_mutex_unlock(&mutex_stopped);
-		pthread_mutex_unlock(&mutex_terminated);
+		pthread_mutex_unlock(&mutex_init);
 		return -1;
 	}
 
 	sock_video = socket(AF_INET, SOCK_STREAM, 0);
 	if(sock_video < 0) {
 		fprintf(stderr, "Error : couldn't bind TCP socket.\n");
+		video_stop_decoder();
 		pthread_attr_destroy(&thread_attribs);
-		pthread_mutex_unlock(&mutex_stopped);
-		pthread_mutex_unlock(&mutex_terminated);
+		pthread_mutex_unlock(&mutex_init);
 		return -1;
 	}
 
 	//bind du socket client pour le forcer sur le port choisi
 	if(connect(sock_video, (struct sockaddr*)&addr_drone_video, sizeof(addr_drone_video)) < 0) {
 		perror("Error connecting to video stream");
-		close(sock_video);
+		video_clean();
 		pthread_attr_destroy(&thread_attribs);
-		pthread_mutex_unlock(&mutex_stopped);
-		pthread_mutex_unlock(&mutex_terminated);
+		pthread_mutex_unlock(&mutex_init);
 		return -1;
 	}
 	//ajouter le socket au set pour select
@@ -150,16 +150,14 @@ int jakopter_init_video() {
 		perror("Error creating the main video thread");
 		stopped = 1;
 		terminated = 1;
-		pthread_attr_destroy(&thread_attribs);
 		video_clean();
-		pthread_mutex_unlock(&mutex_stopped);
-		pthread_mutex_unlock(&mutex_terminated);
+		pthread_attr_destroy(&thread_attribs);
+		pthread_mutex_unlock(&mutex_init);
 		return -1;
 	}
 	pthread_attr_destroy(&thread_attribs);
-	//now that we're done initializing, release the locks.
-	pthread_mutex_unlock(&mutex_stopped);
-	pthread_mutex_unlock(&mutex_terminated);
+	//now that we're done initializing, release the lock.
+	pthread_mutex_unlock(&mutex_init);
 	return 0;
 }
 
@@ -174,14 +172,17 @@ void video_clean() {
 Useful for stopping it from the inside.
 @return 0 if stopped was 0, 1 if it wasn't.*/
 int video_set_stopped() {
+	pthread_mutex_lock(&mutex_init);
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
 		stopped = 1;
 		pthread_mutex_unlock(&mutex_stopped);
+		pthread_mutex_unlock(&mutex_init);
 		return 0;
 	}
 	else {
 		pthread_mutex_unlock(&mutex_stopped);
+		pthread_mutex_unlock(&mutex_init);
 		return 1;
 	}
 }
