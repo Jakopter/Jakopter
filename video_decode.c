@@ -1,5 +1,6 @@
 #include "video_decode.h"
 #include "video_process.h"
+#include "video_display.h"
 
 
 static AVCodec* codec;
@@ -56,7 +57,7 @@ int video_init_decoder() {
 	frameOffset = 0;
 	
 	//for now, use the example "dump to file" callback for frame processing.
-	frame_processing_callback = jako_dumpFrameToFile;
+	frame_processing_callback = video_display_frame;
 	
 	//temp buffer to store raw frame
 	tempBufferSize = avpicture_get_size(AV_PIX_FMT_YUV420P, JAKO_VIDEO_WIDTH, JAKO_VIDEO_HEIGHT);
