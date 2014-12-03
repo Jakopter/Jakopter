@@ -76,11 +76,14 @@ static int video_display_set_size(int w, int h) {
 * Clean the display context : close the window and clean SDL structures.
 */
 static void video_display_clean() {
-	SDL_DestroyTexture(frameTex);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(win);
-	SDL_Quit();
-	initialized = 0;
+	//no need to clean stuff if it hasn't been initialized.
+	if(initialized) {
+		SDL_DestroyTexture(frameTex);
+		SDL_DestroyRenderer(renderer);
+		SDL_DestroyWindow(win);
+		SDL_Quit();
+		initialized = 0;
+	}
 }
 
 /*
@@ -90,7 +93,7 @@ static void video_display_clean() {
 int video_display_frame(uint8_t* frame, int width, int height, int size) {
 
 	//if we get a NULL frame, stop displaying.
-	if(frame == NULL && initialized) {
+	if(frame == NULL) {
 		video_display_clean();
 		return 0;
 	}

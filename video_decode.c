@@ -11,8 +11,10 @@ static AVFrame* current_frame;
 //offset in bytes when parsing a frame (might be useless, needs more testing)
 static int frameOffset;
 //buffer to write the raw decoded frame.
-static int tempBufferSize;
-static unsigned char* tempBuffer;
+static int tempBufferSize = 0;
+static unsigned char* tempBuffer = NULL;
+//current video size. Used to check whether the size has changed, and tempBuffer reallocation is needed.
+static int current_width = 0, current_height = 0;
 
 
 /*callback to which is sent every decoded frame.
@@ -59,11 +61,32 @@ int video_init_decoder() {
 	//for now, use the example "dump to file" callback for frame processing.
 	frame_processing_callback = video_display_frame;
 	
-	//temp buffer to store raw frame
-	tempBufferSize = avpicture_get_size(AV_PIX_FMT_YUV420P, JAKO_VIDEO_WIDTH, JAKO_VIDEO_HEIGHT);
-	tempBuffer = calloc(tempBufferSize, 1);
+	//temp buffer to store raw frame; for now, don't make assumptions on its size,
+	//wait til frames come in to allocate it.
+	tempBufferSize = 0;
+	tempBuffer = NULL;
+	current_width = 0;
+	current_height = 0;
 	return 0;
 }
+
+/*
+* Allocate tempBuffer so that it can hold a decoded YUV420p frame of the
+* size currently specified in the current_frame structure.
+* Update current_width/height and tempBufferSize to match these new dimensions.
+*/
+static int video_alloc_frame_buffer() {
+	if(tempBuffer != NULL)
+		free(tempBuffer);
+	tempBufferSize = avpicture_get_size(AV_PIX_FMT_YUV420P, current_frame->width, current_frame->height);
+	tempBuffer = calloc(tempBufferSize, 1);
+	if(tempBuffer == NULL)
+		return -1;
+	current_width = current_frame->width;
+	current_height = current_frame->height;
+	return 0;
+}
+
 /*
 Decode a video buffer.
 Returns:
@@ -104,6 +127,12 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 			//If we get there, we should've decoded a frame.
 			if(complete_frame) {
 				nb_frames++;
+				//check if the video size has changed
+				if(current_frame->width != current_width || current_frame->height != current_height)
+					if(video_alloc_frame_buffer() < 0) {
+						fprintf(stderr, "Error : couldn't allocate memory for decoding.\n");
+						return -1;
+					}
 				//write the raw frame data in our temporary buffer...
 				int picsize = avpicture_layout((const AVPicture*)current_frame, current_frame->format, 
 				current_frame->width, current_frame->height, tempBuffer, tempBufferSize);
@@ -131,5 +160,6 @@ void video_stop_decoder() {
 	//avcodec_free_context(&context);
 	av_parser_close(cpContext);
 	av_frame_free(&current_frame);
-	free(tempBuffer);
+	if(tempBuffer != NULL)
+		free(tempBuffer);
 }

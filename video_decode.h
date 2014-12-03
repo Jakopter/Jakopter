@@ -15,10 +15,6 @@ Now that we use a frame parser before decoding, we don't need to pad it.*/
 	#define av_frame_free	avcodec_free_frame
 #endif
 
-//Dimensions of the video stream
-#define JAKO_VIDEO_WIDTH	640
-#define JAKO_VIDEO_HEIGHT	360
-
 /*Load up the h264 codec needed for video decoding.
 Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder();
