@@ -1,26 +1,27 @@
 #include "drone.h"
 #include "navdata.h"
 
-/*commandes pour décoller et atterrir*/
+/*takeoff and land comm*/
 char ref_cmd[PACKET_SIZE];
-char *ref_head = "AT*REF",
-	 *takeoff_arg="290718208",
-	 *land_arg="290717696";
-char *pcmd_head = "AT*PCMD",
-	 *rotate_left_arg="1,0,0,0,-1085485875",
-	 *rotate_right_arg="1,0,0,0,1061997773",
-	 *forward_arg="1,0,-1102263091,0,O",
-	 *backward_arg="1,0,0,104522055,O,0";
-char *config_head = "AT*CONFIG";
+/* REF arguments */
+char *takeoff_arg = "290718208",
+	 *land_arg = "290717696";
+/* PCMD arguments */
+// char *rotate_left_arg = "1,0,0,0,-1085485875",
+// 	 *rotate_right_arg = "1,0,0,0,1061997773",
+// 	 *forward_arg  = "1,0,-1102263091,0,0",
+// 	 *backward_arg = "1,0,0,104522055,0,0";
 
 /*N° de commande actuel*/
 int cmd_no_sq = 0;
 /*commande en cours d'envoi, et ses arguments*/
-char *cmd_current = NULL, *cmd_current_args = NULL;
+char *cmd_current = NULL;
+char cmd_current_args[ARGS_MAX][SIZE_INT];
 
 /*Thread qui se charge d'envoyer régulièrement des commandes pour rester co avec le drone*/
 pthread_t cmd_thread;
-int stopped = 1;      //Guard that stops any function if connection isn't initialized.
+/*Guard that stops any function if connection isn't initialized.*/
+int stopped = 1;
 static pthread_mutex_t mutex_cmd = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 
@@ -30,34 +31,69 @@ static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 /* Change la commande courante : prend le nom de la commande
 et une chaîne avec les arguments
  * \param cmd_type header de la forme AT*SOMETHING
- * \param args code commande à transmettre (takeoff_arg)
+ * \param args codes commande à transmettre
+ * \param nb_args number of arguments
 */
-void set_cmd(char* cmd_type, char* args) {
+int set_cmd(char* cmd_type, char** args, int nb_args) {
+	if (nb_args > ARGS_MAX)
+		return -1;
+
 	pthread_mutex_lock(&mutex_cmd);
 	cmd_current = cmd_type;
-	cmd_current_args = args;
+
+	int i = 0;
+
+	for (i = 0; (i < ARGS_MAX) && (i < nb_args); i++) {
+		strncpy(cmd_current_args[i], args[i], SIZE_INT);
+	}
+
+	if (i < ARGS_MAX)
+		cmd_current_args[i][0] = '\0';
+
 	pthread_mutex_unlock(&mutex_cmd);
+	return 0;
+}
+
+/** Protected by mutex_cmd */
+void gen_cmd(char * cmd, char* cmd_type, int no_sq){
+	char buf[SIZE_INT];
+	snprintf(buf, SIZE_INT, "%d", no_sq);
+
+	cmd = strncat(cmd, "AT*", PACKET_SIZE);
+	cmd = strncat(cmd, cmd_type, PACKET_SIZE);
+	cmd = strncat(cmd, "=", PACKET_SIZE);
+	cmd = strncat(cmd, buf, PACKET_SIZE);
+
+	int i = 0;
+	while((cmd_current_args[i][0] != '\0') && (i < ARGS_MAX)) {
+		cmd = strncat(cmd, ",", PACKET_SIZE);
+		cmd = strncat(cmd, cmd_current_args[i], PACKET_SIZE);
+		i++;
+	}
+	cmd = strncat(cmd, "\r", PACKET_SIZE);
 }
 
 /*Envoie la commande courante, et incrémente le compteur*/
 int send_cmd() {
+	int ret;
 	pthread_mutex_lock(&mutex_cmd);
+
 	if(cmd_current != NULL) {
 		memset(ref_cmd, 0, PACKET_SIZE);
-		snprintf(ref_cmd, PACKET_SIZE, "%s=%d,%s\r", cmd_current, cmd_no_sq, cmd_current_args);
+		ref_cmd[0] = '\0';
+		gen_cmd(ref_cmd,cmd_current,cmd_no_sq);
 		cmd_no_sq++;
-		ref_cmd[PACKET_SIZE-1] = '\0';
 
-		int ret = sendto(sock_cmd, ref_cmd, PACKET_SIZE, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone));
+		ret = sendto(sock_cmd, ref_cmd, PACKET_SIZE, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone));
+
 		pthread_mutex_unlock(&mutex_cmd);
 
 		return ret;
 	}
-
 	pthread_mutex_unlock(&mutex_cmd);
-
 	return 0;
 }
+
 
 /*Fonction de cmd_thread*/
 void* cmd_routine(void* args) {
@@ -87,7 +123,7 @@ int jakopter_connect() {
 	if(!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
 		jakopter_disconnect();
-		
+
 	}
 	else
 		pthread_mutex_unlock(&mutex_stopped);
@@ -116,7 +152,6 @@ int jakopter_connect() {
 	pthread_mutex_lock(&mutex_cmd);
 	cmd_no_sq = 1;
 	cmd_current = NULL;
-	cmd_current_args = NULL;
 	pthread_mutex_unlock(&mutex_cmd);
 
 	pthread_mutex_lock(&mutex_stopped);
@@ -155,7 +190,8 @@ int jakopter_takeoff() {
 	//changer la commande
 	//takeoff = 0x11540200, land = 0x11540000
 
-	set_cmd(ref_head, takeoff_arg);
+	char * args[] = {takeoff_arg};
+	set_cmd(HEAD_REF, args, 1);
 	return 0;
 }
 
@@ -172,7 +208,8 @@ int jakopter_land() {
 	else
 		pthread_mutex_unlock(&mutex_stopped);
 
-	set_cmd(ref_head, land_arg);
+	char * args[] = {land_arg};
+	set_cmd(HEAD_REF, args, 1);
 	return 0;
 }
 
@@ -188,7 +225,8 @@ int jakopter_rotate_left() {
 	else
 		pthread_mutex_unlock(&mutex_stopped);
 
-	set_cmd(ref_head, rotate_left_arg);
+	char * args[] = {"1","0","0","0","-1085485875"};
+	set_cmd(HEAD_REF, args,5);
 	return 0;
 }
 
@@ -204,7 +242,8 @@ int jakopter_rotate_right() {
 	else
 		pthread_mutex_unlock(&mutex_stopped);
 
-	set_cmd(ref_head, rotate_right_arg);
+	char * args[] = {"1","0","0","0","106199773"};
+	set_cmd(HEAD_REF, args,5);
 	return 0;
 }
 
@@ -220,7 +259,8 @@ int jakopter_forward() {
 	else
 		pthread_mutex_unlock(&mutex_stopped);
 
-	set_cmd(ref_head, forward_arg);
+	char * args[] = {"1","0","-1102263091","0","0"};
+	set_cmd(HEAD_REF, args,1);
 	return 0;
 }
 
@@ -236,7 +276,8 @@ int jakopter_backward() {
 	else
 		pthread_mutex_unlock(&mutex_stopped);
 
-	set_cmd(ref_head, backward_arg);
+	char * args[] = {"1","0","0","104522055","0","0"};
+	set_cmd(HEAD_REF, args,1);
 	return 0;
 }
 
@@ -252,12 +293,11 @@ int jakopter_disconnect() {
 		return pthread_join(cmd_thread, NULL);
 	}
 	else {
-		pthread_mutex_unlock(&mutex_stopped);	
+		pthread_mutex_unlock(&mutex_stopped);
 		fprintf(stderr, "Erreur : la communication est déjà stoppée\n");
 		return -1;
 	}
 }
-
 
 /*Obtenir le nombre actuel de commandes*/
 int jakopter_get_no_sq() {
