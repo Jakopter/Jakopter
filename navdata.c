@@ -1,9 +1,10 @@
 #include "navdata.h"
-
+#include "drone.h"
 
 
 /*commandes*/
-static navdata_t navdata_cmd;
+static struct navdata_demo navdata_cmd;
+//static struct navdata_full navdata_all;
 
 
 
@@ -23,7 +24,7 @@ int recv_cmd() {
 
 	pthread_mutex_lock(&mutex_navdata);
 	socklen_t len = sizeof(addr_drone_navdata);
-	int ret = recvfrom(sock_navdata, &navdata_cmd, sizeof(navdata_t), 0, (struct sockaddr*)&addr_drone_navdata, &len);
+	int ret = recvfrom(sock_navdata, &navdata_cmd, sizeof(struct navdata_demo), 0, (struct sockaddr*)&addr_drone_navdata, &len);
 	pthread_mutex_unlock(&mutex_navdata);
 	return ret;
 }
@@ -52,17 +53,18 @@ void* navdata_routine(void* args) {
 		pthread_exit(NULL);
 	}
 
-	if(!(navdata_cmd.ardrone_state & (1 << 11))) {
-		fprintf(stderr, "navdata_cmd.ardrone_state: %d\n", navdata_cmd.ardrone_state & (1 << 11));
-		pthread_exit(NULL);
+	//navdata bootstrap == 1
+	if(navdata_cmd.ardrone_state & (1 << 11)) {
+		fprintf(stderr, "navdata_cmd.ardrone_state navdata bootstrap: %d\n", navdata_cmd.ardrone_state & (1 << 11));
 	}
-	
-	char bootstrap_cmd[] = "AT*CONFIG=\"general:navdata_demo\",\"TRUE\"\r";
 
-	if(sendto(sock_cmd, bootstrap_cmd, strlen(bootstrap_cmd)+1, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone)) < 0) {
-		perror("Erreur envoie bootstrap exit command\n");
+	if(navdata_cmd.ardrone_state & (1 << 15)) {
+		fprintf(stderr, "navdata_cmd.ardrone_state vbat too low: %d\n", navdata_cmd.ardrone_state & (1 << 11));
 		pthread_exit(NULL);
 	}
+
+	char * bootstrap_cmd[] = {"\"general:navdata_demo\"","\"TRUE\""};
+	set_cmd(HEAD_CONFIG, bootstrap_cmd, 2);
 
 	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped_navdata) {
@@ -112,7 +114,7 @@ int navdata_connect() {
 		fprintf(stderr, "Erreur : impossible de binder le socket au port %d\n", PORT_NAVDATA);
 		return -1;
 	}
-	
+
 	pthread_mutex_lock(&mutex_stopped);
 	stopped_navdata = false;
 	pthread_mutex_unlock(&mutex_stopped);
@@ -126,30 +128,32 @@ int navdata_connect() {
 	return 0;
 }
 
-int jakopter_is_flying(lua_State* L) {
+
+int jakopter_is_flying() {
 	int flyState = -1;
 	pthread_mutex_lock(&mutex_navdata);
 	flyState = navdata_cmd.ardrone_state & 0x0001;
 	pthread_mutex_unlock(&mutex_navdata);
-	lua_pushnumber(L, flyState);
-	//Nombre de valeurs retournées
-	return 1;
+	return flyState;
 }
 
-int jakopter_height(lua_State* L) {
+
+
+int jakopter_height() {
 	int height = -1;
 	pthread_mutex_lock(&mutex_navdata);
-	navdata_option_t option = navdata_cmd.options[0];
-
-	int i;
-	for ( i = 0; i < 16;i++) {
-		printf("%d\n",option.data[i]);
-	}
-	//height = option.data[24];
+	printf("Header: %d\n",navdata_cmd.header);
+	printf("Tag: %d\n",navdata_cmd.tag);
+	printf("Size: %d\n",navdata_cmd.size);
+	printf("Masque: %x\n",navdata_cmd.ardrone_state);
+	printf("Fly state: %d\n",navdata_cmd.ctrl_state);
+	printf("Theta: %f\n",navdata_cmd.theta);
+	printf("Phi: %f\n",navdata_cmd.phi);
+	printf("Psi: %f\n",navdata_cmd.psi);
+	height = navdata_cmd.altitude;
 	pthread_mutex_unlock(&mutex_navdata);
-	lua_pushnumber(L, height);
 	//Nombre de valeurs retournées
-	return 1;
+	return height;
 }
 
 

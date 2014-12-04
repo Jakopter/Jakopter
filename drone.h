@@ -9,7 +9,7 @@
 #define TIMEOUT_CMD		30000
 
 /* max number of digit into an integer */
-#define SIZE_INT 		10
+#define SIZE_INT 		30
 #define ARGS_MAX 		7
 #define HEAD_REF 		"REF"
 #define HEAD_PCMD 		"PCMD"
@@ -27,6 +27,8 @@ int jakopter_backward();
 
 //DEBUG
 int jakopter_get_no_sq();
+//Used by navdata
+int set_cmd(char* cmd_type, char** args, int nb_args);
 
 
 #endif

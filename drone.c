@@ -122,8 +122,8 @@ int jakopter_connect() {
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
-		jakopter_disconnect();
-
+		perror("Connexion déjà effectuée");
+		return -1;
 	}
 	else
 		pthread_mutex_unlock(&mutex_stopped);
@@ -260,7 +260,7 @@ int jakopter_forward() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","-1102263091","0","0"};
-	set_cmd(HEAD_REF, args,1);
+	set_cmd(HEAD_REF, args,5);
 	return 0;
 }
 
@@ -277,7 +277,7 @@ int jakopter_backward() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","0","104522055","0","0"};
-	set_cmd(HEAD_REF, args,1);
+	set_cmd(HEAD_REF, args,5);
 	return 0;
 }
 
