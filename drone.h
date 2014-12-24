@@ -14,11 +14,14 @@
 #define HEAD_REF 		"REF"
 #define HEAD_PCMD 		"PCMD"
 #define HEAD_CONFIG 	"CONFIG"
+#define HEAD_CTRL 		"CTRL"
+#define HEAD_COM_WATCHDOG "COMWDG"
 
 
 int jakopter_connect();
 int jakopter_takeoff();
 int jakopter_land();
+int jakopter_reinit();
 int jakopter_disconnect();
 int jakopter_rotate_left();
 int jakopter_rotate_right();
@@ -28,7 +31,8 @@ int jakopter_backward();
 //DEBUG
 int jakopter_get_no_sq();
 //Used by navdata
-int set_cmd(char* cmd_type, char** args, int nb_args);
+int init_navdata_bootstrap();
+int init_navdata_ack();
 
 
 #endif

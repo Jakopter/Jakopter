@@ -4,22 +4,24 @@
 #include "common.h"
 #define PORT_NAVDATA	5554
 #define NAVDATA_INTERVAL 	1/15 // interval in seconds
+#define TAG_DEMO 0
+#define TAG_CKS 0
 
-typedef struct _navdata_option_t {
+struct navdata_option {
 	uint16_t  tag;
 	uint16_t  size;
 	uint8_t   data[];
-} navdata_option_t;
+};
 
 
-typedef struct _navdata_t {
+struct navdata {
 	uint32_t    header;			/*!< Always set to NAVDATA_HEADER */
 	uint32_t    ardrone_state;	/*!< Bit mask built from def_ardrone_state_mask_t */
 	uint32_t    sequence;	/*!< Sequence number, incremented for each sent packet */
 	bool		vision_defined;
 
-	navdata_option_t  options[1];
-} __attribute__ ((packed)) navdata_t;
+	struct navdata_option  options[1]; //static pointer
+};
 
 typedef struct _matrix33_t
 {
@@ -79,6 +81,11 @@ struct navdata_demo
 
 	matrix33_t  drone_camera_rot;		  /*!<  Deprecated ! Don't use ! */
 	vector31_t  drone_camera_trans;	  /*!<  Deprecated ! Don't use ! */
+};
+
+union navdata_t {
+	struct navdata raw;
+	struct navdata_demo demo;
 };
 
 int navdata_connect();

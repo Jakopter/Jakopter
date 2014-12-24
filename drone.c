@@ -55,7 +55,7 @@ int set_cmd(char* cmd_type, char** args, int nb_args) {
 }
 
 /** Protected by mutex_cmd */
-void gen_cmd(char * cmd, char* cmd_type, int no_sq){
+void gen_cmd(char * cmd, char* cmd_type, int no_sq) {
 	char buf[SIZE_INT];
 	snprintf(buf, SIZE_INT, "%d", no_sq);
 
@@ -94,6 +94,25 @@ int send_cmd() {
 	return 0;
 }
 
+int init_navdata_bootstrap() {
+	int ret;
+	char * bootstrap_cmd[] = {"\"general:navdata_demo\"","\"TRUE\""};
+	set_cmd(HEAD_CONFIG, bootstrap_cmd, 2);
+	ret = send_cmd();
+	set_cmd(NULL, NULL, 0);
+	return ret;
+}
+
+int init_navdata_ack() {
+	int ret;
+	//5 pour reset le masque navdata
+	//Envoie ACK_CONTROL_MODE
+	char * ctrl_cmd[] = {"5","0"};
+	set_cmd(HEAD_CTRL, ctrl_cmd, 2);
+	ret = send_cmd();
+	set_cmd(NULL, NULL, 0);
+	return ret;
+}
 
 /*Fonction de cmd_thread*/
 void* cmd_routine(void* args) {
@@ -278,6 +297,22 @@ int jakopter_backward() {
 
 	char * args[] = {"1","0","0","104522055","0","0"};
 	set_cmd(HEAD_REF, args,5);
+	return 0;
+}
+
+int jakopter_reinit() {
+	//vérifier qu'on a initialisé
+	pthread_mutex_lock(&mutex_stopped);
+	if(!cmd_no_sq || stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+
+		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+		return -1;
+	}
+	else
+		pthread_mutex_unlock(&mutex_stopped);
+
+	set_cmd(HEAD_COM_WATCHDOG, NULL,0);
 	return 0;
 }
 

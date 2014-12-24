@@ -69,6 +69,10 @@ int jakopter_height_lua(lua_State* L){
     lua_pushnumber(L, jakopter_height());
     return 1;
 }
+int jakopter_reinit_lua(lua_State* L){
+    lua_pushnumber(L, jakopter_reinit());
+    return 1;
+}
 
 
 //enregistrer les fonctions pour lua
@@ -87,6 +91,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"stop_video", jakopter_stop_video_lua},
     {"is_flying", jakopter_is_flying_lua},
     {"height", jakopter_height_lua},
+    {"reinit", jakopter_reinit_lua},
 	{NULL, NULL}
 };
 
