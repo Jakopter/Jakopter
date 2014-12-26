@@ -31,9 +31,12 @@ int jako_dumpFrameToFile(uint8_t* buffer, int width, int height, int size) {
 		}
 		nbFramesToDump = JAKO_FRAMEDUMP_COUNT;
 		isInitialized = 1;
-		printf("Dumping frames to file %s...\n", JAKO_FRAMEDUMP_FILENAME);
-		if(nbFramesToDump < 0)
+		if(nbFramesToDump < 0) {
+			printf("Dumping frames to file %s...\n", JAKO_FRAMEDUMP_FILENAME);
 			printf("Warning : the frame count is unlimited ! The file is going to grow big real fast !\n");
+		}
+		else
+			printf("Dumping %d frames to file %s...\n", nbFramesToDump, JAKO_FRAMEDUMP_FILENAME);
 	}
 	
 	//dump the frame into the file
@@ -43,7 +46,7 @@ int jako_dumpFrameToFile(uint8_t* buffer, int width, int height, int size) {
 	}
 	else {
 		printf("We're done dumping the stream !\n");
-		jakopter_stop_video();
+		video_set_stopped();
 	}
 	
 	return 0;
