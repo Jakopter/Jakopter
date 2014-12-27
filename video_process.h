@@ -16,6 +16,6 @@ int jako_dumpFrameToFile(uint8_t* frame, int width, int height, int size);
 //Name of the file where frames will be dumped
 #define JAKO_FRAMEDUMP_FILENAME "frames.yuv"
 //Number of frames we want to dump into this file. -1 = unlimited.
-#define JAKO_FRAMEDUMP_COUNT -1
+#define JAKO_FRAMEDUMP_COUNT 250
 
 #endif

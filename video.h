@@ -80,6 +80,10 @@ int jakopter_init_video();
 Fermer la connexion au port et arrêter le thread.
 */
 int jakopter_stop_video();
+/*
+Ask the video thread to stop, but don't wait for it. Shouldn't be called by the user.
+*/
+int video_set_stopped();
 
 #endif
 
