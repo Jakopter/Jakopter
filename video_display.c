@@ -19,6 +19,10 @@ static SDL_Texture* frameTex = NULL;
 */
 static int current_width, current_height;
 /*
+* Rectangle drawn in the middle of the screen
+*/
+static SDL_Rect rectangle;
+/*
 * Check whether or not the display has been initialized.
 */
 static int initialized = 0;
@@ -51,6 +55,11 @@ static int video_display_init(int width, int height) {
 		return -1;
 	}
 	
+	//a red rectangle will be drawn on the screen.
+	rectangle.w = 50;
+	rectangle.h = 50;
+	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 125);
+	
 	return 0;
 }
 
@@ -69,6 +78,9 @@ static int video_display_set_size(int w, int h) {
 	}
 	current_width = w;
 	current_height = h;
+	//we want the rectangle to be centered
+	rectangle.x = (w/2) - (rectangle.w/2);
+	rectangle.y = (h/2) - (rectangle.h/2);
 	return 0;
 }
 
@@ -124,6 +136,7 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 	//clear the renderer, then update it so that we get the new frame displayed.
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, frameTex, NULL, NULL);
+	SDL_RenderFillRect(renderer, &rectangle);
 	SDL_RenderPresent(renderer);
 	
 	return 0;
