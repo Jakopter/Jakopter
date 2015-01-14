@@ -245,7 +245,7 @@ int jakopter_rotate_left() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","0","0","-1085485875"};
-	set_cmd(HEAD_REF, args,5);
+	set_cmd(HEAD_PCMD, args,5);
 	return 0;
 }
 
@@ -262,7 +262,7 @@ int jakopter_rotate_right() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","0","0","106199773"};
-	set_cmd(HEAD_REF, args,5);
+	set_cmd(HEAD_PCMD, args,5);
 	return 0;
 }
 
@@ -279,7 +279,7 @@ int jakopter_forward() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","-1102263091","0","0"};
-	set_cmd(HEAD_REF, args,5);
+	set_cmd(HEAD_PCMD, args,5);
 	return 0;
 }
 
@@ -296,7 +296,7 @@ int jakopter_backward() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","0","104522055","0","0"};
-	set_cmd(HEAD_REF, args,5);
+	set_cmd(HEAD_PCMD, args,5);
 	return 0;
 }
 
