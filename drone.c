@@ -34,7 +34,8 @@ et une chaîne avec les arguments
  * \param args codes commande à transmettre
  * \param nb_args number of arguments
 */
-int set_cmd(char* cmd_type, char** args, int nb_args) {
+int set_cmd(char* cmd_type, char** args, int nb_args)
+{
 	if (nb_args > ARGS_MAX)
 		return -1;
 
@@ -55,7 +56,8 @@ int set_cmd(char* cmd_type, char** args, int nb_args) {
 }
 
 /** Protected by mutex_cmd */
-void gen_cmd(char * cmd, char* cmd_type, int no_sq) {
+void gen_cmd(char * cmd, char* cmd_type, int no_sq)
+{
 	char buf[SIZE_INT];
 	snprintf(buf, SIZE_INT, "%d", no_sq);
 
@@ -74,7 +76,8 @@ void gen_cmd(char * cmd, char* cmd_type, int no_sq) {
 }
 
 /*Envoie la commande courante, et incrémente le compteur*/
-int send_cmd() {
+int send_cmd()
+{
 	int ret;
 	pthread_mutex_lock(&mutex_cmd);
 
@@ -94,36 +97,47 @@ int send_cmd() {
 	return 0;
 }
 
-int init_navdata_bootstrap() {
+int init_navdata_bootstrap()
+{
 	int ret;
 	char * bootstrap_cmd[] = {"\"general:navdata_demo\"","\"TRUE\""};
-	set_cmd(HEAD_CONFIG, bootstrap_cmd, 2);
+	if(set_cmd(HEAD_CONFIG, bootstrap_cmd, 2) < 0)
+		return -1;
 	ret = send_cmd();
-	set_cmd(NULL, NULL, 0);
+	if(set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 	return ret;
 }
 
-int init_navdata_ack() {
+int init_navdata_ack()
+{
 	int ret;
 	//5 pour reset le masque navdata
 	//Envoie ACK_CONTROL_MODE
 	char * ctrl_cmd[] = {"5","0"};
-	set_cmd(HEAD_CTRL, ctrl_cmd, 2);
+	if(set_cmd(HEAD_CTRL, ctrl_cmd, 2) < 0)
+		return -1;
 	ret = send_cmd();
-	set_cmd(NULL, NULL, 0);
+	if(set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 	return ret;
 }
 
 /*Fonction de cmd_thread*/
-void* cmd_routine(void* args) {
+void* cmd_routine(void* args)
+{
 	struct timespec itv = {0, TIMEOUT_CMD};
+	int cmd_done = 0;
 	pthread_mutex_lock(&mutex_stopped);
-	while(!stopped) {
+	while(!stopped && !cmd_done) {
 		pthread_mutex_unlock(&mutex_stopped);
 
 		if(send_cmd() < 0)
 			perror("Erreur d'envoi au drone");
 		nanosleep(&itv, NULL);
+
+		if(set_cmd(NULL, NULL, 0) < 0)
+			return -1;
 
 		pthread_mutex_lock(&mutex_stopped);
 	}
@@ -135,7 +149,8 @@ void* cmd_routine(void* args) {
 /*créer un socket + initialiser l'adresse du drone et du client ; remettre le nb de commandes à 1.
 Démarrer le thread de commande.
 Appelle stop si le thread est déjà en train de tourner.*/
-int jakopter_connect() {
+int jakopter_connect()
+{
 
 	//stopper la com si elle est déjà initialisée
 	pthread_mutex_lock(&mutex_stopped);
@@ -193,8 +208,37 @@ int jakopter_connect() {
 	return 0;
 }
 
+int jakopter_flat_trim()
+{
+	if(jakopter_is_flying()) {
+		fprintf(stderr, "Erreur : le drone est en vol, établissement du référentiel annulé.\n");
+		return -1;
+	}
+	if(set_cmd(HEAD_FTRIM, NULL, 0) < 0)
+		return -1;
+
+	return 0;
+}
+
+int jakopter_calib()
+{
+	if(!jakopter_is_flying()) {
+		fprintf(stderr, "Erreur : le drone est en vol, calibration annulée.\n");
+		return -1;
+	}
+
+	char * args[] = {"0"};
+
+	if(set_cmd(HEAD_CALIB, args, 1) < 0)
+		return -1;
+
+	return 0;
+}
+
 /*faire décoller le drone (échoue si pas init).*/
-int jakopter_takeoff() {
+int jakopter_takeoff()
+{
+
 
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
@@ -206,16 +250,22 @@ int jakopter_takeoff() {
 	else
 		pthread_mutex_unlock(&mutex_stopped);
 
+	if(jakopter_flat_trim() < 0) {
+		fprintf(stderr, "Erreur: Le drone ne peut établir son référentiel.\n");
+		return -1;
+	}
 	//changer la commande
 	//takeoff = 0x11540200, land = 0x11540000
 
 	char * args[] = {takeoff_arg};
-	set_cmd(HEAD_REF, args, 1);
+	if(set_cmd(HEAD_REF, args, 1) < 0)
+		return -1;
 	return 0;
 }
 
 /*faire atterrir le drone*/
-int jakopter_land() {
+int jakopter_land()
+{
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
@@ -228,11 +278,13 @@ int jakopter_land() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {land_arg};
-	set_cmd(HEAD_REF, args, 1);
+	if(set_cmd(HEAD_REF, args, 1) < 0)
+		return -1;
 	return 0;
 }
 
-int jakopter_rotate_left() {
+int jakopter_rotate_left()
+{
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
@@ -245,11 +297,15 @@ int jakopter_rotate_left() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","0","0","-1085485875"};
-	set_cmd(HEAD_PCMD, args,5);
+
+	if(set_cmd(HEAD_REF, args, 5) < 0)
+		return -1;
+
 	return 0;
 }
 
-int jakopter_rotate_right() {
+int jakopter_rotate_right()
+{
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
@@ -262,11 +318,16 @@ int jakopter_rotate_right() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","0","0","106199773"};
-	set_cmd(HEAD_PCMD, args,5);
+
+
+	if(set_cmd(HEAD_REF, args, 5) < 0)
+		return -1;
+
 	return 0;
 }
 
-int jakopter_forward() {
+int jakopter_forward()
+{
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
@@ -279,11 +340,15 @@ int jakopter_forward() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","-1102263091","0","0"};
-	set_cmd(HEAD_PCMD, args,5);
+
+	if(set_cmd(HEAD_REF, args, 5) < 0)
+		return -1;
+
 	return 0;
 }
 
-int jakopter_backward() {
+int jakopter_backward()
+{
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
@@ -296,11 +361,15 @@ int jakopter_backward() {
 		pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {"1","0","0","104522055","0","0"};
-	set_cmd(HEAD_PCMD, args,5);
+
+	if(set_cmd(HEAD_REF, args, 5) < 0)
+		return -1;
+
 	return 0;
 }
 
-int jakopter_reinit() {
+int jakopter_reinit()
+{
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
 	if(!cmd_no_sq || stopped) {
@@ -312,12 +381,14 @@ int jakopter_reinit() {
 	else
 		pthread_mutex_unlock(&mutex_stopped);
 
-	set_cmd(HEAD_COM_WATCHDOG, NULL,0);
+	if(set_cmd(HEAD_COM_WATCHDOG, NULL, 0) < 0)
+		return -1;
 	return 0;
 }
 
 /* Arrêter le thread principal (fin de la co au drone) */
-int jakopter_disconnect() {
+int jakopter_disconnect()
+{
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped) {
 		stopped = 1;
@@ -335,6 +406,7 @@ int jakopter_disconnect() {
 }
 
 /*Obtenir le nombre actuel de commandes*/
-int jakopter_get_no_sq() {
+int jakopter_get_no_sq()
+{
 	return cmd_no_sq;
 }

@@ -19,7 +19,8 @@ static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 struct sockaddr_in addr_drone_navdata, addr_client_navdata;
 int sock_navdata;
 
-int recv_cmd() {
+int recv_cmd()
+{
 
 	pthread_mutex_lock(&mutex_navdata);
 	socklen_t len = sizeof(addr_drone_navdata);
@@ -29,7 +30,8 @@ int recv_cmd() {
 }
 
 /*Fonction de navdata_thread*/
-void* navdata_routine(void* args) {
+void* navdata_routine(void* args)
+{
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(sock_navdata, &fds);
@@ -48,7 +50,6 @@ void* navdata_routine(void* args) {
 	}
 
 
-	// boucler tant que le bootstrap n'est pas quitté
 	if(recv_cmd() < 0) {
 		perror("Erreur reception réponse 1er paquet\n");
 		pthread_exit(NULL);
@@ -82,6 +83,10 @@ void* navdata_routine(void* args) {
 		pthread_exit(NULL);
 	}
 
+	if(data.raw.ardrone_state & (1 << 11)) {
+		fprintf(stderr, "navdata_cmd.ardrone_state navdata bootstrap end: %d\n", data.raw.ardrone_state & (1 << 11));
+	}
+
 	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped_navdata) {
 		pthread_mutex_unlock(&mutex_stopped);
@@ -91,7 +96,7 @@ void* navdata_routine(void* args) {
 		usleep(NAVDATA_INTERVAL*1000);
 
 		if(sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
-			perror("Erreur d'envoi 1er paquet navdata\n");
+			perror("Erreur d'envoi paquet ping navdata\n");
 			pthread_exit(NULL);
 		}
 
@@ -102,7 +107,8 @@ void* navdata_routine(void* args) {
 	pthread_exit(NULL);
 }
 
-int navdata_connect() {
+int navdata_connect()
+{
 
 	//stopper la com si elle est déjà initialisée
 	if(!stopped_navdata)
@@ -142,7 +148,8 @@ int navdata_connect() {
 }
 
 
-int jakopter_is_flying() {
+int jakopter_is_flying()
+{
 	int flyState = -1;
 	pthread_mutex_lock(&mutex_navdata);
 	flyState = data.raw.ardrone_state & 0x0001;
@@ -152,12 +159,14 @@ int jakopter_is_flying() {
 
 
 
-int jakopter_height() {
+int jakopter_height()
+{
 	int height = -1;
 	if(data.raw.options[0].tag != TAG_DEMO){
 		perror("Le tag actuel ne correspond pas au TAG_DEMO.");
 		return height;
 	}
+	//Avertir sur l'actualisation des données
 	pthread_mutex_lock(&mutex_navdata);
 	printf("Header: %x\n",data.demo.header);
 	printf("Masque: %x\n",data.demo.ardrone_state);
@@ -175,7 +184,8 @@ int jakopter_height() {
 }
 
 
-int navdata_disconnect() {
+int navdata_disconnect()
+{
 	pthread_mutex_lock(&mutex_stopped);
 	if(!stopped_navdata) {
 		stopped_navdata = true;
