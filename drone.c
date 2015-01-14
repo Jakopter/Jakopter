@@ -137,7 +137,7 @@ void* cmd_routine(void* args)
 		nanosleep(&itv, NULL);
 
 		if(set_cmd(NULL, NULL, 0) < 0)
-			return -1;
+			pthread_exit(NULL);
 
 		pthread_mutex_lock(&mutex_stopped);
 	}
@@ -298,7 +298,7 @@ int jakopter_rotate_left()
 
 	char * args[] = {"1","0","0","0","-1085485875"};
 
-	if(set_cmd(HEAD_REF, args, 5) < 0)
+	if(set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
 	return 0;
@@ -320,7 +320,7 @@ int jakopter_rotate_right()
 	char * args[] = {"1","0","0","0","106199773"};
 
 
-	if(set_cmd(HEAD_REF, args, 5) < 0)
+	if(set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
 	return 0;
@@ -341,7 +341,7 @@ int jakopter_forward()
 
 	char * args[] = {"1","0","-1102263091","0","0"};
 
-	if(set_cmd(HEAD_REF, args, 5) < 0)
+	if(set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
 	return 0;
@@ -362,7 +362,7 @@ int jakopter_backward()
 
 	char * args[] = {"1","0","0","104522055","0","0"};
 
-	if(set_cmd(HEAD_REF, args, 5) < 0)
+	if(set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
 	return 0;
