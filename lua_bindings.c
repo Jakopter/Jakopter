@@ -81,6 +81,10 @@ int jakopter_calib_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_calib());
 	return 1;
 }
+int jakopter_stay_lua(lua_State* L){
+	lua_pushnumber(L, jakopter_stay());
+	return 1;
+}
 
 
 //enregistrer les fonctions pour lua
@@ -102,6 +106,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"reinit", jakopter_reinit_lua},
 	{"ftrim", jakopter_ftrim_lua},
 	{"calib", jakopter_calib_lua},
+	{"stay", jakopter_stay_lua},
 	{NULL, NULL}
 };
 

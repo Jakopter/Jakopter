@@ -16,7 +16,7 @@ char *takeoff_arg = "290718208",
 int cmd_no_sq = 0;
 /*commande en cours d'envoi, et ses arguments*/
 char *cmd_current = NULL;
-char cmd_current_args[ARGS_MAX][SIZE_INT];
+char cmd_current_args[ARGS_MAX][SIZE_ARG];
 
 /*Thread qui se charge d'envoyer régulièrement des commandes pour rester co avec le drone*/
 pthread_t cmd_thread;
@@ -45,7 +45,7 @@ int set_cmd(char* cmd_type, char** args, int nb_args)
 	int i = 0;
 
 	for (i = 0; (i < ARGS_MAX) && (i < nb_args); i++) {
-		strncpy(cmd_current_args[i], args[i], SIZE_INT);
+		strncpy(cmd_current_args[i], args[i], SIZE_ARG);
 	}
 
 	if (i < ARGS_MAX)
@@ -127,17 +127,13 @@ int init_navdata_ack()
 void* cmd_routine(void* args)
 {
 	struct timespec itv = {0, TIMEOUT_CMD};
-	int cmd_done = 0;
 	pthread_mutex_lock(&mutex_stopped);
-	while(!stopped && !cmd_done) {
+	while(!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
 
 		if(send_cmd() < 0)
 			perror("Erreur d'envoi au drone");
 		nanosleep(&itv, NULL);
-
-		if(set_cmd(NULL, NULL, 0) < 0)
-			pthread_exit(NULL);
 
 		pthread_mutex_lock(&mutex_stopped);
 	}
@@ -280,6 +276,27 @@ int jakopter_land()
 	char * args[] = {land_arg};
 	if(set_cmd(HEAD_REF, args, 1) < 0)
 		return -1;
+	return 0;
+}
+
+int jakopter_stay()
+{
+	//vérifier qu'on a initialisé
+	pthread_mutex_lock(&mutex_stopped);
+	if(!cmd_no_sq || stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+
+		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+		return -1;
+	}
+	else
+		pthread_mutex_unlock(&mutex_stopped);
+
+	char * args[] = {"1","0","0","0","0"};
+
+	if(set_cmd(HEAD_PCMD, args, 5) < 0)
+		return -1;
+
 	return 0;
 }
 
