@@ -1,7 +1,9 @@
-LIBS+= `pkg-config lua libavcodec sdl2 --libs` -pthread
+LIBS+= `pkg-config lua5.2 libavcodec sdl2 --libs` -pthread
 LDFLAGS+= -shared
 DEBUG += -g
-CFLAGS+= -c -std=gnu99 -fdiagnostics-color=always -Wall -fpic `pkg-config lua libavcodec sdl2 --cflags`
+CFLAGS+= -c -std=gnu99 -Wall -fpic `pkg-config lua5.2 libavcodec sdl2 --cflags` 
+#LIBS+= `pkg-config lua --libs` `pkg-config libavcodec --libs` -pthread
+#CFLAGS+= -c -std=gnu99 -Wall -fpic `pkg-config lua libavcodec sdl2 --cflags`
 
 SRCS= $(wildcard *.c)
 OBJS= $(SRCS:.c=.o)

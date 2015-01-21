@@ -233,15 +233,6 @@ int jakopter_calib()
 
 int jakopter_takeoff()
 {
-	//check we're initialized
-	pthread_mutex_lock(&mutex_stopped);
-	if (!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-		fprintf(stderr, "[~] Communication isn't initialized\n");
-		return -1;
-	}
-	pthread_mutex_unlock(&mutex_stopped);
-
 	if (jakopter_flat_trim() < 0) {
 		fprintf(stderr, "[~] Can't establish frame of reference.\n");
 		return -1;
@@ -311,17 +302,7 @@ int jakopter_land()
 
 int jakopter_stay()
 {
-	pthread_mutex_lock(&mutex_stopped);
-	if (!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "[~] Communication isn't initialized\n");
-		return -1;
-	}
-	pthread_mutex_unlock(&mutex_stopped);
-
 	char * args[] = {"1","0","0","0","0"};
-
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
@@ -330,23 +311,10 @@ int jakopter_stay()
 	return 0;
 }
 
-
-
 int jakopter_rotate_left()
 {
-	pthread_mutex_lock(&mutex_stopped);
-	if (!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "[~] Communication isn't initialized\n");
-		return -1;
-	}
-	pthread_mutex_unlock(&mutex_stopped);
-
-
-//-0.8
+	//-0.8
 	char * args[] = {"1","0","0","0","-1085485875"};
-
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
@@ -360,18 +328,7 @@ int jakopter_rotate_left()
 
 int jakopter_rotate_right()
 {
-	pthread_mutex_lock(&mutex_stopped);
-	if (!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "[~] Communication isn't initialized\n");
-		return -1;
-	}
-	pthread_mutex_unlock(&mutex_stopped);
-
 	char * args[] = {"1","0","0","0","106199773"};
-
-
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
@@ -380,15 +337,6 @@ int jakopter_rotate_right()
 
 int jakopter_forward()
 {
-	pthread_mutex_lock(&mutex_stopped);
-	if (!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "[~] Communication isn't initialized\n");
-		return -1;
-	}
-	pthread_mutex_unlock(&mutex_stopped);
-
 	char * args[] = {"1","0","-1102263091","0","0"};
 
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
@@ -399,17 +347,7 @@ int jakopter_forward()
 
 int jakopter_backward()
 {
-	pthread_mutex_lock(&mutex_stopped);
-	if (!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "[~] Communication isn't initialized\n");
-		return -1;
-	}
-	pthread_mutex_unlock(&mutex_stopped);
-
 	char * args[] = {"1","0","0","104522055","0","0"};
-
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
@@ -418,15 +356,6 @@ int jakopter_backward()
 
 int jakopter_reinit()
 {
-	pthread_mutex_lock(&mutex_stopped);
-	if (!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "[~] Communication isn't initialized\n");
-		return -1;
-	}
-	pthread_mutex_unlock(&mutex_stopped);
-
 	if (set_cmd(HEAD_COM_WATCHDOG, NULL, 0) < 0)
 		return -1;
 	return 0;
