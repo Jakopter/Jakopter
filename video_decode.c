@@ -31,9 +31,9 @@ static int (*frame_processing_callback)(uint8_t*, int, int, int);
 /*Load up the h264 codec needed for video decoding.
 Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder() {
-
 	//initialize libavcodec
 	avcodec_register_all();
+
 	//try to load h264
 	codec = avcodec_find_decoder(AV_CODEC_ID_H264);
 	if(codec == NULL) {
@@ -41,12 +41,13 @@ int video_init_decoder() {
 		return -1;
 	}
 
-	//itilialize the ffmpeg codec context
+	//inilialize the ffmpeg codec context
 	context = avcodec_alloc_context3(codec);
 	if(avcodec_open2(context, codec, NULL) < 0) {
 		fprintf(stderr, "FFmpeg error : Couldn't open codec.\n");
 		return -1;
 	}
+
 	//initialize the frame parser (needed to get a whole frame from several packets)
 	cpContext = av_parser_init(AV_CODEC_ID_H264);
 	//initialize the video packet and frame structures
@@ -116,9 +117,7 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 			//reinit frame offset for next frame
 			frameOffset = 0;
 		}
-
 	}
-
 	return nb_frames;
 }
 

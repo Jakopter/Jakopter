@@ -33,6 +33,7 @@ void* video_routine(void* args) {
 			stopped = 1;
 		}
 		else if(FD_ISSET(sock_video, &vid_fd_set)) {
+
 			/*receive the video data from the drone. Only BASE_SIZE, since
 			TCP_SIZE may be larger on purpose.*/
 			pack_size = recv(sock_video, tcp_buf, BASE_VIDEO_BUF_SIZE, 0);
@@ -53,6 +54,7 @@ void* video_routine(void* args) {
 		}
 		else {
 			printf("Video : data reception has timed out. Ending the video thread now.\n");
+			//printf("Timeout : aucune donnée vidéo reçue. Nouvel essai.\n");
 			stopped = 1;
 		}
 		//reset the timeout and the FDSET entry
@@ -75,7 +77,7 @@ int jakopter_init_video() {
 	addr_drone_video.sin_family      = AF_INET;
 	addr_drone_video.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
 	addr_drone_video.sin_port        = htons(PORT_VIDEO);
-
+	
 	//initialiser le fdset
 	FD_ZERO(&vid_fd_set);
 
@@ -83,19 +85,20 @@ int jakopter_init_video() {
 	//possible errors during the decoding process by ffmpeg.
 	//Do not reference FF_INPUT_BUFFER_PADDING_SIZE directly to keep tasks as separated as possible.
 	memset(tcp_buf+BASE_VIDEO_BUF_SIZE, 0, TCP_VIDEO_BUF_SIZE-BASE_VIDEO_BUF_SIZE);
-
+	
 	//initialize the video decoder
 	if(video_init_decoder() < 0) {
 		fprintf(stderr, "Error initializing decoder, aborting.\n");
 		close(sock_video);
 		return -1;
 	}
-	
+
 	sock_video = socket(AF_INET, SOCK_STREAM, 0);
 	if(sock_video < 0) {
 		fprintf(stderr, "Error : couldn't bind TCP socket.\n");
 		return -1;
 	}
+
 
 	//bind du socket client pour le forcer sur le port choisi
 	if(connect(sock_video, (struct sockaddr*)&addr_drone_video, sizeof(addr_drone_video)) < 0) {
@@ -105,8 +108,7 @@ int jakopter_init_video() {
 	}
 	//ajouter le socket au set pour select
 	FD_SET(sock_video, &vid_fd_set);
-
-
+	
 	pthread_mutex_lock(&mutex_stopped);
 	stopped = 0;
 	pthread_mutex_unlock(&mutex_stopped);

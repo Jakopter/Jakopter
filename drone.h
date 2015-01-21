@@ -8,6 +8,13 @@
 
 #define TIMEOUT_CMD		30000
 
+/* max number of digit into an integer */
+#define SIZE_INT 		10
+#define ARGS_MAX 		7
+#define HEAD_REF 		"REF"
+#define HEAD_PCMD 		"PCMD"
+#define HEAD_CONFIG 	"CONFIG"
+
 
 int jakopter_connect();
 int jakopter_takeoff();
@@ -17,6 +24,7 @@ int jakopter_rotate_left();
 int jakopter_rotate_right();
 int jakopter_forward();
 int jakopter_backward();
+
 //DEBUG
 int jakopter_get_no_sq();
 
