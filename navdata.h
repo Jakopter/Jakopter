@@ -92,5 +92,8 @@ int navdata_connect();
 int navdata_disconnect();
 int jakopter_is_flying();
 int jakopter_height();
+float jakopter_y_axis();
+
+int navdata_no_sq();
 
 #endif

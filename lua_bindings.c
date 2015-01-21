@@ -8,70 +8,82 @@
 Lua bindings to user-exposed functions
 */
 int jakopter_connect_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_connect());
-    return 1; //Number of returned values
+	lua_pushnumber(L, jakopter_connect());
+	return 1; //Number of returned values
 }
 
 int jakopter_takeoff_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_takeoff());
-    return 1;
+	lua_pushnumber(L, jakopter_takeoff());
+	return 1;
 }
 
 int jakopter_land_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_land());
-    return 1;
+	lua_pushnumber(L, jakopter_land());
+	return 1;
 }
 
 int jakopter_rotate_left_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_rotate_left());
-    return 1;
+	lua_pushnumber(L, jakopter_rotate_left());
+	return 1;
 }
 
 int jakopter_rotate_right_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_rotate_right());
-    return 1;
+	lua_pushnumber(L, jakopter_rotate_right());
+	return 1;
 }
 
 int jakopter_forward_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_forward());
-    return 1;
+	lua_pushnumber(L, jakopter_forward());
+	return 1;
 }
 
 int jakopter_backward_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_backward());
-    return 1;
+	lua_pushnumber(L, jakopter_backward());
+	return 1;
 }
 
 int jakopter_disconnect_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_disconnect());
-    return 1;
+	lua_pushnumber(L, jakopter_disconnect());
+	return 1;
 }
 
 int jakopter_get_no_sq_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_get_no_sq());
-    return 1;
+	lua_pushnumber(L, jakopter_get_no_sq());
+	return 1;
 }
 
 int jakopter_init_video_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_init_video());
-    return 1;
+	lua_pushnumber(L, jakopter_init_video());
+	return 1;
 }
 
 int jakopter_stop_video_lua(lua_State* L) {
-    lua_pushnumber(L, jakopter_stop_video());
-    return 1;
+	lua_pushnumber(L, jakopter_stop_video());
+	return 1;
 }
 int jakopter_is_flying_lua(lua_State* L){
-    lua_pushnumber(L, jakopter_is_flying());
-    return 1;
+	lua_pushnumber(L, jakopter_is_flying());
+	return 1;
 }
 int jakopter_height_lua(lua_State* L){
-    lua_pushnumber(L, jakopter_height());
-    return 1;
+	lua_pushnumber(L, jakopter_height());
+	return 1;
 }
 int jakopter_reinit_lua(lua_State* L){
-    lua_pushnumber(L, jakopter_reinit());
-    return 1;
+	lua_pushnumber(L, jakopter_reinit());
+	return 1;
+}
+int jakopter_ftrim_lua(lua_State* L){
+	lua_pushnumber(L, jakopter_flat_trim());
+	return 1;
+}
+int jakopter_calib_lua(lua_State* L){
+	lua_pushnumber(L, jakopter_calib());
+	return 1;
+}
+int jakopter_stay_lua(lua_State* L){
+	lua_pushnumber(L, jakopter_stay());
+	return 1;
 }
 
 
@@ -89,9 +101,12 @@ static const luaL_Reg jakopterlib[] = {
 	{"get_no_sq", jakopter_get_no_sq_lua},
 	{"connect_video", jakopter_init_video_lua},
 	{"stop_video", jakopter_stop_video_lua},
-    {"is_flying", jakopter_is_flying_lua},
-    {"height", jakopter_height_lua},
-    {"reinit", jakopter_reinit_lua},
+	{"is_flying", jakopter_is_flying_lua},
+	{"height", jakopter_height_lua},
+	{"reinit", jakopter_reinit_lua},
+	{"ftrim", jakopter_ftrim_lua},
+	{"calib", jakopter_calib_lua},
+	{"stay", jakopter_stay_lua},
 	{NULL, NULL}
 };
 
