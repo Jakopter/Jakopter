@@ -2,12 +2,10 @@
 #include "drone.h"
 
 
-/*commandes*/
 static union navdata_t data;
 
 
 
-/*Thread qui se charge d'envoyer régulièrement des commandes pour rester co avec le drone*/
 pthread_t navdata_thread;
 bool stopped_navdata = true;      //Guard that stops any function if connection isn't initialized.
 static pthread_mutex_t mutex_navdata = PTHREAD_MUTEX_INITIALIZER;
@@ -29,8 +27,7 @@ int recv_cmd()
 	return ret;
 }
 
-/*Fonction de navdata_thread*/
-void* navdata_routine(void* args)
+int navdata_init()
 {
 	fd_set fds;
 	FD_ZERO(&fds);
@@ -41,34 +38,33 @@ void* navdata_routine(void* args)
 
 	if(sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
 		perror("Erreur d'envoi 1er paquet navdata\n");
-		pthread_exit(NULL);
+		return -1;
 	}
 
 	if(select(sock_navdata+1, &fds, NULL, NULL, &timeout) <= 0) {
 		perror("Pas de réponse 1er paquet ou erreur\n");
-		pthread_exit(NULL);
+		return -1;
 	}
 
 
 	if(recv_cmd() < 0) {
 		perror("Erreur reception réponse 1er paquet\n");
-		pthread_exit(NULL);
+		return -1;
 	}
 
 	//navdata bootstrap == 1
 	if(data.raw.ardrone_state & (1 << 11)) {
-		fprintf(stderr, "navdata_cmd.ardrone_state navdata bootstrap: %d\n", data.raw.ardrone_state & (1 << 11));
+		fprintf(stderr, "navdata_cmd.ardrone_state navdata bootstrap: %d\n", (data.raw.ardrone_state & (1 << 11))%2);
 	}
 
 	if(data.raw.ardrone_state & (1 << 15)) {
-		fprintf(stderr, "navdata_cmd.ardrone_state vbat too low: %d\n", data.raw.ardrone_state & (1 << 11));
-		pthread_exit(NULL);
+		fprintf(stderr, "navdata_cmd.ardrone_state vbat too low: %d\n", (data.raw.ardrone_state & (1 << 11))%2);
+		return -1;
 	}
 
-	//boucler sur la réception du bootstrap
 	if(init_navdata_bootstrap() < 0){
 		fprintf(stderr, "Echec de l'envoi du bootstrap\n");
-		pthread_exit(NULL);
+		return -1;
 	}
 
 	if(recv_cmd() < 0)
@@ -80,13 +76,19 @@ void* navdata_routine(void* args)
 
 	if(init_navdata_ack() < 0){
 		fprintf(stderr, "Echec de l'acquittement de l'initialisation du navdata\n");
-		pthread_exit(NULL);
+		return -1;
 	}
 
 	if(data.raw.ardrone_state & (1 << 11)) {
 		fprintf(stderr, "navdata_cmd.ardrone_state navdata bootstrap end: %d\n", data.raw.ardrone_state & (1 << 11));
 	}
 
+	return 0;
+}
+
+/*Fonction de navdata_thread*/
+void* navdata_routine(void* args)
+{
 	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped_navdata) {
 		pthread_mutex_unlock(&mutex_stopped);
@@ -110,9 +112,8 @@ void* navdata_routine(void* args)
 int navdata_connect()
 {
 
-	//stopper la com si elle est déjà initialisée
 	if(!stopped_navdata)
-		navdata_disconnect();
+		return -1;
 
 	addr_drone_navdata.sin_family      = AF_INET;
 	addr_drone_navdata.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
@@ -128,7 +129,6 @@ int navdata_connect()
 		return -1;
 	}
 
-	//bind du socket client pour le forcer sur le port choisi
 	if(bind(sock_navdata, (struct sockaddr*)&addr_client_navdata, sizeof(addr_client_navdata)) < 0) {
 		fprintf(stderr, "Erreur : impossible de binder le socket au port %d\n", PORT_NAVDATA);
 		return -1;
@@ -138,7 +138,11 @@ int navdata_connect()
 	stopped_navdata = false;
 	pthread_mutex_unlock(&mutex_stopped);
 
-	//démarrer le thread
+	if(navdata_init() < 0) {
+		perror("Erreur init sequence");
+		return -1;
+	}
+
 	if(pthread_create(&navdata_thread, NULL, navdata_routine, NULL) < 0) {
 		perror("Erreur création thread");
 		return -1;
@@ -153,6 +157,7 @@ int jakopter_is_flying()
 	int flyState = -1;
 	pthread_mutex_lock(&mutex_navdata);
 	flyState = data.raw.ardrone_state & 0x0001;
+	printf("%x\n",data.demo.ctrl_state);
 	pthread_mutex_unlock(&mutex_navdata);
 	return flyState;
 }
@@ -166,21 +171,34 @@ int jakopter_height()
 		perror("Le tag actuel ne correspond pas au TAG_DEMO.");
 		return height;
 	}
-	//Avertir sur l'actualisation des données
+	//TODO: Avertir sur l'actualisation des données
 	pthread_mutex_lock(&mutex_navdata);
-	printf("Header: %x\n",data.demo.header);
-	printf("Masque: %x\n",data.demo.ardrone_state);
-	printf("Sequence num: %d\n",data.demo.sequence);
-	printf("Tag: %x\n",data.demo.tag);
-	printf("Size: %d\n",data.demo.size);
-	printf("Fly state: %x\n",data.demo.ctrl_state); //Masque défini dans ctrl_states.h
-	printf("Theta: %f\n",data.demo.theta);
-	printf("Phi: %f\n",data.demo.phi);
-	printf("Psi: %f\n",data.demo.psi);
 	height = data.demo.altitude;
 	pthread_mutex_unlock(&mutex_navdata);
-	//Nombre de valeurs retournées
 	return height;
+}
+
+float jakopter_y_axis()
+{
+	float y_axis = -1.0;
+	if(data.raw.options[0].tag != TAG_DEMO){
+		perror("Le tag actuel ne correspond pas au TAG_DEMO.");
+		return y_axis;
+	}
+	//Avertir sur l'actualisation des données
+	pthread_mutex_lock(&mutex_navdata);
+	y_axis = data.demo.psi;
+	pthread_mutex_unlock(&mutex_navdata);
+	return y_axis;
+}
+
+int navdata_no_sq()
+{
+	int ret;
+	pthread_mutex_lock(&mutex_navdata);
+	ret = data.raw.sequence;
+	pthread_mutex_unlock(&mutex_navdata);
+	return ret;
 }
 
 
@@ -203,4 +221,18 @@ int navdata_disconnect()
 		return -1;
 	}
 
+}
+
+void debug_navdata_demo() {
+	pthread_mutex_lock(&mutex_navdata);
+	printf("Header: %x\n",data.demo.header);
+	printf("Masque: %x\n",data.demo.ardrone_state);
+	printf("Sequence num: %d\n",data.demo.sequence);
+	printf("Tag: %x\n",data.demo.tag);
+	printf("Size: %d\n",data.demo.size);
+	printf("Fly state: %x\n",data.demo.ctrl_state); //Masque défini dans ctrl_states.h
+	printf("Theta: %f\n",data.demo.theta);
+	printf("Phi: %f\n",data.demo.phi);
+	printf("Psi: %f\n",data.demo.psi);//Yaw
+	pthread_mutex_unlock(&mutex_navdata);
 }

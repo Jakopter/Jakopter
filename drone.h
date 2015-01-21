@@ -10,7 +10,7 @@
 #define TIMEOUT_CMD		30000
 
 /* max number of digit into an integer */
-#define SIZE_INT		32
+#define SIZE_INT		11
 #define SIZE_ARG		30
 #define ARGS_MAX 		7
 #define HEAD_REF 		"REF"
