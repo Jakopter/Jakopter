@@ -1,0 +1,29 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+PROJECT(Jakopter)
+
+ADD_DEFINITIONS(-std=c99)
+
+# pthreads
+FIND_PACKAGE(Threads)
+
+INCLUDE_DIRECTORIES("include/")
+
+SET(CMAKE_BUILD_TYPE DEBUG)
+
+SET(EXECUTABLE_OUTPUT_PATH build/${CMAKE_BUILD_TYPE})
+
+SET(
+	SRC_FILES
+	src/drone.c
+	src/navdata.c
+)
+
+ADD_LIBRARY(
+	jakopter SHARED 
+	${SRC_FILES}	
+)
+
+# link pthreads
+TARGET_LINK_LIBRARIES(jakopter ${CMAKE_THREADS_LIBS_INIT})
+

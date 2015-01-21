@@ -2,4 +2,6 @@
 *.o
 *.d
 frames.yuv
-
+CMakeCache.txt
+*.swp
+CMakeFiles
