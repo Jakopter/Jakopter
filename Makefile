@@ -3,7 +3,6 @@ LDFLAGS+= -shared
 DEBUG += -g
 CFLAGS+= -c -std=gnu99 -fdiagnostics-color=always -Wall -fpic `pkg-config lua5.2 libavcodec --cflags` 
 #LIBS+= `pkg-config lua --libs` `pkg-config libavcodec --libs` -pthread
-#LDFLAGS+= -shared
 #CFLAGS+= -c -std=gnu99 -fdiagnostics-color=always -Wall -fpic `pkg-config lua libavcodec --cflags`
 
 SRCS= $(wildcard *.c)
