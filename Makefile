@@ -138,6 +138,30 @@ src/drone.c.s:
 	$(MAKE) -f CMakeFiles/jakopter.dir/build.make CMakeFiles/jakopter.dir/src/drone.c.s
 .PHONY : src/drone.c.s
 
+src/lua_bindings.o: src/lua_bindings.c.o
+.PHONY : src/lua_bindings.o
+
+# target to build an object file
+src/lua_bindings.c.o:
+	$(MAKE) -f CMakeFiles/jakopter.dir/build.make CMakeFiles/jakopter.dir/src/lua_bindings.c.o
+.PHONY : src/lua_bindings.c.o
+
+src/lua_bindings.i: src/lua_bindings.c.i
+.PHONY : src/lua_bindings.i
+
+# target to preprocess a source file
+src/lua_bindings.c.i:
+	$(MAKE) -f CMakeFiles/jakopter.dir/build.make CMakeFiles/jakopter.dir/src/lua_bindings.c.i
+.PHONY : src/lua_bindings.c.i
+
+src/lua_bindings.s: src/lua_bindings.c.s
+.PHONY : src/lua_bindings.s
+
+# target to generate assembly for a file
+src/lua_bindings.c.s:
+	$(MAKE) -f CMakeFiles/jakopter.dir/build.make CMakeFiles/jakopter.dir/src/lua_bindings.c.s
+.PHONY : src/lua_bindings.c.s
+
 src/navdata.o: src/navdata.c.o
 .PHONY : src/navdata.o
 
@@ -174,6 +198,9 @@ help:
 	@echo "... src/drone.o"
 	@echo "... src/drone.i"
 	@echo "... src/drone.s"
+	@echo "... src/lua_bindings.o"
+	@echo "... src/lua_bindings.i"
+	@echo "... src/lua_bindings.s"
 	@echo "... src/navdata.o"
 	@echo "... src/navdata.i"
 	@echo "... src/navdata.s"
