@@ -8,34 +8,29 @@ char ref_cmd[PACKET_SIZE];
 char *takeoff_arg = "290718208",
 	 *land_arg = "290717696";
 /* PCMD arguments */
-// char *rotate_left_arg = "1,0,0,0,-1085485875",
-// 	 *rotate_right_arg = "1,0,0,0,1061997773",
-// 	 *forward_arg  = "1,0,-1102263091,0,0",
-// 	 *backward_arg = "1,0,0,104522055,0,0";
 
-/*N° de commande actuel*/
+/*Current sequence number*/
 int cmd_no_sq = 0;
-/*commande en cours d'envoi, et ses arguments*/
+/*command currently sent*/
 char *cmd_current = NULL;
-char cmd_current_args[ARGS_MAX][SIZE_INT];
+char cmd_current_args[ARGS_MAX][SIZE_ARG];
 
-/*Thread qui se charge d'envoyer régulièrement des commandes pour rester co avec le drone*/
+/*Thread which send regularly commands to keep the connection*/
 pthread_t cmd_thread;
 /*Guard that stops any function if connection isn't initialized.*/
 int stopped = 1;
+/* Race condition between setting a command and send routine*/
 static pthread_mutex_t mutex_cmd = PTHREAD_MUTEX_INITIALIZER;
+/* Race condition between send routine and disconnection */
 static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 
-
-
-
-/* Change la commande courante : prend le nom de la commande
-et une chaîne avec les arguments
- * \param cmd_type header de la forme AT*SOMETHING
- * \param args codes commande à transmettre
+/* Change the current command sent.
+ * \param cmd_type header as AT*SOMETHING
+ * \param args arguments of the command
  * \param nb_args number of arguments
 */
-int set_cmd(char* cmd_type, char** args, int nb_args) {
+int set_cmd(char* cmd_type, char** args, int nb_args)
+{
 	if (nb_args > ARGS_MAX)
 		return -1;
 
@@ -45,7 +40,7 @@ int set_cmd(char* cmd_type, char** args, int nb_args) {
 	int i = 0;
 
 	for (i = 0; (i < ARGS_MAX) && (i < nb_args); i++) {
-		strncpy(cmd_current_args[i], args[i], SIZE_INT);
+		strncpy(cmd_current_args[i], args[i], SIZE_ARG);
 	}
 
 	if (i < ARGS_MAX)
@@ -56,7 +51,8 @@ int set_cmd(char* cmd_type, char** args, int nb_args) {
 }
 
 /** Protected by mutex_cmd */
-void gen_cmd(char * cmd, char* cmd_type, int no_sq) {
+void gen_cmd(char * cmd, char* cmd_type, int no_sq)
+{
 	char buf[SIZE_INT];
 	snprintf(buf, SIZE_INT, "%d", no_sq);
 
@@ -74,12 +70,13 @@ void gen_cmd(char * cmd, char* cmd_type, int no_sq) {
 	cmd = strncat(cmd, "\r", PACKET_SIZE);
 }
 
-/*Envoie la commande courante, et incrémente le compteur*/
-int send_cmd() {
+/* Send the current command stored in cmd_current. */
+int send_cmd()
+{
 	int ret;
 	pthread_mutex_lock(&mutex_cmd);
 
-	if(cmd_current != NULL) {
+	if (cmd_current != NULL) {
 		memset(ref_cmd, 0, PACKET_SIZE);
 		ref_cmd[0] = '\0';
 		gen_cmd(ref_cmd,cmd_current,cmd_no_sq);
@@ -95,35 +92,42 @@ int send_cmd() {
 	return 0;
 }
 
-int init_navdata_bootstrap() {
+int init_navdata_bootstrap()
+{
 	int ret;
 	char * bootstrap_cmd[] = {"\"general:navdata_demo\"","\"TRUE\""};
-	set_cmd(HEAD_CONFIG, bootstrap_cmd, 2);
+	if (set_cmd(HEAD_CONFIG, bootstrap_cmd, 2) < 0)
+		return -1;
 	ret = send_cmd();
-	set_cmd(NULL, NULL, 0);
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 	return ret;
 }
 
-int init_navdata_ack() {
+int init_navdata_ack()
+{
 	int ret;
-	//5 pour reset le masque navdata
-	//Envoie ACK_CONTROL_MODE
+	//5 to reset navdata mask
+	//Send ACK_CONTROL_MODE
 	char * ctrl_cmd[] = {"5","0"};
-	set_cmd(HEAD_CTRL, ctrl_cmd, 2);
+	if (set_cmd(HEAD_CTRL, ctrl_cmd, 2) < 0)
+		return -1;
 	ret = send_cmd();
-	set_cmd(NULL, NULL, 0);
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 	return ret;
 }
 
-/*Fonction de cmd_thread*/
-void* cmd_routine(void* args) {
+/* cmd_thread function*/
+void* cmd_routine(void* args)
+{
 	struct timespec itv = {0, TIMEOUT_CMD};
 	pthread_mutex_lock(&mutex_stopped);
-	while(!stopped) {
+	while (!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
 
-		if(send_cmd() < 0)
-			perror("Erreur d'envoi au drone");
+		if (send_cmd() < 0)
+			perror("[~] Can't send command to the drone. \n");
 		nanosleep(&itv, NULL);
 
 		pthread_mutex_lock(&mutex_stopped);
@@ -133,20 +137,17 @@ void* cmd_routine(void* args) {
 	pthread_exit(NULL);
 }
 
-/*créer un socket + initialiser l'adresse du drone et du client ; remettre le nb de commandes à 1.
-Démarrer le thread de commande.
-Appelle stop si le thread est déjà en train de tourner.*/
-int jakopter_connect() {
+/* Create a socket and start the command thread. */
 
-	//stopper la com si elle est déjà initialisée
+int jakopter_connect()
+{
 	pthread_mutex_lock(&mutex_stopped);
-	if(!stopped) {
+	if (!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
-		perror("Connexion déjà effectuée");
+		perror("[~] Connection already done \n");
 		return -1;
 	}
-	else
-		pthread_mutex_unlock(&mutex_stopped);
+	pthread_mutex_unlock(&mutex_stopped);
 
 	addr_drone.sin_family      = AF_INET;
 	addr_drone.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
@@ -157,14 +158,14 @@ int jakopter_connect() {
 	addr_client.sin_port        = htons(PORT_CMD);
 
 	sock_cmd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if(sock_cmd < 0) {
-		fprintf(stderr, "Erreur, impossible d'établir le socket\n");
+	if (sock_cmd < 0) {
+		fprintf(stderr, "[~] Can't establish socket \n");
 		return -1;
 	}
 
 	//bind du socket client pour le forcer sur le port choisi
-	if(bind(sock_cmd, (struct sockaddr*)&addr_client, sizeof(addr_client)) < 0) {
-		fprintf(stderr, "Erreur : impossible de binder le socket au port %d\n", PORT_CMD);
+	if (bind(sock_cmd, (struct sockaddr*)&addr_client, sizeof(addr_client)) < 0) {
+		fprintf(stderr, "[~] Can't bind socket to port %d\n", PORT_CMD);
 		return -1;
 	}
 
@@ -179,148 +180,193 @@ int jakopter_connect() {
 	pthread_mutex_unlock(&mutex_stopped);
 
 	int navdata_status = navdata_connect();
-	if(navdata_status == -1) {
-		perror("Erreur de connexion navdata");
+	if (navdata_status == -1) {
+		perror("[~] Navdata connection failed");
 		return -1;
 	}
 
 
 	//démarrer le thread
-	if(pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {
-		perror("Erreur création thread");
+	if (pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {
+		perror("[~] Can't create thread");
 		return -1;
 	}
 
 	return 0;
 }
 
-/*faire décoller le drone (échoue si pas init).*/
-int jakopter_takeoff() {
-
-	//vérifier qu'on a initialisé
-	pthread_mutex_lock(&mutex_stopped);
-	if(!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+int jakopter_flat_trim()
+{
+	if (jakopter_is_flying()) {
+		fprintf(stderr, "[*] Drone is flying, setting of frame of reference canceled.\n");
 		return -1;
 	}
-	else
-		pthread_mutex_unlock(&mutex_stopped);
+	if (set_cmd(HEAD_FTRIM, NULL, 0) < 0)
+		return -1;
 
-	//changer la commande
-	//takeoff = 0x11540200, land = 0x11540000
+	usleep(10*TIMEOUT_CMD);
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
+	return 0;
+}
+
+int jakopter_calib()
+{
+	if (!jakopter_is_flying()) {
+		fprintf(stderr, "[*] Drone isn't flying, calibration canceled.\n");
+		return -1;
+	}
+
+	char * args[] = {"0"};
+
+	if (set_cmd(HEAD_CALIB, args, 1) < 0)
+		return -1;
+
+	usleep(10*TIMEOUT_CMD);
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
+	return 0;
+}
+
+int jakopter_takeoff()
+{
+	if (jakopter_flat_trim() < 0) {
+		fprintf(stderr, "[~] Can't establish frame of reference.\n");
+		return -1;
+	}
 
 	char * args[] = {takeoff_arg};
-	set_cmd(HEAD_REF, args, 1);
+	if (set_cmd(HEAD_REF, args, 1) < 0)
+		return -1;
+
+
+	//set timeout
+	int no_sq;
+	no_sq = navdata_no_sq();
+	//Attente depart
+	while(no_sq == 0) {
+		usleep(10*TIMEOUT_CMD);
+		no_sq = navdata_no_sq();
+	}
+	while(!jakopter_is_flying() || jakopter_height() < 500) {
+		usleep(10*TIMEOUT_CMD);
+		no_sq = navdata_no_sq();
+	}
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
+
 	return 0;
 }
 
 /*faire atterrir le drone*/
-int jakopter_land() {
+int jakopter_land()
+{
 	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
-	if(!cmd_no_sq || stopped) {
+	if (!cmd_no_sq || stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
 
-		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+		fprintf(stderr, "[~] Communication isn't initialized\n");
 		return -1;
 	}
-	else
-		pthread_mutex_unlock(&mutex_stopped);
+	pthread_mutex_unlock(&mutex_stopped);
 
 	char * args[] = {land_arg};
-	set_cmd(HEAD_REF, args, 1);
+	if (set_cmd(HEAD_REF, args, 1) < 0)
+		return -1;
+
+	//set timeout
+	int no_sq;
+	no_sq = navdata_no_sq();
+
+	while (no_sq == 0) {
+		usleep(10*TIMEOUT_CMD);
+		no_sq = navdata_no_sq();
+	}
+	while (jakopter_is_flying() && jakopter_height() > 500) {
+		usleep(10*TIMEOUT_CMD);
+		no_sq = navdata_no_sq();
+	}
+	//TODO: emergency if no new data received
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
 	return 0;
 }
 
-int jakopter_rotate_left() {
-	//vérifier qu'on a initialisé
-	pthread_mutex_lock(&mutex_stopped);
-	if(!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+int jakopter_stay()
+{
+	char * args[] = {"1","0","0","0","0"};
+	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
-	}
-	else
-		pthread_mutex_unlock(&mutex_stopped);
 
+	usleep(20*TIMEOUT_CMD);
+
+	return 0;
+}
+
+int jakopter_rotate_left()
+{
+	//-0.8
 	char * args[] = {"1","0","0","0","-1085485875"};
-	set_cmd(HEAD_PCMD, args,5);
+	if (set_cmd(HEAD_PCMD, args, 5) < 0)
+		return -1;
+
+	//Condition navdata
+	printf("Yaw : %f", jakopter_y_axis());
+	usleep(20*TIMEOUT_CMD);
+	printf("Yaw : %f", jakopter_y_axis());
+
 	return 0;
 }
 
-int jakopter_rotate_right() {
-	//vérifier qu'on a initialisé
-	pthread_mutex_lock(&mutex_stopped);
-	if(!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
-		return -1;
-	}
-	else
-		pthread_mutex_unlock(&mutex_stopped);
-
+int jakopter_rotate_right()
+{
 	char * args[] = {"1","0","0","0","106199773"};
-	set_cmd(HEAD_PCMD, args,5);
+	if (set_cmd(HEAD_PCMD, args, 5) < 0)
+		return -1;
+
 	return 0;
 }
 
-int jakopter_forward() {
-	//vérifier qu'on a initialisé
-	pthread_mutex_lock(&mutex_stopped);
-	if(!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
-		return -1;
-	}
-	else
-		pthread_mutex_unlock(&mutex_stopped);
-
+int jakopter_forward()
+{
 	char * args[] = {"1","0","-1102263091","0","0"};
-	set_cmd(HEAD_PCMD, args,5);
+
+	if (set_cmd(HEAD_PCMD, args, 5) < 0)
+		return -1;
+
 	return 0;
 }
 
-int jakopter_backward() {
-	//vérifier qu'on a initialisé
-	pthread_mutex_lock(&mutex_stopped);
-	if(!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
-		return -1;
-	}
-	else
-		pthread_mutex_unlock(&mutex_stopped);
-
+int jakopter_backward()
+{
 	char * args[] = {"1","0","0","104522055","0","0"};
-	set_cmd(HEAD_PCMD, args,5);
-	return 0;
-}
-
-int jakopter_reinit() {
-	//vérifier qu'on a initialisé
-	pthread_mutex_lock(&mutex_stopped);
-	if(!cmd_no_sq || stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
-
-		fprintf(stderr, "Erreur : la communication avec le drone n'a pas été initialisée\n");
+	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
-	}
-	else
-		pthread_mutex_unlock(&mutex_stopped);
 
-	set_cmd(HEAD_COM_WATCHDOG, NULL,0);
 	return 0;
 }
 
-/* Arrêter le thread principal (fin de la co au drone) */
-int jakopter_disconnect() {
+int jakopter_reinit()
+{
+	if (set_cmd(HEAD_COM_WATCHDOG, NULL, 0) < 0)
+		return -1;
+	return 0;
+}
+
+/* Stop main thread (End of connection of drone) */
+int jakopter_disconnect()
+{
 	pthread_mutex_lock(&mutex_stopped);
-	if(!stopped) {
+	if (!stopped) {
 		stopped = 1;
 		pthread_mutex_unlock(&mutex_stopped);
 
@@ -330,12 +376,12 @@ int jakopter_disconnect() {
 	}
 	else {
 		pthread_mutex_unlock(&mutex_stopped);
-		fprintf(stderr, "Erreur : la communication est déjà stoppée\n");
+		fprintf(stderr, "[~] Communication is already stopped\n");
 		return -1;
 	}
 }
 
-/*Obtenir le nombre actuel de commandes*/
-int jakopter_get_no_sq() {
+int jakopter_get_no_sq()
+{
 	return cmd_no_sq;
 }
