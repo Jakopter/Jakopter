@@ -1,6 +1,6 @@
 #include "drone.h"
 #include "navdata.h"
-//#include "video.h"
+#include "video.h"
 #include "lauxlib.h"
 #include "lua.h"
 
@@ -51,7 +51,7 @@ int jakopter_get_no_sq_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_get_no_sq());
 	return 1;
 }
-/*
+
 int jakopter_init_video_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_init_video());
 	return 1;
@@ -61,7 +61,7 @@ int jakopter_stop_video_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_stop_video());
 	return 1;
 }
-*/
+
 int jakopter_is_flying_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_is_flying());
 	return 1;
@@ -104,8 +104,8 @@ static const luaL_Reg jakopterlib[] = {
 	{"backward", jakopter_backward},
 	{"disconnect", jakopter_disconnect_lua},
 	{"get_no_sq", jakopter_get_no_sq_lua},
-	//{"connect_video", jakopter_init_video_lua},
-	//{"stop_video", jakopter_stop_video_lua},
+	{"connect_video", jakopter_init_video_lua},
+	{"stop_video", jakopter_stop_video_lua},
 	{"is_flying", jakopter_is_flying_lua},
 	{"height", jakopter_height_lua},
 	{"reinit", jakopter_reinit_lua},
