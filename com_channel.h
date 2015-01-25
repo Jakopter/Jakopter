@@ -62,7 +62,7 @@ void* jakopter_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size);
 *		performed on a given com channel.
 * \param cc com channel to check.
 */
-uint32_t jakopter_get_timestamp(jakopter_com_channel_t* cc);
+double jakopter_get_timestamp(jakopter_com_channel_t* cc);
 
 #endif
 

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
+#include <string.h>
+
 
 
 struct jakopter_com_channel_t {
@@ -54,7 +56,18 @@ void jakopter_destroy_com_channel(jakopter_com_channel_t** cc)
 
 void jakopter_write_int(jakopter_com_channel_t* cc, size_t offset, int value)
 {
+	//make sure we won't be writing out of bounds
+	if(offset + sizeof(int) > cc->buf_size)
+		return;
 
+	pthread_mutex_lock(&cc->mutex);
+	//copy the value at the given offset
+	int8_t* place = ((int8_t*)cc->buffer) + offset;
+	memcpy(place, &value, sizeof(int));
+	//we just modified the buffer, so update the timestamp
+	cc->last_write_time = clock();
+	
+	pthread_mutex_unlock(&cc->mutex);
 }
 
 void jakopter_write_char(jakopter_com_channel_t* cc, size_t offset, char value)
@@ -73,7 +86,18 @@ void jakopter_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, s
 
 int jakopter_read_int(jakopter_com_channel_t* cc, size_t offset)
 {
-	return 0;
+	//we can't read over the end
+	if(offset + sizeof(int) > cc->buf_size)
+		return 0;
+	
+	pthread_mutex_lock(&cc->mutex);
+	//retreive the number
+	int8_t* place = ((int8_t*)cc->buffer) + offset;
+	int result;
+	memcpy(&result, place, sizeof(int));
+	pthread_mutex_unlock(&cc->mutex);
+	
+	return result;
 }
 
 char jakopter_read_char(jakopter_com_channel_t* cc, size_t offset)
@@ -84,12 +108,26 @@ char jakopter_read_char(jakopter_com_channel_t* cc, size_t offset)
 //The returned pointer has to be freed by the caller.
 void* jakopter_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size)
 {
-	return NULL;
+	//we can't read over the end
+	if(offset + size > cc->buf_size)
+		return NULL;
+
+	void* result = malloc(size);
+	if(result == NULL)
+		return NULL;
+	pthread_mutex_lock(&cc->mutex);
+	//retreive the data
+	int8_t* place = ((int8_t*)cc->buffer) + offset;
+	memcpy(result, place, size);
+	pthread_mutex_unlock(&cc->mutex);
+	
+	return result;
 }
 
 
-uint32_t jakopter_get_timestamp(jakopter_com_channel_t* cc)
+double jakopter_get_timestamp(jakopter_com_channel_t* cc)
 {
-	return 0;
+	//the timestamp is stored in clock ticks, convert it to milliseconds.
+	return ((double)(cc->last_write_time - cc->init_time)) / (CLOCKS_PER_SEC / 1000.d);
 }
 
