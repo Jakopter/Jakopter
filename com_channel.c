@@ -72,12 +72,34 @@ void jakopter_write_int(jakopter_com_channel_t* cc, size_t offset, int value)
 
 void jakopter_write_char(jakopter_com_channel_t* cc, size_t offset, char value)
 {
+	//make sure we won't be writing out of bounds
+	if(offset + sizeof(char) > cc->buf_size)
+		return;
 
+	pthread_mutex_lock(&cc->mutex);
+	//copy the value at the given offset
+	int8_t* place = ((int8_t*)cc->buffer) + offset;
+	memcpy(place, &value, sizeof(char));
+	//we just modified the buffer, so update the timestamp
+	cc->last_write_time = clock();
+	
+	pthread_mutex_unlock(&cc->mutex);
 }
 
 void jakopter_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, size_t size)
 {
+	//make sure we won't be writing out of bounds
+	if(offset + size > cc->buf_size || data == NULL)
+		return;
 
+	pthread_mutex_lock(&cc->mutex);
+	//copy the value at the given offset
+	int8_t* place = ((int8_t*)cc->buffer) + offset;
+	memcpy(place, data, size);
+	//we just modified the buffer, so update the timestamp
+	cc->last_write_time = clock();
+	
+	pthread_mutex_unlock(&cc->mutex);
 }
 
 
@@ -102,7 +124,18 @@ int jakopter_read_int(jakopter_com_channel_t* cc, size_t offset)
 
 char jakopter_read_char(jakopter_com_channel_t* cc, size_t offset)
 {
-	return 0;
+	//we can't read over the end
+	if(offset + sizeof(char) > cc->buf_size)
+		return 0;
+	
+	pthread_mutex_lock(&cc->mutex);
+	//retreive the number
+	int8_t* place = ((int8_t*)cc->buffer) + offset;
+	char result;
+	memcpy(&result, place, sizeof(char));
+	pthread_mutex_unlock(&cc->mutex);
+	
+	return result;
 }
 
 //The returned pointer has to be freed by the caller.
@@ -127,7 +160,11 @@ void* jakopter_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size)
 
 double jakopter_get_timestamp(jakopter_com_channel_t* cc)
 {
+	pthread_mutex_lock(&cc->mutex);
 	//the timestamp is stored in clock ticks, convert it to milliseconds.
-	return ((double)(cc->last_write_time - cc->init_time)) / (CLOCKS_PER_SEC / 1000.d);
+	double ts = ((double)(cc->last_write_time - cc->init_time)) / (CLOCKS_PER_SEC / 1000.d);
+	pthread_mutex_unlock(&cc->mutex);
+	
+	return ts;
 }
 

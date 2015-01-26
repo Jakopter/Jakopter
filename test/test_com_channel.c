@@ -9,12 +9,13 @@
 #include <stdlib.h>
 
 #define TEST_SIZE 1024
+//unused
 #define NUM_WRITES 20
 
 static bool write_read_test_int();
 static bool write_read_test_str();
 static bool timestamp_test();
-//threads used for the test
+//threads for testing, unused.
 void* write_thread(void* args);
 void* read_thread(void* args);
 
