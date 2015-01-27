@@ -3,3 +3,8 @@ Makefile
 *.o
 *.d
 frames.yuv
+CMakeCache.txt
+*.swp
+CMakeFiles
+cmake_install.cmake
+Makefile

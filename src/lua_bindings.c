@@ -73,26 +73,32 @@ int jakopter_stop_video_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_stop_video());
 	return 1;
 }
+
 int jakopter_is_flying_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_is_flying());
 	return 1;
 }
+
 int jakopter_height_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_height());
 	return 1;
 }
+
 int jakopter_reinit_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_reinit());
 	return 1;
 }
+
 int jakopter_ftrim_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_flat_trim());
 	return 1;
 }
+
 int jakopter_calib_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_calib());
 	return 1;
 }
+
 int jakopter_stay_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_stay());
 	return 1;
@@ -120,7 +126,6 @@ int jakopter_destroy_com_channel_lua(lua_State* L){
 	return 0;
 }
 
-
 //enregistrer les fonctions pour lua
 //ou luaL_reg
 static const luaL_Reg jakopterlib[] = {
@@ -146,7 +151,7 @@ static const luaL_Reg jakopterlib[] = {
 	{NULL, NULL}
 };
 
-int luaopen_drone(lua_State* L) {
+int luaopen_libjakopter(lua_State* L) {
 	//the metatable is used for type-checking our custom structs in lua.
 	//here, define a table for com channels pointers.
 	luaL_newmetatable(L, "jakopter.com_channel");
@@ -159,3 +164,4 @@ int luaopen_drone(lua_State* L) {
 #endif
 	return 1;
 }
+
