@@ -25,6 +25,7 @@ SET(
 	CORE_SRC_FILES
 	src/drone.c
 	src/navdata.c
+	src/com_channel.c
 )
 
 SET(
