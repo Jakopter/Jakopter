@@ -1,3 +1,4 @@
+#include "common.h"
 #include "navdata.h"
 #include "drone.h"
 
