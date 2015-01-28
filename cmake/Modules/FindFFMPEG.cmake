@@ -3,6 +3,21 @@
 # FFMPEG_FOUND - system has FFmpeg
 # FFMPEG_INCLUDE_DIRS - the FFmpeg include directory
 # FFMPEG_LIBRARIES - Link these to use FFmpeg
+#
+# This file is part of gvSIG (http://www.gvsig.org/web).
+#
+# Foobar is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Foobar is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 
 IF(UNIX AND NOT APPLE)
 
