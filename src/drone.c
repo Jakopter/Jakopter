@@ -38,7 +38,6 @@ int set_cmd(char* cmd_type, char** args, int nb_args)
 	cmd_current = cmd_type;
 
 	int i = 0;
-
 	for (i = 0; (i < ARGS_MAX) && (i < nb_args); i++) {
 		strncpy(cmd_current_args[i], args[i], SIZE_ARG);
 	}
@@ -348,7 +347,7 @@ int jakopter_forward()
 
 int jakopter_backward()
 {
-	char * args[] = {"1","0","0","104522055","0","0"};
+	char * args[] = {"1","0","104522055","0","0"};
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
@@ -359,6 +358,18 @@ int jakopter_reinit()
 {
 	if (set_cmd(HEAD_COM_WATCHDOG, NULL, 0) < 0)
 		return -1;
+	return 0;
+}
+
+int jakopter_move(float * ltor, float * ftob, float * v_speed, float * a_speed)
+{
+	char * args[] = {"","","","",""};
+	char buf[SIZE_INT];
+	snprintf(buf, SIZE_INT, "%d", no_sq);
+
+	if (set_cmd(HEAD_PCMD, args, 5) < 0)
+		return -1;
+
 	return 0;
 }
 
