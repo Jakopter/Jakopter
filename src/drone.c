@@ -24,10 +24,12 @@ static pthread_mutex_t mutex_cmd = PTHREAD_MUTEX_INITIALIZER;
 /* Race condition between send routine and disconnection */
 static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 
-/* Change the current command sent.
+/**
+ * \brief Change the current command sent.
  * \param cmd_type header as AT*SOMETHING
  * \param args arguments of the command
  * \param nb_args number of arguments
+ * \returns -1 if nb_args greater than the max number of arguments
 */
 int set_cmd(char* cmd_type, char** args, int nb_args)
 {
@@ -50,7 +52,13 @@ int set_cmd(char* cmd_type, char** args, int nb_args)
 	return 0;
 }
 
-/** Protected by mutex_cmd */
+/**
+ * \brief Concatenate command items before dispatch.
+ * \param cmd_type header as AT*SOMETHING
+ * \param args arguments of the command
+ * \param nb_args number of arguments
+ * \pre Protected by mutex_cmd
+*/
 void gen_cmd(char * cmd, char* cmd_type, int no_sq)
 {
 	char buf[SIZE_INT];
@@ -70,7 +78,10 @@ void gen_cmd(char * cmd, char* cmd_type, int no_sq)
 	cmd = strncat(cmd, "\r", PACKET_SIZE);
 }
 
-/* Send the current command stored in cmd_current. */
+/**
+ * \brief Send the current command stored in cmd_current.
+ * \returns sendto return code or 0 if nothing sent
+*/
 int send_cmd()
 {
 	int ret;
@@ -118,7 +129,10 @@ int init_navdata_ack()
 	return ret;
 }
 
-/* cmd_thread function*/
+/**
+ * \brief This cmd_thread function is a timer which send a command each TIMEOUT_CMD ns.
+ * \param args not used
+*/
 void* cmd_routine(void* args)
 {
 	struct timespec itv = {0, TIMEOUT_CMD};
@@ -137,7 +151,10 @@ void* cmd_routine(void* args)
 	pthread_exit(NULL);
 }
 
-/* Create a socket and start the command thread. */
+/**
+ * \brief Creates a socket and starts the command thread. Needs the computer to be connected to the drone wifi network.
+ * \returns 0 if success, -1 if error
+*/
 
 int jakopter_connect()
 {
@@ -264,10 +281,8 @@ int jakopter_takeoff()
 	return 0;
 }
 
-/*faire atterrir le drone*/
 int jakopter_land()
 {
-	//vérifier qu'on a initialisé
 	pthread_mutex_lock(&mutex_stopped);
 	if (!cmd_no_sq || stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
@@ -309,6 +324,9 @@ int jakopter_stay()
 
 	usleep(20*TIMEOUT_CMD);
 
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
 	return 0;
 }
 
@@ -323,6 +341,9 @@ int jakopter_rotate_left()
 	printf("Yaw : %f", jakopter_y_axis());
 	usleep(20*TIMEOUT_CMD);
 	printf("Yaw : %f", jakopter_y_axis());
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 
 	return 0;
 }
@@ -362,20 +383,22 @@ int jakopter_reinit()
 	return 0;
 }
 
-/* Stop main thread (End of connection of drone) */
+/**
+ * \brief Stop main thread (End of drone connection)
+*/
 int jakopter_disconnect()
 {
 	pthread_mutex_lock(&mutex_stopped);
-	if (!stopped) {
+	if (navdata_disconnect() == 0 && !stopped) {
 		stopped = 1;
 		pthread_mutex_unlock(&mutex_stopped);
 
 		close(sock_cmd);
-		navdata_disconnect();
 		return pthread_join(cmd_thread, NULL);
 	}
 	else {
 		pthread_mutex_unlock(&mutex_stopped);
+
 		fprintf(stderr, "[~] Communication is already stopped\n");
 		return -1;
 	}
