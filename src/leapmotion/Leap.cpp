@@ -58,17 +58,17 @@ void LeapListener::onFrame(const Controller& controller) {
     }
 }
 
-extern "C" void StartLeapData()
+void StartLeapData()
 {
 	controller.addListener(listener);
 }
 
-extern "C" void StopLeapData()
+void StopLeapData()
 {
 	controller.removeListener(listener);
 }
 
-extern "C" LeapData_t GetLeapData()
+LeapData_t GetLeapData()
 {
 	return leapData;
 }
