@@ -15,6 +15,9 @@ Now that we use a frame parser before decoding, we don't need to pad it.*/
 	#define av_frame_free	avcodec_free_frame
 #endif
 
+/*Our desired log level for libavcodec. It will be set at init.*/
+#define JAKO_FFMPEG_LOG AV_LOG_PANIC
+
 /*Load up the h264 codec needed for video decoding.
 Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder();

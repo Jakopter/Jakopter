@@ -58,6 +58,9 @@ int video_init_decoder() {
 	current_frame = av_frame_alloc();
 	frameOffset = 0;
 	
+	//prevent h264 from logging error messages that we have no interest in
+	av_log_set_level(JAKO_FFMPEG_LOG);
+	
 	//for now, use the example "dump to file" callback for frame processing.
 	frame_processing_callback = video_display_frame;
 	
