@@ -130,7 +130,7 @@ int navdata_connect()
 	}
 
 	if(bind(sock_navdata, (struct sockaddr*)&addr_client_navdata, sizeof(addr_client_navdata)) < 0) {
-		fprintf(stderr, "[~][navdata] Can't bind socket to port %d %d\n", PORT_NAVDATA);
+		fprintf(stderr, "[~][navdata] Can't bind socket to port %d\n", PORT_NAVDATA);
 		return -1;
 	}
 

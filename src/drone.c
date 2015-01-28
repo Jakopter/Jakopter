@@ -384,9 +384,20 @@ int jakopter_reinit()
 
 int jakopter_move(float * ltor, float * ftob, float * v_speed, float * a_speed)
 {
-	char * args[] = {"","","","",""};
+	char * args[] = {"1","","","",""};
+
 	char buf[SIZE_INT];
-	snprintf(buf, SIZE_INT, "%d", no_sq);
+	snprintf(buf, SIZE_INT, "%d", *((int *) ltor));
+	args[1] = strncat(args[1], buf, SIZE_INT);
+
+	snprintf(buf, SIZE_INT, "%d", *((int *) ftob));
+	args[2] = strncat(args[2], buf, SIZE_INT);
+
+	snprintf(buf, SIZE_INT, "%d", *((int *) v_speed));
+	args[3] = strncat(args[3], buf, SIZE_INT);
+
+	snprintf(buf, SIZE_INT, "%d", *((int *) a_speed));
+	args[4] = strncat(args[4], buf, SIZE_INT);
 
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
