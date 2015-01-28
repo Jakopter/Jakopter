@@ -20,7 +20,7 @@ struct jakopter_com_channel_t {
 };
 
 
-jakopter_com_channel_t* jakopter_init_com_channel(size_t size)
+jakopter_com_channel_t* jakopter_com_create_channel(size_t size)
 {
 	//maybe we should allocate on the stack and copy the struct on return instead ?
 	jakopter_com_channel_t* cc = malloc(sizeof(jakopter_com_channel_t));
@@ -43,7 +43,7 @@ jakopter_com_channel_t* jakopter_init_com_channel(size_t size)
 	return cc;
 }
 
-void jakopter_destroy_com_channel(jakopter_com_channel_t** cc)
+void jakopter_com_destroy_channel(jakopter_com_channel_t** cc)
 {
 	if(cc != NULL && *cc != NULL) {
 		pthread_mutex_destroy(&(*cc)->mutex);
@@ -54,7 +54,7 @@ void jakopter_destroy_com_channel(jakopter_com_channel_t** cc)
 }
 
 
-void jakopter_write_int(jakopter_com_channel_t* cc, size_t offset, int value)
+void jakopter_com_write_int(jakopter_com_channel_t* cc, size_t offset, int value)
 {
 	//make sure we won't be writing out of bounds
 	if(offset + sizeof(int) > cc->buf_size)
@@ -70,7 +70,7 @@ void jakopter_write_int(jakopter_com_channel_t* cc, size_t offset, int value)
 	pthread_mutex_unlock(&cc->mutex);
 }
 
-void jakopter_write_char(jakopter_com_channel_t* cc, size_t offset, char value)
+void jakopter_com_write_char(jakopter_com_channel_t* cc, size_t offset, char value)
 {
 	//make sure we won't be writing out of bounds
 	if(offset + sizeof(char) > cc->buf_size)
@@ -86,7 +86,7 @@ void jakopter_write_char(jakopter_com_channel_t* cc, size_t offset, char value)
 	pthread_mutex_unlock(&cc->mutex);
 }
 
-void jakopter_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, size_t size)
+void jakopter_com_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, size_t size)
 {
 	//make sure we won't be writing out of bounds
 	if(offset + size > cc->buf_size || data == NULL)
@@ -106,7 +106,7 @@ void jakopter_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, s
 /*******************************************************************
 ********Functions for reading data from the channel*****************/
 
-int jakopter_read_int(jakopter_com_channel_t* cc, size_t offset)
+int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset)
 {
 	//we can't read over the end
 	if(offset + sizeof(int) > cc->buf_size)
@@ -122,7 +122,7 @@ int jakopter_read_int(jakopter_com_channel_t* cc, size_t offset)
 	return result;
 }
 
-char jakopter_read_char(jakopter_com_channel_t* cc, size_t offset)
+char jakopter_com_read_char(jakopter_com_channel_t* cc, size_t offset)
 {
 	//we can't read over the end
 	if(offset + sizeof(char) > cc->buf_size)
@@ -138,31 +138,27 @@ char jakopter_read_char(jakopter_com_channel_t* cc, size_t offset)
 	return result;
 }
 
-//The returned pointer has to be freed by the caller.
-void* jakopter_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size)
+void* jakopter_com_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size, void* dest)
 {
 	//we can't read over the end
-	if(offset + size > cc->buf_size)
+	if(offset + size > cc->buf_size || dest == NULL)
 		return NULL;
 
-	void* result = malloc(size);
-	if(result == NULL)
-		return NULL;
 	pthread_mutex_lock(&cc->mutex);
 	//retreive the data
 	int8_t* place = ((int8_t*)cc->buffer) + offset;
-	memcpy(result, place, size);
+	memcpy(dest, place, size);
 	pthread_mutex_unlock(&cc->mutex);
 	
-	return result;
+	return dest;
 }
 
 
-double jakopter_get_timestamp(jakopter_com_channel_t* cc)
+double jakopter_com_get_timestamp(jakopter_com_channel_t* cc)
 {
 	pthread_mutex_lock(&cc->mutex);
 	//the timestamp is stored in clock ticks, convert it to milliseconds.
-	double ts = ((double)(cc->last_write_time - cc->init_time)) / (CLOCKS_PER_SEC / 1000.d);
+	double ts = ((double)(cc->last_write_time - cc->init_time)) / (CLOCKS_PER_SEC / (double)1000);
 	pthread_mutex_unlock(&cc->mutex);
 	
 	return ts;
