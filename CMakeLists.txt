@@ -31,8 +31,8 @@ SET(
 SET(
 	VIDEO_SRC_FILES
 	src/video.c
+	src/video_queue.c
 	src/video_decode.c
-	src/video_process.c
 	src/video_display.c
 )
 

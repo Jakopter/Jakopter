@@ -1,6 +1,4 @@
 #include "video_decode.h"
-#include "video_process.h"
-#include "video_display.h"
 
 
 static AVCodec* codec;
@@ -15,21 +13,6 @@ static int tempBufferSize = 0;
 static unsigned char* tempBuffer = NULL;
 //current video size. Used to check whether the size has changed, and tempBuffer reallocation is needed.
 static int current_width = 0, current_height = 0;
-
-
-/*callback to which is sent every decoded frame.
-Parameters:
-	buffer containing the raw frame data, encoded in YUV420p.
-		A value of NULL for this parameter means the video stream has ended.
-	frame width
-	frame height
-	size of the buffer in bytes
-Return value:
-	the return value of the callback will be checked by the decoding routine.
-	LESS THAN 0 : the video thread will stop.
-	Anything else : no effect.
-*/
-static int (*frame_processing_callback)(uint8_t*, int, int, int);
 
 /*Load up the h264 codec needed for video decoding.
 Perform the initialization steps required by FFmpeg.*/
@@ -60,9 +43,6 @@ int video_init_decoder() {
 	
 	//prevent h264 from logging error messages that we have no interest in
 	av_log_set_level(JAKO_FFMPEG_LOG);
-	
-	//for now, use the example "dump to file" callback for frame processing.
-	frame_processing_callback = video_display_frame;
 	
 	//temp buffer to store raw frame; for now, don't make assumptions on its size,
 	//wait til frames come in to allocate it.
@@ -97,7 +77,7 @@ Returns:
 	> 0 : decoded n images.
 	-1 : error while decoding.
 */
-int video_decode_packet(uint8_t* buffer, int buf_size) {
+int video_decode_packet(uint8_t* buffer, int buf_size, jakopter_video_frame_t* result) {
 	//number of bytes processed by the frame parser and the decoder
 	int parsedLen = 0, decodedLen = 0;
 	//do we have a whole frame ?
@@ -136,12 +116,15 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 						fprintf(stderr, "Error : couldn't allocate memory for decoding.\n");
 						return -1;
 					}
-				//write the raw frame data in our temporary buffer...
+				//write the raw frame data in our temporary buffer
 				int picsize = avpicture_layout((const AVPicture*)current_frame, current_frame->format, 
 				current_frame->width, current_frame->height, tempBuffer, tempBufferSize);
-				//...that we then pass to the processing callback.
-				if(frame_processing_callback(tempBuffer, current_frame->width, current_frame->height, picsize) < 0)
-					return -1;
+				//write the final result in the output structure
+				result->pixels = tempBuffer;
+				result->w = current_frame->width;
+				result->h = current_frame->height;
+				result->size = picsize;
+
 				//printf("Decoded frame : %d bytes, format : %d, size : %dx%d\n", picsize, current_frame->format, current_frame->width, current_frame->height);
 				//free the frame's references for reuse
 				av_frame_unref(current_frame);
@@ -155,8 +138,6 @@ int video_decode_packet(uint8_t* buffer, int buf_size) {
 }
 
 void video_stop_decoder() {
-	//Send a NULL buffer to the callback to indicate that we're done.
-	frame_processing_callback(NULL, 0, 0, 0);
 
 	avcodec_close(context);
 	//quite recent and not very useful for us, always use avcodec_close for now.

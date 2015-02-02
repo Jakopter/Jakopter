@@ -103,7 +103,7 @@ int jakopter_stay_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_stay());
 	return 1;
 }
-int jakopter_init_com_channel_lua(lua_State* L){
+int jakopter_com_create_channel_lua(lua_State* L){
 	lua_Integer s = luaL_checkinteger(L, 1);
 	luaL_argcheck(L, s > 0, 1, "Channel size must be > 0");
 	//store the cc pointer as user data, so that we can assign our custom metatable to it.
@@ -111,15 +111,15 @@ int jakopter_init_com_channel_lua(lua_State* L){
 	luaL_getmetatable(L, "jakopter.com_channel");
 	lua_setmetatable(L, -2);
 	//actually create the channel. Raise an error if it fails.
-	*cc = jakopter_init_com_channel((size_t)s);
+	*cc = jakopter_com_create_channel((size_t)s);
 	if(*cc == NULL)
 		return luaL_error(L, "Failed to create a com_channel of size %d", s);
 	
 	return 1;	
 }
-int jakopter_destroy_com_channel_lua(lua_State* L){
+int jakopter_com_destroy_channel_lua(lua_State* L){
 	jakopter_com_channel_t** cc = check_com_channel(L);
-	jakopter_destroy_com_channel(cc);
+	jakopter_com_destroy_channel(cc);
 	if(*cc != NULL)
 		return luaL_error(L, "Failed to destroy the com_channel");
 		
@@ -146,8 +146,8 @@ static const luaL_Reg jakopterlib[] = {
 	{"ftrim", jakopter_ftrim_lua},
 	{"calib", jakopter_calib_lua},
 	{"stay", jakopter_stay_lua},
-	{"create_cc", jakopter_init_com_channel_lua},
-	{"destroy_cc", jakopter_destroy_com_channel_lua},
+	{"create_cc", jakopter_com_create_channel_lua},
+	{"destroy_cc", jakopter_com_destroy_channel_lua},
 	{NULL, NULL}
 };
 
