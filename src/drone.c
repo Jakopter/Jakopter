@@ -6,7 +6,8 @@
 char ref_cmd[PACKET_SIZE];
 /* REF arguments */
 char *takeoff_arg = "290718208",
-	 *land_arg = "290717696";
+	 *land_arg = "290717696",
+	 *emergency_arg = "290717952";
 /* PCMD arguments */
 
 /*Current sequence number*/
@@ -143,6 +144,7 @@ void* cmd_routine(void* args)
 		if (send_cmd() < 0)
 			perror("[~] Can't send command to the drone. \n");
 		nanosleep(&itv, NULL);
+		itv.tv_nsec = TIMEOUT_CMD;
 
 		pthread_mutex_lock(&mutex_stopped);
 	}
@@ -223,6 +225,8 @@ int jakopter_flat_trim()
 
 	usleep(10*TIMEOUT_CMD);
 
+	printf("[*] Flat trim\n");
+
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
 
@@ -268,10 +272,12 @@ int jakopter_takeoff()
 	while(no_sq == 0) {
 		usleep(10*TIMEOUT_CMD);
 		no_sq = navdata_no_sq();
+		printf("[*] Waiting 0\n");
 	}
 	while(!jakopter_is_flying() || jakopter_height() < 500) {
 		usleep(10*TIMEOUT_CMD);
 		no_sq = navdata_no_sq();
+		printf("[*] Waiting height\n");
 	}
 
 	if (set_cmd(NULL, NULL, 0) < 0)
@@ -296,19 +302,44 @@ int jakopter_land()
 	if (set_cmd(HEAD_REF, args, 1) < 0)
 		return -1;
 
-	//set timeout
+	int init_no_sq = navdata_no_sq();
 	int no_sq;
-	no_sq = navdata_no_sq();
+	int i = 0;
 
-	while (no_sq == 0) {
+	while (no_sq == 0 && i < TIMEOUT_NAVDATA) {
 		usleep(10*TIMEOUT_CMD);
 		no_sq = navdata_no_sq();
+		i++;
 	}
-	while (jakopter_is_flying() && jakopter_height() > 500) {
+
+
+	init_no_sq = navdata_no_sq();
+	int emergency = 0;
+	i = 0;
+	while (jakopter_is_flying() && jakopter_height() > 500 && !emergency) {
 		usleep(10*TIMEOUT_CMD);
 		no_sq = navdata_no_sq();
+
+		//emergency if no new data received
+		if (no_sq == init_no_sq && i >= TIMEOUT_NAVDATA)
+			emergency = jakopter_emergency();
+
+		i++;
 	}
-	//TODO: emergency if no new data received
+
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
+	return 0;
+}
+int jakopter_emergency()
+{
+	char * args[] = {emergency_arg};
+	if (set_cmd(HEAD_REF, args, 1) < 0)
+		return -1;
+
+	usleep(20*TIMEOUT_CMD);
 
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
@@ -354,6 +385,11 @@ int jakopter_rotate_right()
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
+	usleep(20*TIMEOUT_CMD);
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
 	return 0;
 }
 
@@ -364,6 +400,11 @@ int jakopter_forward()
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
+	usleep(20*TIMEOUT_CMD);
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
 	return 0;
 }
 
@@ -371,6 +412,11 @@ int jakopter_backward()
 {
 	char * args[] = {"1","0","0","104522055","0","0"};
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
+		return -1;
+
+	usleep(20*TIMEOUT_CMD);
+
+	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
 
 	return 0;

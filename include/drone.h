@@ -8,6 +8,7 @@
 #define PORT_CMD		5556
 
 #define TIMEOUT_CMD		30000
+#define TIMEOUT_NAVDATA 10
 
 /* max number of digit into an integer */
 #define SIZE_INT		11
@@ -25,6 +26,7 @@
 int jakopter_connect();
 int jakopter_takeoff();
 int jakopter_land();
+int jakopter_emergency();
 int jakopter_reinit();
 int jakopter_disconnect();
 int jakopter_rotate_left();
