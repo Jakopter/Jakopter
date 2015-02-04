@@ -1,7 +1,12 @@
 # Jakopter
 
 ## TODO
-Make Lua independant of the video (avcodec AND SDL2).
+Make Lua independant of the video (avcodec and SDL2).
+
+## Requirements
+CMake &ge; 2.8
+Lua
+FFMPEG (or at least libavcodec)
 
 ## Build instructions
 The project uses CMake as a build system.

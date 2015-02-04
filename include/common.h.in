@@ -13,7 +13,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-/* #undef WITH_VIDEO */
+#cmakedefine WITH_VIDEO
 
 #define float32_t float
 #define float64_t double
