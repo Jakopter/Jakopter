@@ -70,6 +70,22 @@ void jakopter_com_write_int(jakopter_com_channel_t* cc, size_t offset, int value
 	pthread_mutex_unlock(&cc->mutex);
 }
 
+void jakopter_com_write_float(jakopter_com_channel_t* cc, size_t offset, float value)
+{
+	//make sure we won't be writing out of bounds
+	if(offset + sizeof(float) > cc->buf_size)
+		return;
+
+	pthread_mutex_lock(&cc->mutex);
+	//copy the value at the given offset
+	uint8_t* place = ((uint8_t*)cc->buffer) + offset;
+	memcpy(place, &value, sizeof(float));
+	//we just modified the buffer, so update the timestamp
+	cc->last_write_time = clock();
+	
+	pthread_mutex_unlock(&cc->mutex);
+}
+
 void jakopter_com_write_char(jakopter_com_channel_t* cc, size_t offset, char value)
 {
 	//make sure we won't be writing out of bounds
@@ -119,6 +135,22 @@ int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset)
 	memcpy(&result, place, sizeof(int));
 	pthread_mutex_unlock(&cc->mutex);
 
+	return result;
+}
+
+float jakopter_com_read_float(jakopter_com_channel_t* cc, size_t offset)
+{
+	//we can't read over the end
+	if(offset + sizeof(float) > cc->buf_size)
+		return 0;
+	
+	pthread_mutex_lock(&cc->mutex);
+	//retreive the number
+	int8_t* place = ((int8_t*)cc->buffer) + offset;
+	float result;
+	memcpy(&result, place, sizeof(float));
+	pthread_mutex_unlock(&cc->mutex);
+	
 	return result;
 }
 
