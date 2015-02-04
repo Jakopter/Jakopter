@@ -29,7 +29,7 @@ Returns:
 	> 0 : decoded n images.
 	-1 : error while decoding.
 */
-int video_decode_packet(uint8_t* buffer, int buf_size);
+int video_decode_packet(uint8_t* buffer, int buf_size, jakopter_video_frame_t* result);
 
 /*Free the decoder and its associated structures.*/
 void video_stop_decoder();

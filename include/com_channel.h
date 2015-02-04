@@ -23,13 +23,13 @@ typedef struct jakopter_com_channel_t jakopter_com_channel_t;
 *		once you're done using it.
 *		Returns NULL on failure.
 */
-jakopter_com_channel_t* jakopter_init_com_channel(size_t size);
+jakopter_com_channel_t* jakopter_com_create_channel(size_t size);
 
 /**
 * \brief Free the memory allocated for the given com channel structure.
 * \param cc com channel to free. The pointer to the structure will be set to NULL on success.
 */
-void jakopter_destroy_com_channel (jakopter_com_channel_t** cc);
+void jakopter_com_destroy_channel (jakopter_com_channel_t** cc);
 
 
 /*******************************************************************
@@ -39,22 +39,34 @@ void jakopter_destroy_com_channel (jakopter_com_channel_t** cc);
 *They make sure no buffer overflow occurs.
 ********************************************************************/
 
-void jakopter_write_int(jakopter_com_channel_t* cc, size_t offset, int value);
+void jakopter_com_write_int(jakopter_com_channel_t* cc, size_t offset, int value);
 
-void jakopter_write_char(jakopter_com_channel_t* cc, size_t offset, char value);
+void jakopter_com_write_float(jakopter_com_channel_t* cc, size_t offset, float value);
 
-void jakopter_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, size_t size);
+void jakopter_com_write_char(jakopter_com_channel_t* cc, size_t offset, char value);
+
+void jakopter_com_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, size_t size);
 
 
 /*******************************************************************
 ********Functions for reading data from the channel*****************/
 
-int jakopter_read_int(jakopter_com_channel_t* cc, size_t offset);
+int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset);
 
-char jakopter_read_char(jakopter_com_channel_t* cc, size_t offset);
+float jakopter_com_read_float(jakopter_com_channel_t* cc, size_t offset);
 
-//The returned pointer has to be freed by the caller.
-void* jakopter_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size);
+char jakopter_com_read_char(jakopter_com_channel_t* cc, size_t offset);
+
+/**
+* \brief Read an arbitrary sequence of bytes.
+* \param cc com channel to read from.
+* \param offset position of the data to be read in the channel's buffer.
+* \param size number of bytes to read.
+* \param dest buffer where the read data will be copied.
+*		Must point to a valid memory zone of at least size bytes.
+* \return dest.
+*/
+void* jakopter_com_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size, void* dest);
 
 
 /**
@@ -62,7 +74,7 @@ void* jakopter_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size);
 *		performed on a given com channel.
 * \param cc com channel to check.
 */
-double jakopter_get_timestamp(jakopter_com_channel_t* cc);
+double jakopter_com_get_timestamp(jakopter_com_channel_t* cc);
 
 #endif
 
