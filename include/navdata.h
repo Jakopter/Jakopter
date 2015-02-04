@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "com_channel.h"
+#include "com_master.h"
 #define PORT_NAVDATA	5554
 #define NAVDATA_INTERVAL 	1/15 // interval in seconds
 #define TAG_DEMO 0

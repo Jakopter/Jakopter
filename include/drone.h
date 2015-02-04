@@ -3,12 +3,15 @@
 
 #include "common.h"
 #include "navdata.h"
+#include "com_channel.h"
+#include "com_master.h"
 
 #define PACKET_SIZE		256
 #define PORT_CMD		5556
 
-#define TIMEOUT_CMD		30000
-#define TIMEOUT_NAVDATA 10
+/* 30 ms in ns */
+#define TIMEOUT_CMD		30000000
+#define NAVDATA_ATTEMPT 10
 
 /* max number of digit into an integer */
 #define SIZE_INT		11

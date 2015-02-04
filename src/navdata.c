@@ -27,21 +27,21 @@ int recv_cmd()
 	size_t offset = 0;
 	switch(data.demo.tag) {
 		case TAG_DEMO:
-			jakopter_write_int(nav_channel, offset, data.demo.vbat_flying_percentage);
+			jakopter_com_write_int(nav_channel, offset, data.demo.vbat_flying_percentage);
 			offset += sizeof(data.demo.vbat_flying_percentage);
-			jakopter_write_int(nav_channel, offset, data.demo.altitude);
+			jakopter_com_write_int(nav_channel, offset, data.demo.altitude);
 			offset += sizeof(data.demo.altitude);
-			jakopter_write_int(nav_channel, offset, data.demo.theta);
+			jakopter_com_write_int(nav_channel, offset, data.demo.theta);
 			offset += sizeof(data.demo.theta);
-			jakopter_write_int(nav_channel, offset, data.demo.phi);
+			jakopter_com_write_int(nav_channel, offset, data.demo.phi);
 			offset += sizeof(data.demo.phi);
-			jakopter_write_int(nav_channel, offset, data.demo.psi);
+			jakopter_com_write_int(nav_channel, offset, data.demo.psi);
 			offset += sizeof(data.demo.psi);
-			jakopter_write_int(nav_channel, offset, data.demo.vx);
+			jakopter_com_write_int(nav_channel, offset, data.demo.vx);
 			offset += sizeof(data.demo.vx);
-			jakopter_write_int(nav_channel, offset, data.demo.vy);
+			jakopter_com_write_int(nav_channel, offset, data.demo.vy);
 			offset += sizeof(data.demo.vy);
-			jakopter_write_int(nav_channel, offset, data.demo.vz);
+			jakopter_com_write_int(nav_channel, offset, data.demo.vz);
 			offset += sizeof(data.demo.vz);
 			break;
 		default:
@@ -81,7 +81,7 @@ int navdata_init()
 	}
 
 	if(data.raw.ardrone_state & (1 << 15)) {
-		fprintf(stderr, "[*][navdata] Battery charge too low: %d\n", (data.raw.ardrone_state & (1 << 11))%2);
+		fprintf(stderr, "[*][navdata] Battery charge too low: %d\n", data.raw.ardrone_state & (1 << 15));
 		return -1;
 	}
 
@@ -157,7 +157,11 @@ int navdata_connect()
 		return -1;
 	}
 
-	nav_channel = jakopter_com_create_channel(sizeof(data));
+	if (!jakopter_com_master_is_init()) {
+		perror("[~][navdata] Com channel master not init");
+		return -1;
+	}
+	nav_channel = jakopter_com_add_channel(1, sizeof(data));
 
 	if(navdata_init() < 0) {
 		perror("[~][navdata] Init sequence failed");
@@ -233,7 +237,8 @@ int navdata_disconnect()
 		pthread_mutex_unlock(&mutex_stopped);
 		int ret = pthread_join(navdata_thread, NULL);
 
-		jakopter_com_destroy_channel(&nav_channel);
+		if (jakopter_com_master_is_init())
+			jakopter_com_remove_channel(1);
 
 		close(sock_navdata);
 
