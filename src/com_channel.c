@@ -26,20 +26,20 @@ jakopter_com_channel_t* jakopter_com_create_channel(size_t size)
 	jakopter_com_channel_t* cc = malloc(sizeof(jakopter_com_channel_t));
 	if(cc == NULL)
 		return NULL;
-	
+
 	//initialize the structure's fields
 	int error = pthread_mutex_init(&cc->mutex, NULL);
 	cc->init_time = clock();
 	cc->last_write_time = cc->init_time;
 	cc->buf_size = size;
 	cc->buffer = malloc(size);
-	
+
 	//check allocation failure
 	if(cc->buffer == NULL || error) {
 		free(cc);
 		return NULL;
 	}
-	
+
 	return cc;
 }
 
@@ -66,7 +66,7 @@ void jakopter_com_write_int(jakopter_com_channel_t* cc, size_t offset, int value
 	memcpy(place, &value, sizeof(int));
 	//we just modified the buffer, so update the timestamp
 	cc->last_write_time = clock();
-	
+
 	pthread_mutex_unlock(&cc->mutex);
 }
 
@@ -82,7 +82,7 @@ void jakopter_com_write_char(jakopter_com_channel_t* cc, size_t offset, char val
 	memcpy(place, &value, sizeof(char));
 	//we just modified the buffer, so update the timestamp
 	cc->last_write_time = clock();
-	
+
 	pthread_mutex_unlock(&cc->mutex);
 }
 
@@ -98,7 +98,7 @@ void jakopter_com_write_buf(jakopter_com_channel_t* cc, size_t offset, void* dat
 	memcpy(place, data, size);
 	//we just modified the buffer, so update the timestamp
 	cc->last_write_time = clock();
-	
+
 	pthread_mutex_unlock(&cc->mutex);
 }
 
@@ -111,14 +111,14 @@ int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset)
 	//we can't read over the end
 	if(offset + sizeof(int) > cc->buf_size)
 		return 0;
-	
+
 	pthread_mutex_lock(&cc->mutex);
 	//retreive the number
 	int8_t* place = ((int8_t*)cc->buffer) + offset;
 	int result;
 	memcpy(&result, place, sizeof(int));
 	pthread_mutex_unlock(&cc->mutex);
-	
+
 	return result;
 }
 
@@ -127,14 +127,14 @@ char jakopter_com_read_char(jakopter_com_channel_t* cc, size_t offset)
 	//we can't read over the end
 	if(offset + sizeof(char) > cc->buf_size)
 		return 0;
-	
+
 	pthread_mutex_lock(&cc->mutex);
 	//retreive the number
 	int8_t* place = ((int8_t*)cc->buffer) + offset;
 	char result;
 	memcpy(&result, place, sizeof(char));
 	pthread_mutex_unlock(&cc->mutex);
-	
+
 	return result;
 }
 
@@ -149,7 +149,7 @@ void* jakopter_com_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t si
 	int8_t* place = ((int8_t*)cc->buffer) + offset;
 	memcpy(dest, place, size);
 	pthread_mutex_unlock(&cc->mutex);
-	
+
 	return dest;
 }
 
@@ -160,7 +160,7 @@ double jakopter_com_get_timestamp(jakopter_com_channel_t* cc)
 	//the timestamp is stored in clock ticks, convert it to milliseconds.
 	double ts = ((double)(cc->last_write_time - cc->init_time)) / (CLOCKS_PER_SEC / (double)1000);
 	pthread_mutex_unlock(&cc->mutex);
-	
+
 	return ts;
 }
 

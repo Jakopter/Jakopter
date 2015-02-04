@@ -2,10 +2,9 @@
 #include "navdata.h"
 #include "drone.h"
 
-
 static union navdata_t data;
 
-
+jakopter_com_channel_t* nav_channel;
 
 pthread_t navdata_thread;
 bool stopped_navdata = true;      //Guard that stops any function if connection isn't initialized.
@@ -24,6 +23,30 @@ int recv_cmd()
 	pthread_mutex_lock(&mutex_navdata);
 	socklen_t len = sizeof(addr_drone_navdata);
 	int ret = recvfrom(sock_navdata, &data, sizeof(data), 0, (struct sockaddr*)&addr_drone_navdata, &len);
+	//Write
+	size_t offset = 0;
+	switch(data.demo.tag) {
+		case TAG_DEMO:
+			jakopter_write_int(nav_channel, offset, data.demo.vbat_flying_percentage);
+			offset += sizeof(data.demo.vbat_flying_percentage);
+			jakopter_write_int(nav_channel, offset, data.demo.altitude);
+			offset += sizeof(data.demo.altitude);
+			jakopter_write_int(nav_channel, offset, data.demo.theta);
+			offset += sizeof(data.demo.theta);
+			jakopter_write_int(nav_channel, offset, data.demo.phi);
+			offset += sizeof(data.demo.phi);
+			jakopter_write_int(nav_channel, offset, data.demo.psi);
+			offset += sizeof(data.demo.psi);
+			jakopter_write_int(nav_channel, offset, data.demo.vx);
+			offset += sizeof(data.demo.vx);
+			jakopter_write_int(nav_channel, offset, data.demo.vy);
+			offset += sizeof(data.demo.vy);
+			jakopter_write_int(nav_channel, offset, data.demo.vz);
+			offset += sizeof(data.demo.vz);
+			break;
+		default:
+			break;
+	}
 	pthread_mutex_unlock(&mutex_navdata);
 	return ret;
 }
@@ -130,9 +153,11 @@ int navdata_connect()
 	}
 
 	if(bind(sock_navdata, (struct sockaddr*)&addr_client_navdata, sizeof(addr_client_navdata)) < 0) {
-		fprintf(stderr, "[~][navdata] Can't bind socket to port %d %d\n", PORT_NAVDATA);
+		fprintf(stderr, "[~][navdata] Can't bind socket to port %d\n", PORT_NAVDATA);
 		return -1;
 	}
+
+	nav_channel = jakopter_com_create_channel(sizeof(data));
 
 	if(navdata_init() < 0) {
 		perror("[~][navdata] Init sequence failed");
@@ -157,7 +182,6 @@ int jakopter_is_flying()
 	int flyState = -1;
 	pthread_mutex_lock(&mutex_navdata);
 	flyState = data.raw.ardrone_state & 0x0001;
-	printf("%x\n",data.demo.ctrl_state);
 	pthread_mutex_unlock(&mutex_navdata);
 	return flyState;
 }
@@ -208,6 +232,8 @@ int navdata_disconnect()
 		stopped_navdata = true;
 		pthread_mutex_unlock(&mutex_stopped);
 		int ret = pthread_join(navdata_thread, NULL);
+
+		jakopter_com_destroy_channel(&nav_channel);
 
 		close(sock_navdata);
 

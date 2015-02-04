@@ -4,17 +4,19 @@ PROJECT(jakopter)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
+
 FIND_PACKAGE(Threads REQUIRED)
 FIND_PACKAGE(SDL2)
 FIND_PACKAGE(SDL2_ttf)
 FIND_PACKAGE(FFMPEG)
 FIND_PACKAGE(Lua)
 
-# Debug : print all declared variables
-#get_cmake_property(_variableNames VARIABLES)
-#foreach (_variableName ${_variableNames})
-#	message(STATUS "${_variableName}=${${_variableName}}")
-#endforeach()
+# SET (CMAKE_C_COMPILER "/usr/bin/clang")
+#Debug : print all declared variables
+# get_cmake_property(_variableNames VARIABLES)
+# foreach (_variableName ${_variableNames})
+# 	message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
 
 INCLUDE_DIRECTORIES("include/")
 
@@ -72,8 +74,8 @@ ELSE()
 ENDIF()
 
 ADD_LIBRARY(
-	jakopter SHARED 
-	${SRC_FILES}	
+	jakopter SHARED
+	${SRC_FILES}
 )
 
 TARGET_LINK_LIBRARIES(jakopter ${CMAKE_THREAD_LIBS_INIT})

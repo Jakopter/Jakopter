@@ -2,6 +2,7 @@
 #define NAVDATA_H
 
 #include "common.h"
+#include "com_channel.h"
 #define PORT_NAVDATA	5554
 #define NAVDATA_INTERVAL 	1/15 // interval in seconds
 #define TAG_DEMO 0
