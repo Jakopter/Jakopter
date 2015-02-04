@@ -138,6 +138,22 @@ int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset)
 	return result;
 }
 
+float jakopter_com_read_float(jakopter_com_channel_t* cc, size_t offset)
+{
+	//we can't read over the end
+	if(offset + sizeof(float) > cc->buf_size)
+		return 0;
+	
+	pthread_mutex_lock(&cc->mutex);
+	//retreive the number
+	int8_t* place = ((int8_t*)cc->buffer) + offset;
+	float result;
+	memcpy(&result, place, sizeof(float));
+	pthread_mutex_unlock(&cc->mutex);
+	
+	return result;
+}
+
 char jakopter_com_read_char(jakopter_com_channel_t* cc, size_t offset)
 {
 	//we can't read over the end
