@@ -2,6 +2,7 @@
 #include "navdata.h"
 #include "video.h"
 #include "com_channel.h"
+#include "com_master.h"
 #include "lauxlib.h"
 #include "lua.h"
 
@@ -139,14 +140,14 @@ int jakopter_com_read_int_lua(lua_State* L) {
 	jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	
-	lua_pushnumber(jakopter_com_read_int(*cc, offset));
+	lua_pushnumber(L, jakopter_com_read_int(*cc, offset));
 	return 1;
 }
 int jakopter_com_read_float_lua(lua_State* L) {
 	jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	
-	lua_pushnumber(jakopter_com_read_float(*cc, offset));
+	lua_pushnumber(L, jakopter_com_read_float(*cc, offset));
 	return 1;
 }
 int jakopter_com_write_int_lua(lua_State* L) {
@@ -154,7 +155,6 @@ int jakopter_com_write_int_lua(lua_State* L) {
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	lua_Integer value = luaL_checkinteger(L, 3);
 	
-	lua_pushnumber(jakopter_com_write_int(*cc, offset, value));
 	return 0;
 }
 int jakopter_com_write_float_lua(lua_State* L) {
@@ -162,7 +162,6 @@ int jakopter_com_write_float_lua(lua_State* L) {
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	lua_Integer value = luaL_checknumber(L, 3);
 	
-	lua_pushnumber(jakopter_com_write_float(*cc, offset, value));
 	return 0;
 }
 
