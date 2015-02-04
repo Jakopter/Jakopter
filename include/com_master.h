@@ -2,6 +2,8 @@
 
 int jakopter_com_init_master(int nb_chan_max);
 
+int jakopter_com_master_is_init();
+
 /**
 * \brief Look up the given id in the master channel and return the
 *		corresponding channel.

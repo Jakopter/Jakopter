@@ -125,6 +125,46 @@ int jakopter_com_destroy_channel_lua(lua_State* L){
 		
 	return 0;
 }
+int jakopter_com_get_channel_lua(lua_State* L) {
+	lua_Integer id = luaL_checkinteger(L, 1);
+	
+	jakopter_com_channel_t** cc = lua_newuserdata(L, sizeof(jakopter_com_channel_t*));
+	luaL_getmetatable(L, "jakopter.com_channel");
+	lua_setmetatable(L, -2);
+	
+	*cc = jakopter_com_get_channel(id);
+	return 1;
+}
+int jakopter_com_read_int_lua(lua_State* L) {
+	jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+	
+	lua_pushnumber(jakopter_com_read_int(*cc, offset));
+	return 1;
+}
+int jakopter_com_read_float_lua(lua_State* L) {
+	jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+	
+	lua_pushnumber(jakopter_com_read_float(*cc, offset));
+	return 1;
+}
+int jakopter_com_write_int_lua(lua_State* L) {
+	jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+	lua_Integer value = luaL_checkinteger(L, 3);
+	
+	lua_pushnumber(jakopter_com_write_int(*cc, offset, value));
+	return 0;
+}
+int jakopter_com_write_float_lua(lua_State* L) {
+	jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+	lua_Integer value = luaL_checknumber(L, 3);
+	
+	lua_pushnumber(jakopter_com_write_float(*cc, offset, value));
+	return 0;
+}
 
 //enregistrer les fonctions pour lua
 //ou luaL_reg

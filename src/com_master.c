@@ -1,21 +1,32 @@
 #include "com_master.h"
+#include <stdbool.h>
 
 jakopter_com_channel_t* master = NULL;
+
+bool isInitialized = false;
 
 int nb_max_chan = 0;
 
 int jakopter_com_init_master(int nb_chan_max)
 {
-	size_t total_size = sizeof(int) + nb_chan_max * sizeof(jakopter_com_channel_t*);
+	if(!isInitialized) {
+		size_t total_size = sizeof(int) + nb_chan_max * sizeof(jakopter_com_channel_t*);
 	
-	master = jakopter_com_create_channel(total_size);
-	if(master == NULL)
-		return -1;
+		master = jakopter_com_create_channel(total_size);
+		if(master == NULL)
+			return -1;
 	
-	nb_max_chan = nb_chan_max;
-	return 0;
+		nb_max_chan = nb_chan_max;
+		isInitialized = true;
+		return 0;
+	}
+	return -1;
 }
 
+int jakopter_com_master_is_init()
+{
+	return isInitialized;
+}
 
 jakopter_com_channel_t* jakopter_com_add_channel(int id, size_t size)
 {
@@ -49,5 +60,6 @@ void jakopter_com_destroy_master()
 {
 	jakopter_com_destroy_channel(&master);
 	nb_max_chan = 0;
+	isInitialized = false;
 }
 
