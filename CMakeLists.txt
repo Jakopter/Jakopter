@@ -27,6 +27,7 @@ SET(
 	src/drone.c
 	src/navdata.c
 	src/com_channel.c
+	src/com_master.c
 )
 
 SET(
