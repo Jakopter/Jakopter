@@ -187,6 +187,10 @@ static const luaL_Reg jakopterlib[] = {
 	{"stay", jakopter_stay_lua},
 	{"create_cc", jakopter_com_create_channel_lua},
 	{"destroy_cc", jakopter_com_destroy_channel_lua},
+	{"read_int", jakopter_com_read_int_lua},
+	{"read_float", jakopter_com_read_float_lua},
+	{"write_int", jakopter_com_write_int_lua},
+	{"write_float", jakopter_com_write_float_lua},
 	{NULL, NULL}
 };
 
