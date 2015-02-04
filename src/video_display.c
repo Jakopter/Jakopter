@@ -30,11 +30,12 @@ static SDL_Rect rectangle;
 */
 static int initialized = 0;
 /**
-* TTF-related functions
+* TTF-related functions (for text)
 */
 static TTF_Font* font;
 static SDL_Color text_color = {255, 255, 255};
-static int video_display_init_ttf(char* font_path);
+static int video_init_text(char* font_path);
+static void video_clean_text();
 static void video_render_text();
 
 /**
@@ -65,7 +66,7 @@ static int video_display_init(int width, int height) {
 	}
 	
 	//initialize SDL_ttf for font rendering
-	if(video_display_init_ttf(FONT_PATH) == -1)
+	if(video_init_text(FONT_PATH) == -1)
 		return -1;
 	
 	//a red rectangle will be drawn on the screen.
@@ -76,7 +77,7 @@ static int video_display_init(int width, int height) {
 	return 0;
 }
 
-static int video_display_init_ttf(char* font_path)
+static int video_init_text(char* font_path)
 {
 	if(TTF_Init() == -1) {
 		fprintf(stderr, "Display : TTF_Init error : %s\n", TTF_GetError());
@@ -120,11 +121,16 @@ static void video_display_clean() {
 		SDL_DestroyTexture(frameTex);
 		SDL_DestroyRenderer(renderer);
 		SDL_DestroyWindow(win);
-		TTF_CloseFont(font);
-		TTF_Quit();
+		video_clean_text();
 		SDL_Quit();
 		initialized = 0;
 	}
+}
+
+void video_clean_text()
+{
+	TTF_CloseFont(font);
+	TTF_Quit();
 }
 
 /**
