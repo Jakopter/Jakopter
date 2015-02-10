@@ -1,5 +1,6 @@
 #include "com_master.h"
 #include <stdbool.h>
+#include <stdio.h>
 
 jakopter_com_channel_t* master = NULL;
 
@@ -30,6 +31,10 @@ int jakopter_com_master_is_init()
 
 jakopter_com_channel_t* jakopter_com_add_channel(int id, size_t size)
 {
+	if(id >= nb_max_chan) {
+		fprintf(stderr, "[com_channel] Can't add channel with out-of-bounds id : %d\n", id);
+		return NULL;
+	}
 	jakopter_com_channel_t* new_chan = jakopter_com_create_channel(size);
 	if(new_chan == NULL)
 		return NULL;
@@ -41,6 +46,9 @@ jakopter_com_channel_t* jakopter_com_add_channel(int id, size_t size)
 
 jakopter_com_channel_t* jakopter_com_get_channel(int id)
 {
+	if(!isInitialized)
+		return NULL;
+
 	jakopter_com_channel_t* chan;
 	size_t offset = sizeof(int) + id*sizeof(jakopter_com_channel_t*);
 	jakopter_com_read_buf(master, offset, sizeof(chan), &chan);

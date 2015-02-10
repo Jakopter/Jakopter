@@ -141,6 +141,9 @@ int jakopter_com_get_channel_lua(lua_State* L) {
 	lua_setmetatable(L, -2);
 
 	*cc = jakopter_com_get_channel(id);
+	if(*cc == NULL)
+		return luaL_error(L, "Failed to retrieve com_channel of id %d", id);
+	
 	return 1;
 }
 int jakopter_com_read_int_lua(lua_State* L) {
