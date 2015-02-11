@@ -1,14 +1,18 @@
 # Jakopter
 
-## TODO
-Make Lua independant of the video (avcodec AND SDL2).
+## Requirements
+CMake &ge; 2.8
+
+Lua 5.1 or 5.2
+
+FFMPEG (or at least libavcodec)
 
 ## Build instructions
 The project uses CMake as a build system.
 
 On UNIX systems you can generate a Makefile with the command:
 
-    cmake . -G"Unix Makefiles"
+    cmake .
 
 Then you should be able to compile the project properly with:
 
