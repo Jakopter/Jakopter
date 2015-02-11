@@ -157,10 +157,10 @@ int navdata_connect()
 		return -1;
 	}
 
-	if (!jakopter_com_master_is_init()) {
+/*	if (!jakopter_com_master_is_init()) {
 		perror("[~][navdata] Com channel master not init");
 		return -1;
-	}
+	}*/
 	nav_channel = jakopter_com_add_channel(CHANNEL_NAVDATA, sizeof(data));
 
 	if(navdata_init() < 0) {
