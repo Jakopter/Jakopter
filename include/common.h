@@ -1,7 +1,6 @@
 #ifndef JAKOPTER_COMMON_H
 #define JAKOPTER_COMMON_H
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -14,12 +13,14 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-/* #undef WITH_VIDEO */
+#define WITH_VIDEO
+#define WITH_LEAP
 
 #define float32_t float
 #define float64_t double
 
 #define WIFI_ARDRONE_IP	"192.168.1.1"
+#define CHANNEL_LEAPMOTION 1
 
 //init dans drone commande
 struct sockaddr_in addr_drone, addr_client;

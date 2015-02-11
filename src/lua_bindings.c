@@ -3,6 +3,9 @@
 #ifdef WITH_VIDEO
 #include "video.h"
 #endif
+#ifdef WITH_LEAP
+#include "leapdata.h"
+#endif
 #include "com_channel.h"
 #include "com_master.h"
 #include "lauxlib.h"
@@ -75,6 +78,18 @@ int jakopter_init_video_lua(lua_State* L) {
 
 int jakopter_stop_video_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_stop_video());
+	return 1;
+}
+#endif
+
+#ifdef WITH_LEAP
+int jakopter_connect_leap_lua(lua_State* L) {
+	lua_pushnumber(L, jakopter_connect_leap());
+	return 1;
+}
+
+int jakopter_disconnect_leap_lua(lua_State* L) {
+	lua_pushnumber(L, jakopter_disconnect_leap());
 	return 1;
 }
 #endif
@@ -193,6 +208,10 @@ static const luaL_Reg jakopterlib[] = {
 #ifdef WITH_VIDEO
 	{"connect_video", jakopter_init_video_lua},
 	{"stop_video", jakopter_stop_video_lua},
+#endif
+#ifdef WITH_LEAP	
+	{"connect_leap", jakopter_connect_leap_lua},
+	{"disconnect_leap", jakopter_disconnect_leap_lua},
 #endif
 	{"is_flying", jakopter_is_flying_lua},
 	{"height", jakopter_height_lua},
