@@ -99,10 +99,21 @@ int jakopter_calib_lua(lua_State* L){
 	return 1;
 }
 
+int jakopter_move_lua(lua_State* L){
+	float l = luaL_checknumber(L, 1);
+	float f = luaL_checknumber(L, 2);
+	float v = luaL_checknumber(L, 3);
+	float a = luaL_checknumber(L, 4);
+
+	lua_pushnumber(L, jakopter_move(l,f,v,a));
+	return 1;
+}
+
 int jakopter_stay_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_stay());
 	return 1;
 }
+
 int jakopter_init_com_channel_lua(lua_State* L){
 	lua_Integer s = luaL_checkinteger(L, 1);
 	luaL_argcheck(L, s > 0, 1, "Channel size must be > 0");
@@ -117,6 +128,7 @@ int jakopter_init_com_channel_lua(lua_State* L){
 	
 	return 1;	
 }
+
 int jakopter_destroy_com_channel_lua(lua_State* L){
 	jakopter_com_channel_t** cc = check_com_channel(L);
 	jakopter_destroy_com_channel(cc);
@@ -145,6 +157,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"reinit", jakopter_reinit_lua},
 	{"ftrim", jakopter_ftrim_lua},
 	{"calib", jakopter_calib_lua},
+	{"move", jakopter_move_lua},
 	{"stay", jakopter_stay_lua},
 	{"create_cc", jakopter_init_com_channel_lua},
 	{"destroy_cc", jakopter_destroy_com_channel_lua},
