@@ -2,14 +2,17 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-jakopter_com_channel_t* master = NULL;
+//jakopter_com_channel_t* master = NULL;
 
-bool isInitialized = false;
+bool isInitialized = true;
 
-int nb_max_chan = 0;
+jakopter_com_channel_t* master[NB_CHANNELS];
+
+int nb_max_chan = NB_CHANNELS;
 
 int jakopter_com_init_master(int nb_chan_max)
 {
+	/*
 	if(!isInitialized) {
 		size_t total_size = sizeof(int) + nb_chan_max * sizeof(jakopter_com_channel_t*);
 	
@@ -22,6 +25,8 @@ int jakopter_com_init_master(int nb_chan_max)
 		return 0;
 	}
 	return -1;
+	*/
+	return 0;
 }
 
 int jakopter_com_master_is_init()
@@ -39,8 +44,9 @@ jakopter_com_channel_t* jakopter_com_add_channel(int id, size_t size)
 	if(new_chan == NULL)
 		return NULL;
 		
-	size_t offset = sizeof(int) + id*sizeof(jakopter_com_channel_t*);
-	jakopter_com_write_buf(master, offset, &new_chan, sizeof(new_chan));
+	//size_t offset = sizeof(int) + id*sizeof(jakopter_com_channel_t*);
+	//jakopter_com_write_buf(master, offset, &new_chan, sizeof(new_chan));
+	master[id] = new_chan;
 	return new_chan;
 }
 
@@ -49,11 +55,11 @@ jakopter_com_channel_t* jakopter_com_get_channel(int id)
 	if(!isInitialized)
 		return NULL;
 
-	jakopter_com_channel_t* chan;
-	size_t offset = sizeof(int) + id*sizeof(jakopter_com_channel_t*);
-	jakopter_com_read_buf(master, offset, sizeof(chan), &chan);
+	//jakopter_com_channel_t* chan;
+	//size_t offset = sizeof(int) + id*sizeof(jakopter_com_channel_t*);
+	//jakopter_com_read_buf(master, offset, sizeof(chan), &chan);
 	
-	return chan;
+	return master[id];
 }
 
 int jakopter_com_remove_channel(int id)
@@ -66,8 +72,10 @@ int jakopter_com_remove_channel(int id)
 
 void jakopter_com_destroy_master()
 {
+	/*
 	jakopter_com_destroy_channel(&master);
 	nb_max_chan = 0;
 	isInitialized = false;
+	*/
 }
 

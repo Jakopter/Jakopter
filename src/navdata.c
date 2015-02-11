@@ -31,17 +31,17 @@ int recv_cmd()
 			offset += sizeof(data.demo.vbat_flying_percentage);
 			jakopter_com_write_int(nav_channel, offset, data.demo.altitude);
 			offset += sizeof(data.demo.altitude);
-			jakopter_com_write_int(nav_channel, offset, data.demo.theta);
+			jakopter_com_write_float(nav_channel, offset, data.demo.theta);
 			offset += sizeof(data.demo.theta);
-			jakopter_com_write_int(nav_channel, offset, data.demo.phi);
+			jakopter_com_write_float(nav_channel, offset, data.demo.phi);
 			offset += sizeof(data.demo.phi);
-			jakopter_com_write_int(nav_channel, offset, data.demo.psi);
+			jakopter_com_write_float(nav_channel, offset, data.demo.psi);
 			offset += sizeof(data.demo.psi);
-			jakopter_com_write_int(nav_channel, offset, data.demo.vx);
+			jakopter_com_write_float(nav_channel, offset, data.demo.vx);
 			offset += sizeof(data.demo.vx);
-			jakopter_com_write_int(nav_channel, offset, data.demo.vy);
+			jakopter_com_write_float(nav_channel, offset, data.demo.vy);
 			offset += sizeof(data.demo.vy);
-			jakopter_com_write_int(nav_channel, offset, data.demo.vz);
+			jakopter_com_write_float(nav_channel, offset, data.demo.vz);
 			offset += sizeof(data.demo.vz);
 			break;
 		default:
@@ -161,7 +161,7 @@ int navdata_connect()
 		perror("[~][navdata] Com channel master not init");
 		return -1;
 	}
-	nav_channel = jakopter_com_add_channel(1, sizeof(data));
+	nav_channel = jakopter_com_add_channel(CHANNEL_NAVDATA, sizeof(data));
 
 	if(navdata_init() < 0) {
 		perror("[~][navdata] Init sequence failed");

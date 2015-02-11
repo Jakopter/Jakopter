@@ -113,8 +113,8 @@ static int video_display_init(int width, int height) {
 	
 	//create the communication channels
 	if(!jakopter_com_master_is_init())
-		jakopter_com_init_master(6);
-	com_in = jakopter_com_add_channel(DISPLAY_COM_IN_ID, DISPLAY_COM_IN_SIZE);
+		jakopter_com_init_master(NB_CHANNELS);
+	com_in = jakopter_com_add_channel(CHANNEL_DISPLAY, DISPLAY_COM_IN_SIZE);
 	
 	//set the overlay elements to null so that they don't get drawn
 	for(int i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
@@ -181,7 +181,7 @@ static void video_display_clean() {
 		SDL_DestroyWindow(win);
 		video_clean_text();
 		SDL_Quit();
-		jakopter_com_remove_channel(DISPLAY_COM_IN_ID);
+		jakopter_com_remove_channel(CHANNEL_DISPLAY);
 		initialized = 0;
 	}
 }
@@ -330,10 +330,14 @@ void rotate_point(SDL_Point* point, const SDL_Point* center, float angle)
 	//convert the angle to radians for use with C math functions.
 	double a_rad = angle * PI/180.;
 	double a_cos = cos(a_rad), a_sin = sin(a_rad);
+	//translate to origin before rotating
+	point->x -= center->x;
+	point->y -= center->y;
 	//compute the rotation
 	int newx = point->x*a_cos - point->y*a_sin;
 	int newy = point->x*a_sin + point->y*a_cos;
-	point->x = newx;
-	point->y = newy;
+	//translate back to position
+	point->x = newx + center->x;
+	point->y = newy + center->y;
 }
 

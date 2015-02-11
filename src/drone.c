@@ -199,7 +199,7 @@ int jakopter_connect()
 
 	//init com_master
 	if (!jakopter_com_master_is_init())
-		jakopter_com_init_master(2);
+		jakopter_com_init_master(NB_CHANNELS);
 
 	pthread_mutex_lock(&mutex_stopped);
 	stopped = 0;

@@ -4,9 +4,8 @@
 #include <stdint.h>
 
 #define FONT_PATH "../../resources/FreeSans.ttf"
-//id of the input com channel for this module
-#define DISPLAY_COM_IN_ID 5
-#define DISPLAY_COM_IN_SIZE 8
+//size of the input com channel for this module
+#define DISPLAY_COM_IN_SIZE 32
 
 /**
 * "Got frame" callback.

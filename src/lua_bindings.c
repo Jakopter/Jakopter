@@ -176,6 +176,11 @@ int jakopter_com_write_float_lua(lua_State* L) {
 	jakopter_com_write_float(*cc, offset, value);
 	return 0;
 }
+int usleep_lua(lua_State* L) {
+	lua_Integer duration = luaL_checkinteger(L, 1);
+	usleep(duration);
+	return 0;
+}
 
 //enregistrer les fonctions pour lua
 //ou luaL_reg
@@ -205,6 +210,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"read_float", jakopter_com_read_float_lua},
 	{"write_int", jakopter_com_write_int_lua},
 	{"write_float", jakopter_com_write_float_lua},
+	{"usleep", usleep_lua},
 	{NULL, NULL}
 };
 
