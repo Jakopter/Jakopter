@@ -75,6 +75,16 @@ int jakopter_stop_video_lua(lua_State* L) {
 	return 1;
 }
 
+int jakopter_connect_leap_lua(lua_State* L) {
+	lua_pushnumber(L, jakopter_connect_leap());
+	return 1;
+}
+
+int jakopter_disconnect_leap_lua(lua_State* L) {
+	lua_pushnumber(L, jakopter_disconnect_leap());
+	return 1;
+}
+
 int jakopter_is_flying_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_is_flying());
 	return 1;
@@ -188,6 +198,8 @@ static const luaL_Reg jakopterlib[] = {
 	{"get_no_sq", jakopter_get_no_sq_lua},
 	{"connect_video", jakopter_init_video_lua},
 	{"stop_video", jakopter_stop_video_lua},
+	{"connect_leap", jakopter_connect_leap_lua},
+	{"disconnect_leap", jakopter_disconnect_leap_lua},
 	{"is_flying", jakopter_is_flying_lua},
 	{"height", jakopter_height_lua},
 	{"reinit", jakopter_reinit_lua},
@@ -197,7 +209,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"emergency", jakopter_emergency_lua},
 	{"create_cc", jakopter_com_create_channel_lua},
 	{"destroy_cc", jakopter_com_destroy_channel_lua},
-	{"get_cc"}, jakopter_com_get_channel_lua},
+	{"get_cc", jakopter_com_get_channel_lua},
 	{"read_int", jakopter_com_read_int_lua},
 	{"read_float", jakopter_com_read_float_lua},
 	{"write_int", jakopter_com_write_int_lua},

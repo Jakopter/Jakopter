@@ -17,6 +17,7 @@
 #define float64_t double
 
 #define WIFI_ARDRONE_IP	"192.168.1.1"
+#define CHANNEL_LEAPMOTION 1
 
 //init dans drone commande
 struct sockaddr_in addr_drone, addr_client;
