@@ -22,7 +22,7 @@ bool needRealloc = false;
 void video_queue_init()
 {
 	myFrame = VIDEO_QUEUE_END;
-	
+
 	isEmpty = true;
 	processBuffer = NULL;
 	needRealloc = false;
@@ -55,7 +55,7 @@ pthread_mutex_unlock(&mutex);
 
 int video_queue_pull_frame(jakopter_video_frame_t* dest)
 {
-pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutex);
 	//if the queue is empty, wait for a frame to be pushed
 	while(isEmpty)
 		pthread_cond_wait(&condEmpty, &mutex);
@@ -73,5 +73,7 @@ pthread_mutex_lock(&mutex);
 	dest->pixels = memcpy(processBuffer, myFrame.pixels, myFrame.size);
 	//there's only one element in the queue, so it's always empty after pulling it.
 	isEmpty = true;
-pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&mutex);
+
+	return 0;
 }

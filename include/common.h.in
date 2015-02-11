@@ -13,8 +13,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#define WITH_VIDEO
-#define WITH_LEAP
+#cmakedefine WITH_VIDEO
+#cmakedefine WITH_LEAP
 
 #define float32_t float
 #define float64_t double

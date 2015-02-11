@@ -6,5 +6,11 @@ typedef struct {
 } LeapData_t;
 
 
-extern "C" int jakopter_connect_leap();
-extern "C" int jakopter_disconnect_leap();
+#ifdef __cplusplus
+extern "C" {
+#endif
+	int jakopter_connect_leap();
+	int jakopter_disconnect_leap(); 
+#ifdef __cplusplus
+}
+#endif

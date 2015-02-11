@@ -4,12 +4,14 @@
 #include <Leap.h>
 #include "leapdata.h"
 //#include "drone.hpp"
-#include "com_master.h"
-#include "common.h"
+extern "C" {
+	#include "com_master.h"
+	#include "common.h"
+}
 
 using namespace Leap;
 
-jakopter_com_channel_t* leap_channel;
+jakopter_com_channel_t* leap_channel = NULL;
 
 class LeapListener : public Listener {
 public:
@@ -81,7 +83,8 @@ void LeapListener::onFrame(const Controller& controller) {
 // 			default:
 // 				break;
 // 		}
-		jakopter_com_write_buf(leap_channel, 0, (void*)&leapData, sizeof(leapData));
+		if(leap_channel)
+			jakopter_com_write_buf(leap_channel, 0, (void*)&leapData, sizeof(leapData));
 	}
 }
 
@@ -95,7 +98,8 @@ int jakopter_connect_leap()
 
 int jakopter_disconnect_leap()
 {
-	jakopter_com_destroy_channel(&leap_channel);
+	if(leap_channel)
+		jakopter_com_destroy_channel(&leap_channel);
 	controller.removeListener(listener);
 	
 	return 0;

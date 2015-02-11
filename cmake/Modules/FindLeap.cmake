@@ -27,6 +27,7 @@ IF(UNIX)
         /opt/include INTERNAL)
     SET(LEAP_LIBRARY_SEARCH_DIRS
         /usr/lib
+        /usr/lib/Leap
         /usr/lib64
         /usr/local/lib
         /usr/local/lib64

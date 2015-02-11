@@ -1,8 +1,9 @@
 #include <SDL2/SDL.h>
 #include "SDL_ttf.h"
-#include <stdio.h>
+
 #include "navdata.h"
 #include "video_display.h"
+
 
 /*
 * The SDL window where the video is displayed.
@@ -46,7 +47,7 @@ static void video_render_text();
 * @return 0 on success, -1 on error.
 */
 static int video_display_init(int width, int height) {
-	
+
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "Display : error initializing SDL : %s\n", SDL_GetError());
 		return -1;
@@ -58,22 +59,22 @@ static int video_display_init(int width, int height) {
 		fprintf(stderr, "Display : error creating window : %s\n", SDL_GetError());
 		return -1;
 	}
-	
+
 	renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
 	if(renderer == NULL) {
 		fprintf(stderr, "Display : error creating renderer : %s\n", SDL_GetError());
 		return -1;
 	}
-	
+
 	//initialize SDL_ttf for font rendering
 	if(video_init_text(FONT_PATH) == -1)
 		return -1;
-	
+
 	//a red rectangle will be drawn on the screen.
 	rectangle.w = 50;
 	rectangle.h = 50;
 	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 125);
-	
+
 	return 0;
 }
 
@@ -153,28 +154,28 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 		}
 		if(video_display_set_size(width, height) < 0)
 			return -1;
-		
+
 		initialized = 1;
 	}
-	
+
 	//check whether the size of the video has changed
 	if(width != current_width || height != current_height)
 		if(video_display_set_size(width, height) < 0)
 			return -1;
-	
+
 	//update the texture with our new frame
 	if(SDL_UpdateTexture(frameTex, NULL, frame, width) < 0) {
 		fprintf(stderr, "Display : failed to update frame texture : %s\n", SDL_GetError());
 		return -1;
 	}
-	
+
 	//clear the renderer, then update it so that we get the new frame displayed.
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, frameTex, NULL, NULL);
 	//SDL_RenderFillRect(renderer, &rectangle);
 	video_render_text();
 	SDL_RenderPresent(renderer);
-	
+
 	return 0;
 }
 
@@ -186,14 +187,14 @@ void video_render_text()
 					"Drone altitude : %d | "
 					"Drone y axis : %f",
 					jakopter_is_flying(), jakopter_height(), jakopter_y_axis());
-						
+
 	SDL_Surface* text_surf = TTF_RenderUTF8_Blended(font, text, text_color);
 	free(text);
 	SDL_Texture* text_tex = SDL_CreateTextureFromSurface(renderer, text_surf);
-	
+
 	//compute the position of the text : bottom-left corner
 	SDL_Rect txtpos = {0, current_height-text_surf->h, text_surf->w, text_surf->h};
-	
+
 	SDL_FreeSurface(text_surf);
 	SDL_RenderCopy(renderer, text_tex, NULL, &txtpos);
 	SDL_DestroyTexture(text_tex);

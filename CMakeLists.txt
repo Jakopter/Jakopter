@@ -12,16 +12,18 @@ FIND_PACKAGE(FFMPEG)
 FIND_PACKAGE(Lua)
 FIND_PACKAGE(Leap)
 
+# Debug: print all declared variables
+#get_cmake_property(_variableNames VARIABLES)
+#foreach (_variableName ${_variableNames})
+#	message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
+
 # SET (CMAKE_C_COMPILER "/usr/bin/clang")
-#Debug : print all declared variables
-# get_cmake_property(_variableNames VARIABLES)
-# foreach (_variableName ${_variableNames})
-# 	message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
 
 INCLUDE_DIRECTORIES("include/")
 
 SET(CMAKE_BUILD_TYPE DEBUG)
+ADD_DEFINITIONS("-Wall") # Not compatible with MSVC
 
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY build/${CMAKE_BUILD_TYPE})
 
@@ -64,8 +66,11 @@ IF(AVCODEC_FOUND AND SDL2_FOUND AND SDL2TTF_FOUND)
 		${SRC_FILES}
 		${VIDEO_SRC_FILES}
 	)
+
+	SET(WITH_VIDEO ON)
 ELSE()
 	MESSAGE(WARNING "Compiling WITHOUT libavcodec and SDL2")
+	SET(WITH_VIDEO OFF)
 ENDIF()
 
 IF(LEAP_FOUND)
@@ -76,8 +81,10 @@ IF(LEAP_FOUND)
 		${SRC_FILES}
 		${LEAP_SRC_FILES}
 	)
+	SET(WITH_LEAP ON)
 ELSE()
 	MESSAGE(WARNING "Compiling WITHOUT leap motion support")
+	SET(WITH_VIDEO OFF)
 ENDIF()
 
 IF(LUA_FOUND)
@@ -91,6 +98,8 @@ IF(LUA_FOUND)
 ELSE()
 	MESSAGE(WARNING "Compiling WITHOUT Lua")
 ENDIF()
+
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/common.h.in ${CMAKE_SOURCE_DIR}/include/common.h)
 
 ADD_LIBRARY(
 	jakopter SHARED
