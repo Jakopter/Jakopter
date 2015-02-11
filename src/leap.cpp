@@ -3,7 +3,7 @@
 #include <math.h>
 #include <Leap.h>
 #include "leapdata.h"
-//#include "drone.hpp"
+
 extern "C" {
 	#include "com_master.h"
 	#include "common.h"
@@ -24,25 +24,6 @@ private:
 LeapListener listener;
 Controller controller;
 
-int main(int argc, char** argv) {
-// 	if (jakopter_connect() < 0)
-// 		return -1;
-	
-	controller.addListener(listener);
-	
-	// Keep this process running until Enter is pressed
-	std::cout << "Press Enter to quit..." << std::endl;
-	std::cin.get();
-	
-	// Remove the sample listener when done
-	controller.removeListener(listener);
-	
-// 	if (jakopter_disconnect() < 0)
-// 		return -1;	
-// 	
-	return 0;
-}
-
 void LeapListener::onConnect(const Controller& controller) {
 	std::cout << "Connected" << std::endl;
 	controller.enableGesture(Gesture::TYPE_CIRCLE);
@@ -60,14 +41,6 @@ void LeapListener::onFrame(const Controller& controller) {
 		leapData.yaw = hand.direction().yaw();
 		leapData.roll = hand.palmNormal().roll();
 		leapData.height = hand.palmPosition().y;
-		
-		
-		// 		std::cout << "Frame id: " << frame.id()
-		// 		<< ", timestamp: " << frame.timestamp()
-		// 		<< ", height: " << leapData.height
-		// 		<< ", pitch: " << RAD_TO_DEG * leapData.pitch
-		// 		<< ", yaw: " << RAD_TO_DEG * leapData.yaw
-		// 		<< ", roll: " << RAD_TO_DEG * leapData.roll << std::endl;
 		
 // 		switch(gest.type()) {
 // 			case Gesture::TYPE_CIRCLE:
