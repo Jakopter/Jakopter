@@ -6,7 +6,8 @@
 char ref_cmd[PACKET_SIZE];
 /* REF arguments */
 char *takeoff_arg = "290718208",
-	 *land_arg = "290717696";
+	 *land_arg = "290717696",
+	 *emergency_arg = "290717952";
 /* PCMD arguments */
 
 /*Current sequence number*/
@@ -14,6 +15,9 @@ int cmd_no_sq = 0;
 /*command currently sent*/
 char *cmd_current = NULL;
 char cmd_current_args[ARGS_MAX][SIZE_ARG];
+
+/* Waiting time spend by command function */
+struct timespec cmd_wait = {0, NAVDATA_ATTEMPT*TIMEOUT_CMD};
 
 /*Thread which send regularly commands to keep the connection*/
 pthread_t cmd_thread;
@@ -142,6 +146,7 @@ void* cmd_routine(void* args)
 		if (send_cmd() < 0)
 			perror("[~] Can't send command to the drone. \n");
 		nanosleep(&itv, NULL);
+		itv.tv_nsec = TIMEOUT_CMD;
 
 		pthread_mutex_lock(&mutex_stopped);
 	}
@@ -191,6 +196,10 @@ int jakopter_connect()
 	cmd_current = NULL;
 	pthread_mutex_unlock(&mutex_cmd);
 
+	//init com_master
+	if (!jakopter_com_master_is_init())
+		jakopter_com_init_master(2);
+
 	pthread_mutex_lock(&mutex_stopped);
 	stopped = 0;
 	pthread_mutex_unlock(&mutex_stopped);
@@ -213,6 +222,7 @@ int jakopter_connect()
 
 int jakopter_flat_trim()
 {
+
 	if (jakopter_is_flying()) {
 		fprintf(stderr, "[*] Drone is flying, setting of frame of reference canceled.\n");
 		return -1;
@@ -220,7 +230,9 @@ int jakopter_flat_trim()
 	if (set_cmd(HEAD_FTRIM, NULL, 0) < 0)
 		return -1;
 
-	usleep(10*TIMEOUT_CMD);
+	nanosleep(&cmd_wait, NULL);
+
+	printf("[*] Flat trim\n");
 
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
@@ -240,7 +252,7 @@ int jakopter_calib()
 	if (set_cmd(HEAD_CALIB, args, 1) < 0)
 		return -1;
 
-	usleep(10*TIMEOUT_CMD);
+	nanosleep(&cmd_wait, NULL);
 
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
@@ -265,12 +277,14 @@ int jakopter_takeoff()
 	no_sq = navdata_no_sq();
 	//Attente depart
 	while(no_sq == 0) {
-		usleep(10*TIMEOUT_CMD);
+		nanosleep(&cmd_wait, NULL);
 		no_sq = navdata_no_sq();
+		printf("[*] Waiting 0\n");
 	}
 	while(!jakopter_is_flying() || jakopter_height() < 500) {
-		usleep(10*TIMEOUT_CMD);
+		nanosleep(&cmd_wait, NULL);
 		no_sq = navdata_no_sq();
+		printf("[*] Waiting height\n");
 	}
 
 	if (set_cmd(NULL, NULL, 0) < 0)
@@ -295,19 +309,44 @@ int jakopter_land()
 	if (set_cmd(HEAD_REF, args, 1) < 0)
 		return -1;
 
-	//set timeout
+	int init_no_sq = navdata_no_sq();
 	int no_sq;
-	no_sq = navdata_no_sq();
+	int i = 0;
 
-	while (no_sq == 0) {
-		usleep(10*TIMEOUT_CMD);
+	while (no_sq == 0 && i < NAVDATA_ATTEMPT) {
+		nanosleep(&cmd_wait, NULL);
 		no_sq = navdata_no_sq();
+		i++;
 	}
-	while (jakopter_is_flying() && jakopter_height() > 500) {
-		usleep(10*TIMEOUT_CMD);
+
+
+	init_no_sq = navdata_no_sq();
+	int emergency = 0;
+	i = 0;
+	while (jakopter_is_flying() && jakopter_height() > 500 && !emergency) {
+		nanosleep(&cmd_wait, NULL);
 		no_sq = navdata_no_sq();
+
+		//emergency if no new data received
+		if (no_sq == init_no_sq && i >= NAVDATA_ATTEMPT)
+			emergency = jakopter_emergency();
+
+		i++;
 	}
-	//TODO: emergency if no new data received
+
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
+	return 0;
+}
+int jakopter_emergency()
+{
+	char * args[] = {emergency_arg};
+	if (set_cmd(HEAD_REF, args, 1) < 0)
+		return -1;
+
+	nanosleep(&cmd_wait, NULL);
 
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
@@ -321,7 +360,7 @@ int jakopter_stay()
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
-	usleep(20*TIMEOUT_CMD);
+	nanosleep(&cmd_wait, NULL);
 
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
@@ -338,7 +377,7 @@ int jakopter_rotate_left()
 
 	//Condition navdata
 	printf("Yaw : %f", jakopter_y_axis());
-	usleep(20*TIMEOUT_CMD);
+	nanosleep(&cmd_wait, NULL);
 	printf("Yaw : %f", jakopter_y_axis());
 
 	if (set_cmd(NULL, NULL, 0) < 0)
@@ -353,6 +392,11 @@ int jakopter_rotate_right()
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
+	nanosleep(&cmd_wait, NULL);
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
 	return 0;
 }
 
@@ -363,6 +407,11 @@ int jakopter_forward()
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
+	nanosleep(&cmd_wait, NULL);
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
 	return 0;
 }
 
@@ -370,6 +419,11 @@ int jakopter_backward()
 {
 	char * args[] = {"1","0","104522055","0","0"};
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
+		return -1;
+
+	nanosleep(&cmd_wait, NULL);
+
+	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
 
 	return 0;

@@ -4,20 +4,26 @@ PROJECT(jakopter)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
+
 FIND_PACKAGE(Threads REQUIRED)
 FIND_PACKAGE(SDL2)
+FIND_PACKAGE(SDL2_ttf)
 FIND_PACKAGE(FFMPEG)
 FIND_PACKAGE(Lua)
+FIND_PACKAGE(Leap)
 
-# Debug : print all declared variables
+# Debug: print all declared variables
 #get_cmake_property(_variableNames VARIABLES)
 #foreach (_variableName ${_variableNames})
 #	message(STATUS "${_variableName}=${${_variableName}}")
 #endforeach()
 
+# SET (CMAKE_C_COMPILER "/usr/bin/clang")
+
 INCLUDE_DIRECTORIES("include/")
 
 SET(CMAKE_BUILD_TYPE DEBUG)
+ADD_DEFINITIONS("-Wall") # Not compatible with MSVC
 
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY build/${CMAKE_BUILD_TYPE})
 
@@ -26,14 +32,20 @@ SET(
 	src/drone.c
 	src/navdata.c
 	src/com_channel.c
+	src/com_master.c
 )
 
 SET(
 	VIDEO_SRC_FILES
 	src/video.c
+	src/video_queue.c
 	src/video_decode.c
-	src/video_process.c
 	src/video_display.c
+)
+
+SET(
+	LEAP_SRC_FILES
+	src/leap.cpp	
 )
 
 SET(
@@ -46,7 +58,7 @@ SET(
 	${CORE_SRC_FILES}
 )
 
-IF(AVCODEC_FOUND AND SDL2_FOUND)
+IF(AVCODEC_FOUND AND SDL2_FOUND AND SDL2TTF_FOUND)
 	MESSAGE(STATUS "Compiling with libavcodec and SDL2")
 	INCLUDE_DIRECTORIES(${AVCODEC_INCLUDE_DIRS} ${SDL2_INCLUDE_DIR})
 	SET(
@@ -54,8 +66,25 @@ IF(AVCODEC_FOUND AND SDL2_FOUND)
 		${SRC_FILES}
 		${VIDEO_SRC_FILES}
 	)
+
+	SET(WITH_VIDEO ON)
 ELSE()
 	MESSAGE(WARNING "Compiling WITHOUT libavcodec and SDL2")
+	SET(WITH_VIDEO OFF)
+ENDIF()
+
+IF(LEAP_FOUND)
+	MESSAGE(STATUS "Compiling with leap motion support")
+	INCLUDE_DIRECTORIES(${LEAP_INCLUDE_DIRS})
+	SET(
+		SRC_FILES
+		${SRC_FILES}
+		${LEAP_SRC_FILES}
+	)
+	SET(WITH_LEAP ON)
+ELSE()
+	MESSAGE(WARNING "Compiling WITHOUT leap motion support")
+	SET(WITH_VIDEO OFF)
 ENDIF()
 
 IF(LUA_FOUND)
@@ -70,9 +99,11 @@ ELSE()
 	MESSAGE(WARNING "Compiling WITHOUT Lua")
 ENDIF()
 
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/common.h.in ${CMAKE_SOURCE_DIR}/include/common.h)
+
 ADD_LIBRARY(
-	jakopter SHARED 
-	${SRC_FILES}	
+	jakopter SHARED
+	${SRC_FILES}
 )
 
 TARGET_LINK_LIBRARIES(jakopter ${CMAKE_THREAD_LIBS_INIT})
@@ -82,5 +113,9 @@ IF(LUA_FOUND)
 ENDIF()
 
 IF(AVCODEC_FOUND AND SDL2_FOUND)
-	TARGET_LINK_LIBRARIES(jakopter ${AVCODEC_LIBRARIES} ${SDL2_LIBRARY})
+	TARGET_LINK_LIBRARIES(jakopter ${AVCODEC_LIBRARIES} ${SDL2_LIBRARY} ${SDL2TTF_LIBRARY})
+ENDIF()
+
+IF(LEAP_FOUND)
+	TARGET_LINK_LIBRARIES(jakopter ${LEAP_LIBRARIES})
 ENDIF()

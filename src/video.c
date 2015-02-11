@@ -1,15 +1,32 @@
 #include "video.h"
+#include "video_queue.h"
 #include "video_decode.h"
+#include "video_display.h"
 
-//adresses pour la com vidéo
+//addresses for video communication
 struct sockaddr_in addr_drone_video, addr_client_video;
 int sock_video;
 
-//routine de réception des packets vidéo
-pthread_t video_thread;
+//video packet reception, and video processing routines
+pthread_t video_thread, processing_thread;
 //FD set used for the video socket
 fd_set vid_fd_set;
 struct timeval video_timeout = {VIDEO_TIMEOUT, 0};
+
+/*callback to which is sent every decoded frame.
+Parameters:
+	buffer containing the raw frame data, encoded in YUV420p.
+		A value of NULL for this parameter means the video stream has ended.
+	frame width
+	frame height
+	size of the buffer in bytes
+Return value:
+	the return value of the callback will be checked by the decoding routine.
+	LESS THAN 0 : the video thread will stop.
+	Anything else : no effect.
+*/
+static int (*frame_processing_callback)(uint8_t*, int, int, int);
+
 //Set to 1 when we want to tell the video thread to stop.
 static volatile int stopped = 1;
 static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
@@ -28,10 +45,11 @@ uint8_t tcp_buf[TCP_VIDEO_BUF_SIZE];
 //clean things that have been initiated/created by init_video and need manual cleaning.
 static void video_clean();
 
-//cette fonction est un thread, ne pas l'appeler !
+
 void* video_routine(void* args) {
 	ssize_t pack_size = 0;
 	int nb_img = 0;
+	jakopter_video_frame_t decoded_frame;
 	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
@@ -53,11 +71,14 @@ void* video_routine(void* args) {
 				perror("Error recv()");
 			else {
 				//we actually got some data, send it for decoding !
-				nb_img = video_decode_packet(tcp_buf, pack_size);
+				nb_img = video_decode_packet(tcp_buf, pack_size, &decoded_frame);
 				if(nb_img < 0) {
 					fprintf(stderr, "Error processing frame !\n");
 					video_set_stopped();
 				}
+				//if we have a complete decoded frame, push it onto the queue for decoding
+				else if(nb_img == 1)
+					video_queue_push_frame(&decoded_frame);
 			}
 		}
 		else {
@@ -72,6 +93,10 @@ void* video_routine(void* args) {
 		pthread_mutex_lock(&mutex_stopped);
 	}
 	pthread_mutex_unlock(&mutex_stopped);
+	/*push an empty frame on the queue so the processing
+	thread knows it has to stop*/
+	video_queue_push_frame(&VIDEO_QUEUE_END);
+	pthread_join(processing_thread, NULL);
 	//there's no reason to keep stuff that's needed for our video thread once it's ended, so clean it now.
 	video_clean();
 	pthread_mutex_lock(&mutex_terminated);
@@ -81,7 +106,30 @@ void* video_routine(void* args) {
 	pthread_exit(NULL);
 }
 
-
+void* processing_routine(void* args)
+{
+	jakopter_video_frame_t frame;
+	//wait for frames to be decoded, and then process them.
+	pthread_mutex_lock(&mutex_stopped);
+	while(!stopped) {
+		pthread_mutex_unlock(&mutex_stopped);
+		if(video_queue_pull_frame(&frame) < 0) {
+			fprintf(stderr, "[Video Processing] Error retrieving frame !\n");
+			video_set_stopped();
+		}
+		//a 0-sized frame means we're about to quit.
+		else if(frame.size != 0)
+			if(frame_processing_callback(frame.pixels, frame.w, frame.h, frame.size) < 0) {
+				fprintf(stderr, "[Video Processing] Error processing frame !\n");
+				video_set_stopped();
+			}
+		pthread_mutex_lock(&mutex_stopped);
+	}
+	pthread_mutex_unlock(&mutex_stopped);
+	//Send a NULL buffer to the callback to indicate that we're done.
+	frame_processing_callback(NULL, 0, 0, 0);
+	pthread_exit(NULL);
+}
 
 int jakopter_init_video() {
 	pthread_mutex_lock(&mutex_init);
@@ -105,7 +153,7 @@ int jakopter_init_video() {
 	addr_drone_video.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
 	addr_drone_video.sin_port        = htons(PORT_VIDEO);
 	
-	//initialiser le fdset
+	//initialize the fdset
 	FD_ZERO(&vid_fd_set);
 	
 	/* NOT NEEDED NOW
@@ -132,7 +180,7 @@ int jakopter_init_video() {
 		return -1;
 	}
 
-	//bind du socket client pour le forcer sur le port choisi
+	//bind the client socket to force it on the drone's port
 	if(connect(sock_video, (struct sockaddr*)&addr_drone_video, sizeof(addr_drone_video)) < 0) {
 		perror("Error connecting to video stream");
 		video_clean();
@@ -140,13 +188,17 @@ int jakopter_init_video() {
 		pthread_mutex_unlock(&mutex_init);
 		return -1;
 	}
-	//ajouter le socket au set pour select
+	//add the socket to the set, for use with select()
 	FD_SET(sock_video, &vid_fd_set);
 	
+	video_queue_init();
+	frame_processing_callback = video_display_frame;
 	stopped = 0;
 	terminated = 0;
-	//démarrer la réception des packets vidéo
-	if(pthread_create(&video_thread, &thread_attribs, video_routine, NULL) < 0) {
+	//start video packet reception, and video processing
+	if(	pthread_create(&video_thread, &thread_attribs, video_routine, NULL) < 0
+		|| pthread_create(&processing_thread, NULL, processing_routine, NULL) < 0)
+	{
 		perror("Error creating the main video thread");
 		stopped = 1;
 		terminated = 1;
@@ -166,6 +218,7 @@ void video_clean() {
 	if(close(sock_video) < 0)
 		perror("Error stopping video connection");
 	video_stop_decoder();
+	video_queue_free();
 }
 
 /*Ask the video thread to stop without joining with it.

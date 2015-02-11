@@ -1,7 +1,13 @@
 #include "drone.h"
 #include "navdata.h"
+#ifdef WITH_VIDEO
 #include "video.h"
+#endif
+#ifdef WITH_LEAP
+#include "leapdata.h"
+#endif
 #include "com_channel.h"
+#include "com_master.h"
 #include "lauxlib.h"
 #include "lua.h"
 
@@ -64,6 +70,7 @@ int jakopter_get_no_sq_lua(lua_State* L) {
 	return 1;
 }
 
+#ifdef WITH_VIDEO
 int jakopter_init_video_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_init_video());
 	return 1;
@@ -73,6 +80,19 @@ int jakopter_stop_video_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_stop_video());
 	return 1;
 }
+#endif
+
+#ifdef WITH_LEAP
+int jakopter_connect_leap_lua(lua_State* L) {
+	lua_pushnumber(L, jakopter_connect_leap());
+	return 1;
+}
+
+int jakopter_disconnect_leap_lua(lua_State* L) {
+	lua_pushnumber(L, jakopter_disconnect_leap());
+	return 1;
+}
+#endif
 
 int jakopter_is_flying_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_is_flying());
@@ -114,7 +134,13 @@ int jakopter_stay_lua(lua_State* L){
 	return 1;
 }
 
-int jakopter_init_com_channel_lua(lua_State* L){
+int jakopter_emergency_lua(lua_State* L)
+{
+	lua_pushnumber(L, jakopter_emergency());
+	return 1;
+}
+
+int jakopter_com_create_channel_lua(lua_State* L){
 	lua_Integer s = luaL_checkinteger(L, 1);
 	luaL_argcheck(L, s > 0, 1, "Channel size must be > 0");
 	//store the cc pointer as user data, so that we can assign our custom metatable to it.
@@ -122,19 +148,60 @@ int jakopter_init_com_channel_lua(lua_State* L){
 	luaL_getmetatable(L, "jakopter.com_channel");
 	lua_setmetatable(L, -2);
 	//actually create the channel. Raise an error if it fails.
-	*cc = jakopter_init_com_channel((size_t)s);
+	*cc = jakopter_com_create_channel((size_t)s);
 	if(*cc == NULL)
 		return luaL_error(L, "Failed to create a com_channel of size %d", s);
-	
-	return 1;	
+
+	return 1;
 }
 
-int jakopter_destroy_com_channel_lua(lua_State* L){
+int jakopter_com_destroy_channel_lua(lua_State* L){
 	jakopter_com_channel_t** cc = check_com_channel(L);
-	jakopter_destroy_com_channel(cc);
+	jakopter_com_destroy_channel(cc);
 	if(*cc != NULL)
 		return luaL_error(L, "Failed to destroy the com_channel");
-		
+
+	return 0;
+}
+
+int jakopter_com_get_channel_lua(lua_State* L) {
+	lua_Integer id = luaL_checkinteger(L, 1);
+
+	jakopter_com_channel_t** cc = lua_newuserdata(L, sizeof(jakopter_com_channel_t*));
+	luaL_getmetatable(L, "jakopter.com_channel");
+	lua_setmetatable(L, -2);
+
+	*cc = jakopter_com_get_channel(id);
+	return 1;
+}
+int jakopter_com_read_int_lua(lua_State* L) {
+	jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+
+	lua_pushnumber(L, jakopter_com_read_int(*cc, offset));
+	return 1;
+}
+int jakopter_com_read_float_lua(lua_State* L) {
+	jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+
+	lua_pushnumber(L, jakopter_com_read_float(*cc, offset));
+	return 1;
+}
+int jakopter_com_write_int_lua(lua_State* L) {
+	jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+	lua_Integer value = luaL_checkinteger(L, 3);
+
+	jakopter_com_write_int(*cc, offset, value);
+	return 0;
+}
+int jakopter_com_write_float_lua(lua_State* L) {
+	jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+	lua_Integer value = luaL_checknumber(L, 3);
+
+	jakopter_com_write_float(*cc, offset, value);
 	return 0;
 }
 
@@ -150,8 +217,14 @@ static const luaL_Reg jakopterlib[] = {
 	{"backward", jakopter_backward},
 	{"disconnect", jakopter_disconnect_lua},
 	{"get_no_sq", jakopter_get_no_sq_lua},
+#ifdef WITH_VIDEO
 	{"connect_video", jakopter_init_video_lua},
 	{"stop_video", jakopter_stop_video_lua},
+#endif
+#ifdef WITH_LEAP	
+	{"connect_leap", jakopter_connect_leap_lua},
+	{"disconnect_leap", jakopter_disconnect_leap_lua},
+#endif
 	{"is_flying", jakopter_is_flying_lua},
 	{"height", jakopter_height_lua},
 	{"reinit", jakopter_reinit_lua},
@@ -159,8 +232,14 @@ static const luaL_Reg jakopterlib[] = {
 	{"calib", jakopter_calib_lua},
 	{"move", jakopter_move_lua},
 	{"stay", jakopter_stay_lua},
-	{"create_cc", jakopter_init_com_channel_lua},
-	{"destroy_cc", jakopter_destroy_com_channel_lua},
+	{"emergency", jakopter_emergency_lua},
+	{"create_cc", jakopter_com_create_channel_lua},
+	{"destroy_cc", jakopter_com_destroy_channel_lua},
+	{"get_cc", jakopter_com_get_channel_lua},
+	{"read_int", jakopter_com_read_int_lua},
+	{"read_float", jakopter_com_read_float_lua},
+	{"write_int", jakopter_com_write_int_lua},
+	{"write_float", jakopter_com_write_float_lua},
 	{NULL, NULL}
 };
 

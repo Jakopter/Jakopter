@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 
-/*
+#define FONT_PATH "../../resources/FreeSans.ttf"
+
+/**
 * "Got frame" callback.
 * Fills the texture with the given frame, and displays it on the window.
 */
