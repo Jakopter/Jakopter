@@ -1,6 +1,11 @@
 #include "drone.h"
 #include "navdata.h"
+#ifdef WITH_VIDEO
 #include "video.h"
+#endif
+#ifdef WITH_LEAP
+#include "leapdata.h"
+#endif
 #include "com_channel.h"
 #include "com_master.h"
 #include "lauxlib.h"
@@ -65,6 +70,7 @@ int jakopter_get_no_sq_lua(lua_State* L) {
 	return 1;
 }
 
+#ifdef WITH_VIDEO
 int jakopter_init_video_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_init_video());
 	return 1;
@@ -74,6 +80,19 @@ int jakopter_stop_video_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_stop_video());
 	return 1;
 }
+#endif
+
+#ifdef WITH_LEAP
+int jakopter_connect_leap_lua(lua_State* L) {
+	lua_pushnumber(L, jakopter_connect_leap());
+	return 1;
+}
+
+int jakopter_disconnect_leap_lua(lua_State* L) {
+	lua_pushnumber(L, jakopter_disconnect_leap());
+	return 1;
+}
+#endif
 
 int jakopter_is_flying_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_is_flying());
@@ -97,6 +116,16 @@ int jakopter_ftrim_lua(lua_State* L){
 
 int jakopter_calib_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_calib());
+	return 1;
+}
+
+int jakopter_move_lua(lua_State* L){
+	float l = luaL_checknumber(L, 1);
+	float f = luaL_checknumber(L, 2);
+	float v = luaL_checknumber(L, 3);
+	float a = luaL_checknumber(L, 4);
+
+	lua_pushnumber(L, jakopter_move(l,f,v,a));
 	return 1;
 }
 
@@ -125,6 +154,7 @@ int jakopter_com_create_channel_lua(lua_State* L){
 
 	return 1;
 }
+
 int jakopter_com_destroy_channel_lua(lua_State* L){
 	jakopter_com_channel_t** cc = check_com_channel(L);
 	jakopter_com_destroy_channel(cc);
@@ -133,6 +163,7 @@ int jakopter_com_destroy_channel_lua(lua_State* L){
 
 	return 0;
 }
+
 int jakopter_com_get_channel_lua(lua_State* L) {
 	lua_Integer id = luaL_checkinteger(L, 1);
 
@@ -194,13 +225,20 @@ static const luaL_Reg jakopterlib[] = {
 	{"backward", jakopter_backward},
 	{"disconnect", jakopter_disconnect_lua},
 	{"get_no_sq", jakopter_get_no_sq_lua},
+#ifdef WITH_VIDEO
 	{"connect_video", jakopter_init_video_lua},
 	{"stop_video", jakopter_stop_video_lua},
+#endif
+#ifdef WITH_LEAP	
+	{"connect_leap", jakopter_connect_leap_lua},
+	{"disconnect_leap", jakopter_disconnect_leap_lua},
+#endif
 	{"is_flying", jakopter_is_flying_lua},
 	{"height", jakopter_height_lua},
 	{"reinit", jakopter_reinit_lua},
 	{"ftrim", jakopter_ftrim_lua},
 	{"calib", jakopter_calib_lua},
+	{"move", jakopter_move_lua},
 	{"stay", jakopter_stay_lua},
 	{"emergency", jakopter_emergency_lua},
 	{"create_cc", jakopter_com_create_channel_lua},

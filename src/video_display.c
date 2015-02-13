@@ -117,7 +117,8 @@ static int video_display_init(int width, int height) {
 	com_in = jakopter_com_add_channel(CHANNEL_DISPLAY, DISPLAY_COM_IN_SIZE);
 	
 	//set the overlay elements to null so that they don't get drawn
-	for(int i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
+	int i=0;
+	for(i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
 		graphs[i].tex = NULL;
 
 	//initialize SDL_ttf for font rendering
@@ -171,10 +172,11 @@ static int video_display_set_size(int w, int h) {
 * Clean the display context : close the window and clean SDL structures.
 */
 static void video_display_clean() {
+	int i=0;
 	//no need to clean stuff if it hasn't been initialized.
 	if(initialized) {
 		SDL_DestroyTexture(frameTex);
-		for(int i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
+		for(i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
 			if(graphs[i].tex != NULL)
 				SDL_DestroyTexture(graphs[i].tex);
 		SDL_DestroyRenderer(renderer);
@@ -239,7 +241,8 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 	SDL_RenderCopy(renderer, frameTex, NULL, NULL);
 	//SDL_RenderFillRect(renderer, &rectangle);
 	//draw all overlay elements, when they exist
-	for(int i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
+	int i=0;
+	for(i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
 		if(graphs[i].tex != NULL)
 			SDL_RenderCopy(renderer, graphs[i].tex, NULL, &graphs[i].pos);
 	draw_attitude_indic();
@@ -302,7 +305,7 @@ void draw_attitude_indic()
 	* simple attitude indicator with the horizon represented by a straight line
 	* and the drone by a line with a center point.
 	*/
-	
+	int i=0;
 	//nose inclination = y offset from the horizon
 	int nose_incl = (int)(horiz_pitchScale * pitch);
 	//"center" of the drone, unaffected by roll
@@ -317,7 +320,7 @@ void draw_attitude_indic()
 	};
 	int nb_points = sizeof(drone_points)/sizeof(SDL_Point);
 	//apply roll to the points
-	for(int i=0; i<nb_points; i++)
+	for(i=0; i<nb_points; i++)
 		rotate_point(&drone_points[i], &center, roll);
 	//1. draw the horizon
 	SDL_RenderDrawLine(renderer, horiz_posx, horiz_posy, horiz_posx+horiz_size, horiz_posy);
