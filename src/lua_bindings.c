@@ -172,6 +172,9 @@ int jakopter_com_get_channel_lua(lua_State* L) {
 	lua_setmetatable(L, -2);
 
 	*cc = jakopter_com_get_channel(id);
+	if(*cc == NULL)
+		return luaL_error(L, "Failed to retrieve com_channel of id %d", id);
+	
 	return 1;
 }
 int jakopter_com_read_int_lua(lua_State* L) {
@@ -202,6 +205,11 @@ int jakopter_com_write_float_lua(lua_State* L) {
 	lua_Integer value = luaL_checknumber(L, 3);
 
 	jakopter_com_write_float(*cc, offset, value);
+	return 0;
+}
+int usleep_lua(lua_State* L) {
+	lua_Integer duration = luaL_checkinteger(L, 1);
+	usleep(duration);
 	return 0;
 }
 
@@ -240,6 +248,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"read_float", jakopter_com_read_float_lua},
 	{"write_int", jakopter_com_write_int_lua},
 	{"write_float", jakopter_com_write_float_lua},
+	{"usleep", usleep_lua},
 	{NULL, NULL}
 };
 

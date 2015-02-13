@@ -72,7 +72,7 @@ int jakopter_connect_leap()
 int jakopter_disconnect_leap()
 {
 	if(leap_channel)
-		jakopter_com_destroy_channel(&leap_channel);
+		jakopter_com_remove_channel(CHANNEL_LEAPMOTION);
 	controller.removeListener(listener);
 	
 	return 0;
