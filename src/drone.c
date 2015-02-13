@@ -197,7 +197,7 @@ int jakopter_connect()
 	cmd_current = NULL;
 	pthread_mutex_unlock(&mutex_cmd);
 
-	//init com_master
+	//com_master doesn't need to be initialized anymore.
 /*	if (!jakopter_com_master_is_init())
 		jakopter_com_init_master(NB_CHANNELS);
 */

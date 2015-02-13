@@ -111,7 +111,7 @@ static int video_display_init(int width, int height) {
 		return -1;
 	}
 	
-/*	//create the communication channels
+/*	//create the communication channel
 	if(!jakopter_com_master_is_init())
 		jakopter_com_init_master(NB_CHANNELS);*/
 	com_in = jakopter_com_add_channel(CHANNEL_DISPLAY, DISPLAY_COM_IN_SIZE);

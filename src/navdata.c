@@ -157,6 +157,7 @@ int navdata_connect()
 		return -1;
 	}
 
+	//com_master doesn't need to be initialized now.
 /*	if (!jakopter_com_master_is_init()) {
 		perror("[~][navdata] Com channel master not init");
 		return -1;
@@ -237,8 +238,7 @@ int navdata_disconnect()
 		pthread_mutex_unlock(&mutex_stopped);
 		int ret = pthread_join(navdata_thread, NULL);
 
-		if (jakopter_com_master_is_init())
-			jakopter_com_remove_channel(1);
+		jakopter_com_remove_channel(1);
 
 		close(sock_navdata);
 
