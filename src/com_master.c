@@ -96,6 +96,8 @@ pthread_mutex_lock(&master_mutex);
 		return -1;
 	}
 	jakopter_com_destroy_channel(&chan);
+	//set the pointer in the master table to NULL so that we know it's free
+	master[id] = NULL;
 pthread_mutex_unlock(&master_mutex);
 
 	return 0;

@@ -59,6 +59,8 @@ void jakopter_com_destroy_channel(jakopter_com_channel_t** cc)
 		free(*cc);
 		*cc = NULL;
 	}
+	else
+		fprintf(stderr, "[com_channel] Warning : destroy_channel got a NULL channel\n");
 }
 
 
