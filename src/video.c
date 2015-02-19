@@ -2,7 +2,7 @@
 #include "video_queue.h"
 #include "video_decode.h"
 #include "video_display.h"
-#include "com_master.h"
+
 
 //addresses for video communication
 struct sockaddr_in addr_drone_video, addr_client_video;
@@ -27,6 +27,10 @@ Return value:
 	Anything else : no effect.
 */
 static int (*frame_processing_callback)(uint8_t*, int, int, int) = video_display_frame;
+//initialize and clean the processing module used by the callback, if needed.
+//can be NULL.
+static int (*frame_processing_init)(void) = video_display_init;
+static void (*frame_processing_clean)(void) = video_display_clean;
 
 //Set to 1 when we want to tell the video thread to stop.
 static volatile int stopped = 1;
@@ -72,7 +76,7 @@ void* video_routine(void* args)
 				//we actually got some data, send it for decoding !
 				nb_img = video_decode_packet(tcp_buf, pack_size, &decoded_frame);
 				if(nb_img < 0) {
-					fprintf(stderr, "Error processing frame !\n");
+					fprintf(stderr, "Error decoding video !\n");
 					video_set_stopped();
 				}
 				//if we have a complete decoded frame, push it onto the queue for decoding
@@ -109,7 +113,10 @@ void* processing_routine(void* args)
 {
 	//decoded video frame that will be pulled from the queue
 	jakopter_video_frame_t frame;
-	
+	if(frame_processing_init() < 0) {
+		fprintf(stderr, "[Video Processing] Initialization error.\n");
+		stopped = 1;
+	}
 	//wait for frames to be decoded, and then process them.
 	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped) {
@@ -127,8 +134,8 @@ void* processing_routine(void* args)
 		pthread_mutex_lock(&mutex_stopped);
 	}
 	pthread_mutex_unlock(&mutex_stopped);
-	//Send a NULL buffer to the callback to indicate that we're done.
-	frame_processing_callback(NULL, 0, 0, 0);
+	//free the resources of the processing module
+	frame_processing_clean();
 	pthread_exit(NULL);
 }
 
@@ -176,7 +183,7 @@ int jakopter_init_video()
 	}
 	//add the socket to the set, for use with select()
 	FD_SET(sock_video, &vid_fd_set);
-
+	
 	//initialize the queue structure that handles decoding->processing data passing	
 	video_queue_init();
 	//start the threads responsible for video processing and reception

@@ -43,7 +43,11 @@ static SDL_Texture* frameTex = NULL;
 * Current size of the window and the frame texture.
 * Mainly used to check whether it's changed.
 */
-static int current_width, current_height;
+static int current_width=0, current_height=0;
+/*
+* Default size to use when the module is initialized without specifying it.
+*/
+static int default_w=640, default_h=480;
 /*
 * Current pitch, roll and speed of the plane.
 * These are kept updated via the input com channel.
@@ -91,7 +95,7 @@ static void rotate_point(SDL_Point* point, const SDL_Point* center, float angle)
 * @param h width and height with which to create the window.
 * @return 0 on success, -1 on error.
 */
-static int video_display_init(int width, int height) {
+static int video_display_init_size(int width, int height) {
 
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "Display : error initializing SDL : %s\n", SDL_GetError());
@@ -111,10 +115,11 @@ static int video_display_init(int width, int height) {
 		return -1;
 	}
 	
-/*	//create the communication channel
-	if(!jakopter_com_master_is_init())
-		jakopter_com_init_master(NB_CHANNELS);*/
 	com_in = jakopter_com_add_channel(CHANNEL_DISPLAY, DISPLAY_COM_IN_SIZE);
+	if(com_in == NULL) {
+		fprintf(stderr, "Display : couldn't create com channel.\n");
+		return -1;
+	}
 	
 	//set the overlay elements to null so that they don't get drawn
 	int i=0;
@@ -168,10 +173,26 @@ static int video_display_set_size(int w, int h) {
 	return 0;
 }
 
+
+int video_display_init()
+{
+	if(initialized) {
+		fprintf(stderr, "Display : error : double initialization attempt.\n");
+		return -1;
+	}
+	if(video_display_init_size(default_w, default_h) < 0)
+		return -1;
+	if(video_display_set_size(default_w, default_h) < 0)
+		return -1;
+		
+	initialized = 1;
+	return 0;
+}
+
 /**
 * Clean the display context : close the window and clean SDL structures.
 */
-static void video_display_clean() {
+void video_display_clean() {
 	int i=0;
 	//no need to clean stuff if it hasn't been initialized.
 	if(initialized) {
@@ -188,7 +209,7 @@ static void video_display_clean() {
 	}
 }
 
-void video_clean_text()
+static void video_clean_text()
 {
 	TTF_CloseFont(font);
 	TTF_Quit();
@@ -208,7 +229,7 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 
 	//first time called ? Initialize things.
 	if(!initialized) {
-		if(video_display_init(width, height) < 0) {
+		if(video_display_init_size(width, height) < 0) {
 			fprintf(stderr, "Display : Failed initialization.\n");
 			return -1;
 		}
