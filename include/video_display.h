@@ -14,7 +14,7 @@
 int video_display_frame(uint8_t* frame, int width, int height, int size);
 
 /**
-* Initialize the display module with a default window size.
+* Create the com_channel needed to communicate with the display module.
 */
 int video_display_init();
 

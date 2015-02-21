@@ -115,12 +115,6 @@ static int video_display_init_size(int width, int height) {
 		return -1;
 	}
 	
-	com_in = jakopter_com_add_channel(CHANNEL_DISPLAY, DISPLAY_COM_IN_SIZE);
-	if(com_in == NULL) {
-		fprintf(stderr, "Display : couldn't create com channel.\n");
-		return -1;
-	}
-	
 	//set the overlay elements to null so that they don't get drawn
 	int i=0;
 	for(i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
@@ -176,16 +170,12 @@ static int video_display_set_size(int w, int h) {
 
 int video_display_init()
 {
-	if(initialized) {
-		fprintf(stderr, "Display : error : double initialization attempt.\n");
+	com_in = jakopter_com_add_channel(CHANNEL_DISPLAY, DISPLAY_COM_IN_SIZE);
+	if(com_in == NULL) {
+		fprintf(stderr, "Display : couldn't create com channel.\n");
 		return -1;
 	}
-	if(video_display_init_size(default_w, default_h) < 0)
-		return -1;
-	if(video_display_set_size(default_w, default_h) < 0)
-		return -1;
-		
-	initialized = 1;
+	
 	return 0;
 }
 

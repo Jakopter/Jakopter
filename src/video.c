@@ -113,10 +113,6 @@ void* processing_routine(void* args)
 {
 	//decoded video frame that will be pulled from the queue
 	jakopter_video_frame_t frame;
-	if(frame_processing_init() < 0) {
-		fprintf(stderr, "[Video Processing] Initialization error.\n");
-		stopped = 1;
-	}
 	//wait for frames to be decoded, and then process them.
 	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped) {
@@ -207,6 +203,7 @@ int jakopter_init_video()
 	}
 	pthread_attr_destroy(&thread_attribs);
 	//Initialization went OK -> set the guard variables so that the threads can start.
+	frame_processing_init();
 	stopped = 0;
 	terminated = 0;
 	pthread_mutex_unlock(&mutex_stopped);
