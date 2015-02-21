@@ -14,6 +14,16 @@
 int video_display_frame(uint8_t* frame, int width, int height, int size);
 
 /**
+* Create the com_channel needed to communicate with the display module.
+*/
+int video_display_init();
+
+/**
+* Free the memory associated with the module
+*/
+void video_display_clean();
+
+/**
 * Navdata values that are to be received by the display module
 */
 enum video_nav_infos {
