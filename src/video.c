@@ -40,19 +40,23 @@ static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 static volatile int terminated = 1;
 static pthread_mutex_t mutex_terminated = PTHREAD_MUTEX_INITIALIZER;
 
-//TPC_VIDEO_BUF_SIZE = base size (defined in video.h) +
-//extra size needed for decoding (see video_decode.h). (is useless now that we use a frame parser)
-static uint8_t tcp_buf[TCP_VIDEO_BUF_SIZE];
 
 //clean things that have been initiated/created by init_video and need manual cleaning.
 static void video_clean();
+int video_join_thread();
 
 
 void* video_routine(void* args)
 {
+	//TCP segment of encoded video received from the drone
+	static uint8_t tcp_buf[TCP_VIDEO_BUF_SIZE];
+	//size of this segment in bytes
 	ssize_t pack_size = 0;
-	int nb_img = 0;
+	//set to 1 by the decoding function if a decoded video frame is available
+	int got_frame = 0;
+	//structure that will hold our latest decoded video frame
 	jakopter_video_frame_t decoded_frame;
+	
 	pthread_mutex_lock(&mutex_stopped);
 	while(!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
@@ -62,7 +66,6 @@ void* video_routine(void* args)
 			video_set_stopped();
 		}
 		else if(FD_ISSET(sock_video, &vid_fd_set)) {
-
 			/*receive the video data from the drone. Only BASE_SIZE, since
 			TCP_SIZE may be larger on purpose.*/
 			pack_size = recv(sock_video, tcp_buf, BASE_VIDEO_BUF_SIZE, 0);
@@ -74,13 +77,13 @@ void* video_routine(void* args)
 				perror("Error recv()");
 			else {
 				//we actually got some data, send it for decoding !
-				nb_img = video_decode_packet(tcp_buf, pack_size, &decoded_frame);
-				if(nb_img < 0) {
+				got_frame = video_decode_packet(tcp_buf, pack_size, &decoded_frame);
+				if(got_frame < 0) {
 					fprintf(stderr, "Error decoding video !\n");
 					video_set_stopped();
 				}
 				//if we have a complete decoded frame, push it onto the queue for decoding
-				else if(nb_img == 1)
+				else if(got_frame == 1)
 					video_queue_push_frame(&decoded_frame);
 			}
 		}
@@ -102,10 +105,6 @@ void* video_routine(void* args)
 	pthread_join(processing_thread, NULL);
 	//there's no reason to keep stuff that's needed for our video thread once it's ended, so clean it now.
 	video_clean();
-	pthread_mutex_lock(&mutex_terminated);
-	terminated = 1;
-	printf("Video thread terminated.\n");
-	pthread_mutex_unlock(&mutex_terminated);
 	pthread_exit(NULL);
 }
 
@@ -137,17 +136,16 @@ void* processing_routine(void* args)
 
 int jakopter_init_video()
 {
-	pthread_mutex_lock(&mutex_stopped);
 	//do not try to initialize the thread if it's already running !
-	pthread_mutex_lock(&mutex_terminated);
-	if(!terminated) {
-		pthread_mutex_unlock(&mutex_terminated);
+	pthread_mutex_lock(&mutex_stopped);
+	if(!stopped) {
 		fprintf(stderr, "Video thread already running.\n");
 		pthread_mutex_unlock(&mutex_stopped);
 		return -1;
 	}
-	pthread_mutex_unlock(&mutex_terminated);
-
+	//make sure the thread is terminated
+	video_join_thread();
+	
 	addr_drone_video.sin_family      = AF_INET;
 	addr_drone_video.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
 	addr_drone_video.sin_port        = htons(PORT_VIDEO);
@@ -191,17 +189,17 @@ int jakopter_init_video()
 	}
 	//make the reception thread detached so that it can close itself without us having
 	//to join with it in order to free its resources.
-	pthread_attr_t thread_attribs;
+	/*pthread_attr_t thread_attribs;
 	pthread_attr_init(&thread_attribs);
-	pthread_attr_setdetachstate(&thread_attribs, PTHREAD_CREATE_DETACHED);
-	if(pthread_create(&video_thread, &thread_attribs, video_routine, NULL) < 0) {
+	pthread_attr_setdetachstate(&thread_attribs, PTHREAD_CREATE_DETACHED);*/
+	if(pthread_create(&video_thread, NULL, video_routine, NULL) < 0) {
 		perror("Error creating the main video thread");
 		video_clean();
-		pthread_attr_destroy(&thread_attribs);
+		//pthread_attr_destroy(&thread_attribs);
 		pthread_mutex_unlock(&mutex_stopped);
 		return -1;
 	}
-	pthread_attr_destroy(&thread_attribs);
+	//pthread_attr_destroy(&thread_attribs);
 	//Initialization went OK -> set the guard variables so that the threads can start.
 	frame_processing_init();
 	stopped = 0;
@@ -236,16 +234,42 @@ int video_set_stopped()
 }
 
 /*
-End the video thread and clean the required structures
+* Ask the thread to stop with set_stopped, then
+* call join_thread, print a message if the thread has already ended.
+* \return -1 on error, 0 otherwise.
 */
 int jakopter_stop_video()
 {
-
-	if(video_set_stopped()) {
+	video_set_stopped();
+	int exit_status = video_join_thread();
+	if(exit_status == 1)
 		fprintf(stderr, "Video thread is already shut down.\n");
+	else if(exit_status < 0)
 		return -1;
+	
+	return 0;
+}
+
+/*
+* Join with the video thread (don't ask it to stop though).
+* If it's already terminated, do nothing.
+* \return the thread's termination status when entering the function.
+*		(0 if it was running, 1 if it wasn't), -1 if joining fails.
+*/
+int video_join_thread()
+{
+	pthread_mutex_lock(&mutex_terminated);
+	//remember the current state of the thread to return it at the end.
+	int prev_state = terminated;
+	if(!terminated) {
+		if(pthread_join(video_thread, NULL) < 0) {
+			perror("Error joining with the video thread");
+			pthread_mutex_unlock(&mutex_terminated);
+			return -1;
+		}
+		terminated = 1;
 	}
-	else
-		return 0;
+	pthread_mutex_unlock(&mutex_terminated);
+	return prev_state;
 }
 
