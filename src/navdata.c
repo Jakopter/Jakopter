@@ -238,7 +238,7 @@ int navdata_disconnect()
 		pthread_mutex_unlock(&mutex_stopped);
 		int ret = pthread_join(navdata_thread, NULL);
 
-		jakopter_com_remove_channel(1);
+		jakopter_com_remove_channel(CHANNEL_NAVDATA);
 
 		close(sock_navdata);
 
