@@ -212,6 +212,17 @@ int usleep_lua(lua_State* L) {
 	usleep(duration);
 	return 0;
 }
+/**
+* Cleanup function called when the library is unloaded.
+* Makes sure all threads started by the library are terminated.
+*/
+int jakopter_cleanup_lua(lua_State* L) {
+#ifdef WITH_VIDEO
+	jakopter_stop_video();
+#endif
+	jakopter_disconnect();
+	return 0;
+}
 
 //enregistrer les fonctions pour lua
 //ou luaL_reg
@@ -252,10 +263,38 @@ static const luaL_Reg jakopterlib[] = {
 	{NULL, NULL}
 };
 
+/**
+* Create a metatable holding the cleanup function
+* as the garbage collection event.
+* Store a userdata with this metatable in the registry,
+* so that it gets garbage collected when Lua exits,
+* allowing the cleanup function to be executed.
+*/
+int create_cleanup_udata(lua_State* L) {
+	//metatable with cleanup method for the lib
+	luaL_newmetatable(L, "jakopter.cleanup");
+	//set our cleanup method as the __gc callback
+	lua_pushstring(L, "__gc");
+	lua_pushcfunction(L, jakopter_cleanup_lua);
+	lua_settable(L, -3);
+	/*use a userdata to hold our cleanup function.
+	We don't store anything in it, so its size is meaningless.*/
+	lua_pushstring(L, "jakopter.cleanup_dummy");
+	lua_newuserdata(L, 4);
+	luaL_setmetatable(L, "jakopter.cleanup");
+	//store this dummy data in Lua's registry.
+	lua_settable(L, LUA_REGISTRYINDEX);
+	return 0;
+}
+
 int luaopen_libjakopter(lua_State* L) {
 	//the metatable is used for type-checking our custom structs in lua.
 	//here, define a table for com channels pointers.
 	luaL_newmetatable(L, "jakopter.com_channel");
+	/*create the cleanup registry entry so that cleanup will be executed
+	when the lib is unloaded.*/
+	create_cleanup_udata(L);
+	
 	//lua 5.1 et 5.2 incompatibles...
 #if LUA_VERSION_NUM <= 501
 	luaL_register(L, "jakopter", jakopterlib);
