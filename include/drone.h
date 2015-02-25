@@ -36,6 +36,7 @@ int jakopter_rotate_left();
 int jakopter_rotate_right();
 int jakopter_forward();
 int jakopter_backward();
+int jakopter_move(float ltor, float ftob, float v_speed, float a_speed);
 
 //DEBUG
 int jakopter_get_no_sq();

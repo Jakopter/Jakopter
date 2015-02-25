@@ -119,6 +119,16 @@ int jakopter_calib_lua(lua_State* L){
 	return 1;
 }
 
+int jakopter_move_lua(lua_State* L){
+	float l = luaL_checknumber(L, 1);
+	float f = luaL_checknumber(L, 2);
+	float v = luaL_checknumber(L, 3);
+	float a = luaL_checknumber(L, 4);
+
+	lua_pushnumber(L, jakopter_move(l,f,v,a));
+	return 1;
+}
+
 int jakopter_stay_lua(lua_State* L){
 	lua_pushnumber(L, jakopter_stay());
 	return 1;
@@ -144,6 +154,7 @@ int jakopter_com_create_channel_lua(lua_State* L){
 
 	return 1;
 }
+
 int jakopter_com_destroy_channel_lua(lua_State* L){
 	jakopter_com_channel_t** cc = check_com_channel(L);
 	jakopter_com_destroy_channel(cc);
@@ -152,6 +163,7 @@ int jakopter_com_destroy_channel_lua(lua_State* L){
 
 	return 0;
 }
+
 int jakopter_com_get_channel_lua(lua_State* L) {
 	lua_Integer id = luaL_checkinteger(L, 1);
 
@@ -160,6 +172,9 @@ int jakopter_com_get_channel_lua(lua_State* L) {
 	lua_setmetatable(L, -2);
 
 	*cc = jakopter_com_get_channel(id);
+	if(*cc == NULL)
+		return luaL_error(L, "Failed to retrieve com_channel of id %d", id);
+	
 	return 1;
 }
 int jakopter_com_read_int_lua(lua_State* L) {
@@ -192,6 +207,22 @@ int jakopter_com_write_float_lua(lua_State* L) {
 	jakopter_com_write_float(*cc, offset, value);
 	return 0;
 }
+int usleep_lua(lua_State* L) {
+	lua_Integer duration = luaL_checkinteger(L, 1);
+	usleep(duration);
+	return 0;
+}
+/**
+* Cleanup function called when the library is unloaded.
+* Makes sure all threads started by the library are terminated.
+*/
+int jakopter_cleanup_lua(lua_State* L) {
+#ifdef WITH_VIDEO
+	jakopter_stop_video();
+#endif
+	jakopter_disconnect();
+	return 0;
+}
 
 //enregistrer les fonctions pour lua
 //ou luaL_reg
@@ -218,6 +249,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"reinit", jakopter_reinit_lua},
 	{"ftrim", jakopter_ftrim_lua},
 	{"calib", jakopter_calib_lua},
+	{"move", jakopter_move_lua},
 	{"stay", jakopter_stay_lua},
 	{"emergency", jakopter_emergency_lua},
 	{"create_cc", jakopter_com_create_channel_lua},
@@ -227,13 +259,42 @@ static const luaL_Reg jakopterlib[] = {
 	{"read_float", jakopter_com_read_float_lua},
 	{"write_int", jakopter_com_write_int_lua},
 	{"write_float", jakopter_com_write_float_lua},
+	{"usleep", usleep_lua},
 	{NULL, NULL}
 };
+
+/**
+* Create a metatable holding the cleanup function
+* as the garbage collection event.
+* Store a userdata with this metatable in the registry,
+* so that it gets garbage collected when Lua exits,
+* allowing the cleanup function to be executed.
+*/
+int create_cleanup_udata(lua_State* L) {
+	//metatable with cleanup method for the lib
+	luaL_newmetatable(L, "jakopter.cleanup");
+	//set our cleanup method as the __gc callback
+	lua_pushstring(L, "__gc");
+	lua_pushcfunction(L, jakopter_cleanup_lua);
+	lua_settable(L, -3);
+	/*use a userdata to hold our cleanup function.
+	We don't store anything in it, so its size is meaningless.*/
+	lua_pushstring(L, "jakopter.cleanup_dummy");
+	lua_newuserdata(L, 4);
+	luaL_setmetatable(L, "jakopter.cleanup");
+	//store this dummy data in Lua's registry.
+	lua_settable(L, LUA_REGISTRYINDEX);
+	return 0;
+}
 
 int luaopen_libjakopter(lua_State* L) {
 	//the metatable is used for type-checking our custom structs in lua.
 	//here, define a table for com channels pointers.
 	luaL_newmetatable(L, "jakopter.com_channel");
+	/*create the cleanup registry entry so that cleanup will be executed
+	when the lib is unloaded.*/
+	create_cleanup_udata(L);
+	
 	//lua 5.1 et 5.2 incompatibles...
 #if LUA_VERSION_NUM <= 501
 	luaL_register(L, "jakopter", jakopterlib);

@@ -3,8 +3,30 @@
 
 #include "navdata.h"
 #include "video_display.h"
+#include "com_master.h"
+
+//maximum size in bytes of a text to be displayed
+#define TEXT_BUF_SIZE 100
+#define PI 3.14159265
 
 
+/**
+* Structure that defines a graphical element that can be drawn on the screen.
+*/
+typedef struct graphics {
+	SDL_Texture* tex;
+	SDL_Rect pos;
+} graphics_t;
+/*
+* List of all overlayed graphical elements. For now, navdata text only.
+*/
+graphics_t graphs[VIDEO_NB_NAV_INFOS];
+/*
+* channels for data input and output.
+* Input expects navdata in the following order :
+* battery%, altitude, angles (3), speed (3)
+*/
+static jakopter_com_channel_t *com_in;
 /*
 * The SDL window where the video is displayed.
 */
@@ -21,11 +43,17 @@ static SDL_Texture* frameTex = NULL;
 * Current size of the window and the frame texture.
 * Mainly used to check whether it's changed.
 */
-static int current_width, current_height;
+static int current_width=0, current_height=0;
 /*
-* Rectangle drawn in the middle of the screen
+* Default size to use when the module is initialized without specifying it.
 */
-static SDL_Rect rectangle;
+static int default_w=640, default_h=480;
+/*
+* Current pitch, roll and speed of the plane.
+* These are kept updated via the input com channel.
+*/
+static float pitch=0, roll=0;
+static float speed;
 /*
 * Check whether or not the display has been initialized.
 */
@@ -34,10 +62,31 @@ static int initialized = 0;
 * TTF-related functions (for text)
 */
 static TTF_Font* font;
-static SDL_Color text_color = {255, 255, 255};
+static SDL_Color text_color = {0, 200, 0};
 static int video_init_text(char* font_path);
 static void video_clean_text();
-static void video_render_text();
+static SDL_Texture* video_make_text(char* text, int* res_w, int* res_h);
+//Last saved modification timestamp from the input channel
+static double prev_update = 0;
+/*
+* Read the input channel to update the displayed informations.
+*/
+static void update_infos();
+
+///////Horizon indicator overlay options////////
+//Position on the screen
+int horiz_posx, horiz_posy;
+//length of the horizon
+int horiz_size;
+//scale of the pitch indicator in pixels/degrees
+float horiz_pitchScale = 1;
+//Draw the drone's attitude indicator
+static void draw_attitude_indic();
+////////////////////////////////////////////////
+/*
+* Simple point rotation function. Angle in degrees.
+*/
+static void rotate_point(SDL_Point* point, const SDL_Point* center, float angle);
 
 /**
 * Initialize SDL, create the window and the renderer
@@ -46,7 +95,7 @@ static void video_render_text();
 * @param h width and height with which to create the window.
 * @return 0 on success, -1 on error.
 */
-static int video_display_init(int width, int height) {
+static int video_display_init_size(int width, int height) {
 
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "Display : error initializing SDL : %s\n", SDL_GetError());
@@ -65,15 +114,19 @@ static int video_display_init(int width, int height) {
 		fprintf(stderr, "Display : error creating renderer : %s\n", SDL_GetError());
 		return -1;
 	}
+	
+	//set the overlay elements to null so that they don't get drawn
+	int i=0;
+	for(i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
+		graphs[i].tex = NULL;
 
 	//initialize SDL_ttf for font rendering
 	if(video_init_text(FONT_PATH) == -1)
 		return -1;
 
-	//a red rectangle will be drawn on the screen.
-	rectangle.w = 50;
-	rectangle.h = 50;
-	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 125);
+	pitch=0;
+	roll=0;
+	SDL_SetRenderDrawColor(renderer, 0, 250, 0, 255);
 
 	return 0;
 }
@@ -107,28 +160,46 @@ static int video_display_set_size(int w, int h) {
 	}
 	current_width = w;
 	current_height = h;
-	//we want the rectangle to be centered
-	rectangle.x = (w/2) - (rectangle.w/2);
-	rectangle.y = (h/2) - (rectangle.h/2);
+	//recalculate the attitude indicator's position
+	horiz_size = 200;
+	horiz_posx = w/2 - horiz_size/2;
+	horiz_posy = h - horiz_pitchScale*180;
+	return 0;
+}
+
+
+int video_display_init()
+{
+	com_in = jakopter_com_add_channel(CHANNEL_DISPLAY, DISPLAY_COM_IN_SIZE);
+	if(com_in == NULL) {
+		fprintf(stderr, "Display : couldn't create com channel.\n");
+		return -1;
+	}
+	
 	return 0;
 }
 
 /**
 * Clean the display context : close the window and clean SDL structures.
 */
-static void video_display_clean() {
+void video_display_clean() {
+	int i=0;
 	//no need to clean stuff if it hasn't been initialized.
 	if(initialized) {
 		SDL_DestroyTexture(frameTex);
+		for(i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
+			if(graphs[i].tex != NULL)
+				SDL_DestroyTexture(graphs[i].tex);
 		SDL_DestroyRenderer(renderer);
 		SDL_DestroyWindow(win);
 		video_clean_text();
 		SDL_Quit();
+		jakopter_com_remove_channel(CHANNEL_DISPLAY);
 		initialized = 0;
 	}
 }
 
-void video_clean_text()
+static void video_clean_text()
 {
 	TTF_CloseFont(font);
 	TTF_Quit();
@@ -148,7 +219,7 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 
 	//first time called ? Initialize things.
 	if(!initialized) {
-		if(video_display_init(width, height) < 0) {
+		if(video_display_init_size(width, height) < 0) {
 			fprintf(stderr, "Display : Failed initialization.\n");
 			return -1;
 		}
@@ -162,6 +233,13 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 	if(width != current_width || height != current_height)
 		if(video_display_set_size(width, height) < 0)
 			return -1;
+			
+	//check whether there's new stuff in the input com buffer
+	double new_update = jakopter_com_get_timestamp(com_in);
+	if(new_update > prev_update) {
+		update_infos();
+		prev_update = new_update;
+	}
 
 	//update the texture with our new frame
 	if(SDL_UpdateTexture(frameTex, NULL, frame, width) < 0) {
@@ -173,30 +251,107 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, frameTex, NULL, NULL);
 	//SDL_RenderFillRect(renderer, &rectangle);
-	video_render_text();
+	//draw all overlay elements, when they exist
+	int i=0;
+	for(i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
+		if(graphs[i].tex != NULL)
+			SDL_RenderCopy(renderer, graphs[i].tex, NULL, &graphs[i].pos);
+	draw_attitude_indic();
 	SDL_RenderPresent(renderer);
 
 	return 0;
 }
 
-void video_render_text()
+SDL_Texture* video_make_text(char* text, int* res_w, int* res_h)
 {
-	//create a string with infos from navdata
-	char* text;
-	asprintf(&text, "Is drone flying : %d | "
-					"Drone altitude : %d | "
-					"Drone y axis : %f",
-					jakopter_is_flying(), jakopter_height(), jakopter_y_axis());
-
+	//create a surface with the given text
 	SDL_Surface* text_surf = TTF_RenderUTF8_Blended(font, text, text_color);
-	free(text);
+	//then, make a texture from it so it can be used with our renderer
 	SDL_Texture* text_tex = SDL_CreateTextureFromSurface(renderer, text_surf);
-
-	//compute the position of the text : bottom-left corner
-	SDL_Rect txtpos = {0, current_height-text_surf->h, text_surf->w, text_surf->h};
-
+	//fill in the size infos
+	*res_w = text_surf->w;
+	*res_h = text_surf->h;
 	SDL_FreeSurface(text_surf);
-	SDL_RenderCopy(renderer, text_tex, NULL, &txtpos);
-	SDL_DestroyTexture(text_tex);
+	return text_tex;
+}
+
+void update_infos()
+{
+	//base y position of the text
+	int base_y = 0;
+	//height of a line of text with the current font.
+	int line_height = TTF_FontLineSkip(font);
+	//buffer to hold the current textto be drawn
+	char buf[TEXT_BUF_SIZE];
+	
+	//retrieve navdata one by one
+	int bat = jakopter_com_read_int(com_in, 0);
+	//and format it for textual display
+	snprintf(buf, TEXT_BUF_SIZE, "Battery : %d%%", bat);
+	buf[TEXT_BUF_SIZE-1] = '\0';
+	//finally, print it onto a texture using SDL_ttf
+	graphs[0].tex = video_make_text(buf, &graphs[0].pos.w, &graphs[0].pos.h);
+	//and set its draw position accordingly
+	graphs[0].pos.x = 0;
+	graphs[0].pos.y = base_y;
+	//go to a new line
+	base_y += line_height;
+	
+	int alt = jakopter_com_read_int(com_in, 4);
+	snprintf(buf, TEXT_BUF_SIZE, "Altitude : %d", alt);
+	buf[TEXT_BUF_SIZE-1] = '\0';
+	graphs[1].tex = video_make_text(buf, &graphs[1].pos.w, &graphs[1].pos.h);
+	graphs[1].pos.x = 0;
+	graphs[1].pos.y = base_y;
+	
+	//update pitch, roll and speed
+	pitch = jakopter_com_read_float(com_in, 8);
+	roll = jakopter_com_read_float(com_in, 12);
+	speed = jakopter_com_read_float(com_in, 16);
+}
+
+void draw_attitude_indic()
+{
+	/*
+	* simple attitude indicator with the horizon represented by a straight line
+	* and the drone by a line with a center point.
+	*/
+	int i=0;
+	//nose inclination = y offset from the horizon
+	int nose_incl = (int)(horiz_pitchScale * pitch);
+	//"center" of the drone, unaffected by roll
+	SDL_Point center = {horiz_posx+ horiz_size/2, horiz_posy-nose_incl};
+	//series of points representing the drone on the indicator, affected by pitch
+	SDL_Point drone_points[] = {
+		{horiz_posx, center.y},
+		{center.x-5, center.y},
+		{center.x, center.y-5},
+		{center.x+5, center.y},
+		{horiz_posx+horiz_size, center.y}
+	};
+	int nb_points = sizeof(drone_points)/sizeof(SDL_Point);
+	//apply roll to the points
+	for(i=0; i<nb_points; i++)
+		rotate_point(&drone_points[i], &center, roll);
+	//1. draw the horizon
+	SDL_RenderDrawLine(renderer, horiz_posx, horiz_posy, horiz_posx+horiz_size, horiz_posy);
+	//2. draw the drone's "flight line"
+	SDL_RenderDrawLines(renderer, drone_points, nb_points);
+}
+
+void rotate_point(SDL_Point* point, const SDL_Point* center, float angle)
+{
+	//convert the angle to radians for use with C math functions.
+	double a_rad = angle * PI/180.;
+	double a_cos = cos(a_rad), a_sin = sin(a_rad);
+	//translate to origin before rotating
+	point->x -= center->x;
+	point->y -= center->y;
+	//compute the rotation
+	int newx = point->x*a_cos - point->y*a_sin;
+	int newy = point->x*a_sin + point->y*a_cos;
+	//translate back to position
+	point->x = newx + center->x;
+	point->y = newy + center->y;
 }
 

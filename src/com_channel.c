@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <string.h>
+#include <stdio.h>
 
 
 
@@ -24,19 +25,26 @@ jakopter_com_channel_t* jakopter_com_create_channel(size_t size)
 {
 	//maybe we should allocate on the stack and copy the struct on return instead ?
 	jakopter_com_channel_t* cc = malloc(sizeof(jakopter_com_channel_t));
-	if(cc == NULL)
+	void* buffer = malloc(size);
+	if(cc == NULL || buffer == NULL) {
+		free(cc);
+		free(buffer);
+		fprintf(stderr, "[com_channel] Error : failed to allocate memory\n");
 		return NULL;
+	}
 
 	//initialize the structure's fields
 	int error = pthread_mutex_init(&cc->mutex, NULL);
 	cc->init_time = clock();
 	cc->last_write_time = cc->init_time;
 	cc->buf_size = size;
-	cc->buffer = malloc(size);
+	cc->buffer = buffer;
 
 	//check allocation failure
-	if(cc->buffer == NULL || error) {
+	if(error) {
 		free(cc);
+		free(buffer);
+		fprintf(stderr, "[com_channel] Error : failed to initialize mutex\n");
 		return NULL;
 	}
 
@@ -51,14 +59,23 @@ void jakopter_com_destroy_channel(jakopter_com_channel_t** cc)
 		free(*cc);
 		*cc = NULL;
 	}
+	else
+		fprintf(stderr, "[com_channel] Warning : destroy_channel got a NULL channel\n");
 }
 
 
 void jakopter_com_write_int(jakopter_com_channel_t* cc, size_t offset, int value)
 {
-	//make sure we won't be writing out of bounds
-	if(offset + sizeof(int) > cc->buf_size)
+	//debug checks
+	if(cc == NULL) {
+		fprintf(stderr, "[com_channel] Error : got NULL com channel\n");
 		return;
+	}
+	//make sure we won't be writing out of bounds
+	if(offset + sizeof(int) > cc->buf_size) {
+		fprintf(stderr, "[com_channel] Error : attempt to write out of bounds\n");
+		return;
+	}
 
 	pthread_mutex_lock(&cc->mutex);
 	//copy the value at the given offset
@@ -72,9 +89,16 @@ void jakopter_com_write_int(jakopter_com_channel_t* cc, size_t offset, int value
 
 void jakopter_com_write_float(jakopter_com_channel_t* cc, size_t offset, float value)
 {
-	//make sure we won't be writing out of bounds
-	if(offset + sizeof(float) > cc->buf_size)
+	//debug checks
+	if(cc == NULL) {
+		fprintf(stderr, "[com_channel] Error : got NULL com channel\n");
 		return;
+	}
+	//make sure we won't be writing out of bounds
+	if(offset + sizeof(float) > cc->buf_size) {
+		fprintf(stderr, "[com_channel] Error : attempt to write out of bounds\n");
+		return;
+	}
 
 	pthread_mutex_lock(&cc->mutex);
 	//copy the value at the given offset
@@ -88,9 +112,16 @@ void jakopter_com_write_float(jakopter_com_channel_t* cc, size_t offset, float v
 
 void jakopter_com_write_char(jakopter_com_channel_t* cc, size_t offset, char value)
 {
-	//make sure we won't be writing out of bounds
-	if(offset + sizeof(char) > cc->buf_size)
+	//debug checks
+	if(cc == NULL) {
+		fprintf(stderr, "[com_channel] Error : got NULL com channel\n");
 		return;
+	}
+	//make sure we won't be writing out of bounds
+	if(offset + sizeof(char) > cc->buf_size) {
+		fprintf(stderr, "[com_channel] Error : attempt to write out of bounds\n");
+		return;
+	}
 
 	pthread_mutex_lock(&cc->mutex);
 	//copy the value at the given offset
@@ -104,9 +135,16 @@ void jakopter_com_write_char(jakopter_com_channel_t* cc, size_t offset, char val
 
 void jakopter_com_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, size_t size)
 {
-	//make sure we won't be writing out of bounds
-	if(offset + size > cc->buf_size || data == NULL)
+	//debug checks
+	if(cc == NULL) {
+		fprintf(stderr, "[com_channel] Error : got NULL com channel\n");
 		return;
+	}
+	//make sure we won't be writing out of bounds
+	if(offset + size > cc->buf_size) {
+		fprintf(stderr, "[com_channel] Error : attempt to write out of bounds\n");
+		return;
+	}
 
 	pthread_mutex_lock(&cc->mutex);
 	//copy the value at the given offset
@@ -124,9 +162,16 @@ void jakopter_com_write_buf(jakopter_com_channel_t* cc, size_t offset, void* dat
 
 int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset)
 {
-	//we can't read over the end
-	if(offset + sizeof(int) > cc->buf_size)
+	//debug checks
+	if(cc == NULL) {
+		fprintf(stderr, "[com_channel] Error : got NULL com channel\n");
 		return 0;
+	}
+	//we can't read over the end
+	if(offset + sizeof(int) > cc->buf_size) {
+		fprintf(stderr, "[com_channel] Error : attempt to read out of bounds\n");
+		return 0;
+	}
 
 	pthread_mutex_lock(&cc->mutex);
 	//retreive the number
@@ -140,9 +185,16 @@ int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset)
 
 float jakopter_com_read_float(jakopter_com_channel_t* cc, size_t offset)
 {
-	//we can't read over the end
-	if(offset + sizeof(float) > cc->buf_size)
+	//debug checks
+	if(cc == NULL) {
+		fprintf(stderr, "[com_channel] Error : got NULL com channel\n");
 		return 0;
+	}
+	//we can't read over the end
+	if(offset + sizeof(float) > cc->buf_size) {
+		fprintf(stderr, "[com_channel] Error : attempt to read out of bounds\n");
+		return 0;
+	}
 	
 	pthread_mutex_lock(&cc->mutex);
 	//retreive the number
@@ -156,9 +208,16 @@ float jakopter_com_read_float(jakopter_com_channel_t* cc, size_t offset)
 
 char jakopter_com_read_char(jakopter_com_channel_t* cc, size_t offset)
 {
-	//we can't read over the end
-	if(offset + sizeof(char) > cc->buf_size)
+	//debug checks
+	if(cc == NULL) {
+		fprintf(stderr, "[com_channel] Error : got NULL com channel\n");
 		return 0;
+	}
+	//we can't read over the end
+	if(offset + sizeof(char) > cc->buf_size) {
+		fprintf(stderr, "[com_channel] Error : attempt to read out of bounds\n");
+		return 0;
+	}
 
 	pthread_mutex_lock(&cc->mutex);
 	//retreive the number
@@ -172,9 +231,16 @@ char jakopter_com_read_char(jakopter_com_channel_t* cc, size_t offset)
 
 void* jakopter_com_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size, void* dest)
 {
-	//we can't read over the end
-	if(offset + size > cc->buf_size || dest == NULL)
+	//debug checks
+	if(cc == NULL) {
+		fprintf(stderr, "[com_channel] Error : got NULL com channel\n");
 		return NULL;
+	}
+	//we can't read over the end
+	if(offset + size > cc->buf_size) {
+		fprintf(stderr, "[com_channel] Error : attempt to read out of bounds\n");
+		return NULL;
+	}
 
 	pthread_mutex_lock(&cc->mutex);
 	//retreive the data
@@ -188,6 +254,11 @@ void* jakopter_com_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t si
 
 double jakopter_com_get_timestamp(jakopter_com_channel_t* cc)
 {
+	//debug checks
+	if(cc == NULL) {
+		fprintf(stderr, "[com_channel] Error : got NULL com channel\n");
+		return 0;
+	}
 	pthread_mutex_lock(&cc->mutex);
 	//the timestamp is stored in clock ticks, convert it to milliseconds.
 	double ts = ((double)(cc->last_write_time - cc->init_time)) / (CLOCKS_PER_SEC / (double)1000);
