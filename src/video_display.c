@@ -47,7 +47,7 @@ static int current_width=0, current_height=0;
 /*
 * Default size to use when the module is initialized without specifying it.
 */
-static int default_w=640, default_h=480;
+//static int default_w=640, default_h=480;
 /*
 * Current pitch, roll and speed of the plane.
 * These are kept updated via the input com channel.
