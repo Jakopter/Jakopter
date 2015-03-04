@@ -49,10 +49,10 @@ static int current_width=0, current_height=0;
 */
 //static int default_w=640, default_h=480;
 /*
-* Current pitch, roll and speed of the plane.
+* Current pitch, roll, yaw and speed of the plane.
 * These are kept updated via the input com channel.
 */
-static float pitch=0, roll=0;
+static float pitch=0, roll=0, yaw=0;
 static float speed;
 /*
 * Check whether or not the display has been initialized.
@@ -82,6 +82,18 @@ int horiz_size;
 float horiz_pitchScale = 1;
 //Draw the drone's attitude indicator
 static void draw_attitude_indic();
+////////////////////////////////////////////////
+//////////Compass overlay options///////////////
+//position of the compass
+int compass_x = 0, compass_y = 0;
+//width and height of the compass in pixels
+int compass_w = 200, compass_h = 50;
+//number of vertical bars visible on the compass
+int compass_nbBars = 8;
+//scale of the compass in piels/degrees (how fast the compass spins)
+int compass_scale = 1;
+//Draw the drone's compass
+static void draw_compass();
 ////////////////////////////////////////////////
 /*
 * Simple point rotation function. Angle in degrees.
@@ -160,10 +172,12 @@ static int video_display_set_size(int w, int h) {
 	}
 	current_width = w;
 	current_height = h;
-	//recalculate the attitude indicator's position
+	//recalculate the attitude indicator's and the compass' position
 	horiz_size = 200;
 	horiz_posx = w/2 - horiz_size/2;
 	horiz_posy = h - horiz_pitchScale*180;
+	compass_x = horiz_posx;
+	compass_y = h - compass_h*1.5;
 	return 0;
 }
 
@@ -257,6 +271,7 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 		if(graphs[i].tex != NULL)
 			SDL_RenderCopy(renderer, graphs[i].tex, NULL, &graphs[i].pos);
 	draw_attitude_indic();
+	draw_compass();
 	SDL_RenderPresent(renderer);
 
 	return 0;
@@ -307,7 +322,8 @@ void update_infos()
 	//update pitch, roll and speed
 	pitch = jakopter_com_read_float(com_in, 8);
 	roll = jakopter_com_read_float(com_in, 12);
-	speed = jakopter_com_read_float(com_in, 16);
+	yaw = jakopter_com_read_float(com_in, 16);
+	speed = jakopter_com_read_float(com_in, 20);
 }
 
 void draw_attitude_indic()
@@ -320,7 +336,7 @@ void draw_attitude_indic()
 	//nose inclination = y offset from the horizon
 	int nose_incl = (int)(horiz_pitchScale * pitch);
 	//"center" of the drone, unaffected by roll
-	SDL_Point center = {horiz_posx+ horiz_size/2, horiz_posy-nose_incl};
+	SDL_Point center = {horiz_posx + horiz_size/2, horiz_posy-nose_incl};
 	//series of points representing the drone on the indicator, affected by pitch
 	SDL_Point drone_points[] = {
 		{horiz_posx, center.y},
@@ -337,6 +353,17 @@ void draw_attitude_indic()
 	SDL_RenderDrawLine(renderer, horiz_posx, horiz_posy, horiz_posx+horiz_size, horiz_posy);
 	//2. draw the drone's "flight line"
 	SDL_RenderDrawLines(renderer, drone_points, nb_points);
+}
+
+void draw_compass()
+{
+	/*draw every vertical bar of the compass.
+	Their position reflects the drone's yaw value.*/
+	int i=0;
+	for(i=0; i<compass_nbBars; i++) {
+		int x = compass_x + ((int)(i*compass_w/compass_nbBars + yaw*compass_scale)%compass_w);
+		SDL_RenderDrawLine(renderer, x, compass_y, x, compass_y+compass_h);
+	}
 }
 
 void rotate_point(SDL_Point* point, const SDL_Point* center, float angle)
