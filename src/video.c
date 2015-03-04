@@ -202,7 +202,7 @@ int jakopter_init_video()
 	}
 	//pthread_attr_destroy(&thread_attribs);
 	//Initialization went OK -> set the guard variables so that the threads can start.
-	if(frame_processeing_init != NULL)
+	if(frame_processing_init != NULL)
 		frame_processing_init();
 	stopped = 0;
 	terminated = 0;
