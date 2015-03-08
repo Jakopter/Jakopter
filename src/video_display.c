@@ -319,7 +319,7 @@ void update_infos()
 	graphs[1].pos.x = 0;
 	graphs[1].pos.y = base_y;
 	
-	//update pitch, roll and speed
+	//update pitch, roll, yaw and speed
 	pitch = jakopter_com_read_float(com_in, 8);
 	roll = jakopter_com_read_float(com_in, 12);
 	yaw = jakopter_com_read_float(com_in, 16);
@@ -360,8 +360,14 @@ void draw_compass()
 	/*draw every vertical bar of the compass.
 	Their position reflects the drone's yaw value.*/
 	int i=0;
+	int bar_interval = compass_w/compass_nbBars;
+	//yaw displacement in pixels.
+	int offset = ((int)ceilf(yaw*compass_scale)) % bar_interval;
+	//consider negative offsets (=substraction from the interval)
+	offset = (bar_interval+offset)%bar_interval;
+	//compute the position of each bar, and render them
 	for(i=0; i<compass_nbBars; i++) {
-		int x = compass_x + ((int)(i*compass_w/compass_nbBars + yaw*compass_scale)%compass_w);
+		int x = compass_x + offset + i*bar_interval;
 		SDL_RenderDrawLine(renderer, x, compass_y, x, compass_y+compass_h);
 	}
 }
