@@ -130,7 +130,8 @@ void* processing_routine(void* args)
 	}
 	pthread_mutex_unlock(&mutex_stopped);
 	//free the resources of the processing module
-	frame_processing_clean();
+	if(frame_processing_clean != NULL)
+		frame_processing_clean();
 	pthread_exit(NULL);
 }
 
@@ -201,7 +202,8 @@ int jakopter_init_video()
 	}
 	//pthread_attr_destroy(&thread_attribs);
 	//Initialization went OK -> set the guard variables so that the threads can start.
-	frame_processing_init();
+	if(frame_processing_init != NULL)
+		frame_processing_init();
 	stopped = 0;
 	terminated = 0;
 	pthread_mutex_unlock(&mutex_stopped);
