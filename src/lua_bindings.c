@@ -8,6 +8,8 @@
 #endif
 #include "com_channel.h"
 #include "com_master.h"
+//pour le yield
+#include <sched.h>
 #include "lauxlib.h"
 #include "lua.h"
 
@@ -184,7 +186,7 @@ int jakopter_com_get_channel_lua(lua_State* L) {
 */
 int jakopter_com_read_int_lua(lua_State* L) {
 	//jakopter_com_channel_t** cc = check_com_channel(L);
-	lua_Integer chan_id = luaL_checkinteger(L, 1);
+	lua_Integer id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 
 	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
@@ -196,14 +198,14 @@ int jakopter_com_read_int_lua(lua_State* L) {
 }
 int jakopter_com_read_float_lua(lua_State* L) {
 	//jakopter_com_channel_t** cc = check_com_channel(L);
-	lua_Integer chan_id = luaL_checkinteger(L, 1);
+	lua_Integer id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	
 	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
 	if(cc == NULL)
 		return luaL_error(L, "com_channel of id %d doesn't exist", id);
 
-	lua_pushnumber(L, jakopter_com_read_float(*cc, offset));
+	lua_pushnumber(L, jakopter_com_read_float(cc, offset));
 	return 1;
 }
 /**
@@ -214,7 +216,7 @@ int jakopter_com_read_float_lua(lua_State* L) {
 */
 int jakopter_com_write_int_lua(lua_State* L) {
 	//jakopter_com_channel_t** cc = check_com_channel(L);
-	lua_Integer chan_id = luaL_checkinteger(L, 1);
+	lua_Integer id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	lua_Integer value = luaL_checkinteger(L, 3);
 	
@@ -227,7 +229,7 @@ int jakopter_com_write_int_lua(lua_State* L) {
 }
 int jakopter_com_write_float_lua(lua_State* L) {
 	//jakopter_com_channel_t** cc = check_com_channel(L);
-	lua_Integer chan_id = luaL_checkinteger(L, 1);
+	lua_Integer id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	lua_Integer value = luaL_checknumber(L, 3);
 	
@@ -239,13 +241,13 @@ int jakopter_com_write_float_lua(lua_State* L) {
 	return 0;
 }
 int jakopter_com_get_timestamp_lua(lua_State* L) {
-	lua_Integer chan_id = luaL_checkinteger(L, 1);
+	lua_Integer id = luaL_checkinteger(L, 1);
 	
 	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
 	if(cc == NULL)
 		return luaL_error(L, "com_channel of id %d doesn't exist", id);
 		
-	lua_pushnumber(L, jakopter_com_get_timestamp(cc);
+	lua_pushnumber(L, jakopter_com_get_timestamp(cc));
 	return 1;
 }
 
@@ -255,7 +257,7 @@ int usleep_lua(lua_State* L) {
 	return 0;
 }
 int yield_lua(lua_State* L) {
-	pthread_yield();
+	sched_yield();
 	return 0;
 }
 /**
