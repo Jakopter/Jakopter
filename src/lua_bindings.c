@@ -177,39 +177,85 @@ int jakopter_com_get_channel_lua(lua_State* L) {
 	
 	return 1;
 }
+/**
+* \brief Read from a com channel.
+* \param id of the com channel to read from.
+* \param offset of the data to read in the channel.
+*/
 int jakopter_com_read_int_lua(lua_State* L) {
-	jakopter_com_channel_t** cc = check_com_channel(L);
+	//jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer chan_id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 
-	lua_pushnumber(L, jakopter_com_read_int(*cc, offset));
+	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
+	if(cc == NULL)
+		return luaL_error(L, "com_channel of id %d doesn't exist", id);
+	
+	lua_pushnumber(L, jakopter_com_read_int(cc, offset));
 	return 1;
 }
 int jakopter_com_read_float_lua(lua_State* L) {
-	jakopter_com_channel_t** cc = check_com_channel(L);
+	//jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer chan_id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
+	
+	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
+	if(cc == NULL)
+		return luaL_error(L, "com_channel of id %d doesn't exist", id);
 
 	lua_pushnumber(L, jakopter_com_read_float(*cc, offset));
 	return 1;
 }
+/**
+* \brief Write to a com channel.
+* \param id of the com channel to write into.
+* \param offset of the data to write in the channel.
+* \param value to be written at the given offset.
+*/
 int jakopter_com_write_int_lua(lua_State* L) {
-	jakopter_com_channel_t** cc = check_com_channel(L);
+	//jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer chan_id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	lua_Integer value = luaL_checkinteger(L, 3);
+	
+	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
+	if(cc == NULL)
+		return luaL_error(L, "com_channel of id %d doesn't exist", id);
 
-	jakopter_com_write_int(*cc, offset, value);
+	jakopter_com_write_int(cc, offset, value);
 	return 0;
 }
 int jakopter_com_write_float_lua(lua_State* L) {
-	jakopter_com_channel_t** cc = check_com_channel(L);
+	//jakopter_com_channel_t** cc = check_com_channel(L);
+	lua_Integer chan_id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	lua_Integer value = luaL_checknumber(L, 3);
+	
+	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
+	if(cc == NULL)
+		return luaL_error(L, "com_channel of id %d doesn't exist", id);
 
-	jakopter_com_write_float(*cc, offset, value);
+	jakopter_com_write_float(cc, offset, value);
 	return 0;
 }
+int jakopter_com_get_timestamp_lua(lua_State* L) {
+	lua_Integer chan_id = luaL_checkinteger(L, 1);
+	
+	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
+	if(cc == NULL)
+		return luaL_error(L, "com_channel of id %d doesn't exist", id);
+		
+	lua_pushnumber(L, jakopter_com_get_timestamp(cc);
+	return 1;
+}
+
 int usleep_lua(lua_State* L) {
 	lua_Integer duration = luaL_checkinteger(L, 1);
 	usleep(duration);
+	return 0;
+}
+int yield_lua(lua_State* L) {
+	pthread_yield();
 	return 0;
 }
 /**
@@ -252,14 +298,18 @@ static const luaL_Reg jakopterlib[] = {
 	{"move", jakopter_move_lua},
 	{"stay", jakopter_stay_lua},
 	{"emergency", jakopter_emergency_lua},
-	{"create_cc", jakopter_com_create_channel_lua},
-	{"destroy_cc", jakopter_com_destroy_channel_lua},
-	{"get_cc", jakopter_com_get_channel_lua},
-	{"read_int", jakopter_com_read_int_lua},
-	{"read_float", jakopter_com_read_float_lua},
-	{"write_int", jakopter_com_write_int_lua},
-	{"write_float", jakopter_com_write_float_lua},
+	//we don't need to create/destroy channels in lua.
+/*	{"create_cc", jakopter_com_create_channel_lua},
+	{"destroy_cc", jakopter_com_destroy_channel_lua},*/
+	//now we directly pass the channel id to the read/write functions, no need to retrieve the channel separately
+	//{"get_cc", jakopter_com_get_channel_lua},
+	{"cc_read_int", jakopter_com_read_int_lua},
+	{"cc_read_float", jakopter_com_read_float_lua},
+	{"cc_write_int", jakopter_com_write_int_lua},
+	{"cc_write_float", jakopter_com_write_float_lua},
+	{"cc_get_timestamp", jakopter_com_get_timestamp_lua},
 	{"usleep", usleep_lua},
+	{"yield", yield_lua},
 	{NULL, NULL}
 };
 
