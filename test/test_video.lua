@@ -34,6 +34,4 @@ while true do
 	l.cc_write_float(2, 12, roll)
 	l.cc_write_float(2, 16, yaw)
 end
-l.stop_video()
-l.disconnect()
 
