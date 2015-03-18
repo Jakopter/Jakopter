@@ -17,7 +17,6 @@
 #include <unistd.h>
 
 #cmakedefine WITH_VIDEO
-#cmakedefine WITH_LEAP
 
 #define float32_t float
 #define float64_t double
