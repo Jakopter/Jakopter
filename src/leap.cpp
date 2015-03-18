@@ -4,7 +4,7 @@
 #include <math.h>
 #include <Leap.h>
 
-#define CMDFILENAME "/tmp/cmd.txt"
+#define CMDFILENAME "/tmp/jakopter_cmd.txt"
 
 using namespace Leap;
 
