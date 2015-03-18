@@ -12,9 +12,11 @@
 /* 30 ms in ns */
 #define TIMEOUT_CMD		30000000
 #define NAVDATA_ATTEMPT 10
+#define HEIGHT_THRESHOLD 500
 
 /* max number of digit into an integer */
 #define SIZE_INT		11
+#define SIZE_TYPE		10
 #define SIZE_ARG		30
 #define ARGS_MAX 		7
 #define HEAD_REF 		"REF"
