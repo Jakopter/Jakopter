@@ -338,7 +338,8 @@ int create_cleanup_udata(lua_State* L) {
 	We don't store anything in it, so its size is meaningless.*/
 	lua_pushstring(L, "jakopter.cleanup_dummy");
 	lua_newuserdata(L, 4);
-	luaL_setmetatable(L, "jakopter.cleanup");
+	luaL_getmetatable(L, "jakopter.cleanup");
+	lua_setmetatable(L, -2);
 	//store this dummy data in Lua's registry.
 	lua_settable(L, LUA_REGISTRYINDEX);
 	return 0;

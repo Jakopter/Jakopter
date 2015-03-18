@@ -49,11 +49,11 @@ static int current_width=0, current_height=0;
 */
 //static int default_w=640, default_h=480;
 /*
-* Current pitch, roll, yaw and speed of the plane.
+* Current pitch, roll, yaw and speed (unused for now) of the plane.
 * These are kept updated via the input com channel.
 */
 static float pitch=0, roll=0, yaw=0;
-static float speed;
+static float speed=0;
 /*
 * Check whether or not the display has been initialized.
 */
@@ -66,8 +66,19 @@ static SDL_Color text_color = {0, 200, 0};
 static int video_init_text(char* font_path);
 static void video_clean_text();
 static SDL_Texture* video_make_text(char* text, int* res_w, int* res_h);
+
 //Last saved modification timestamp from the input channel
 static double prev_update = 0;
+//Set to 1 if the user wants to capture a screenshot; then set back to 0 automatically
+static int want_screenshot = 0;
+//Total number of screenshots taken, used for screenshot filenames
+static int screenshot_nb = 0;
+//Base screenshot name. Final name = base name + screenshot_nb
+static char* screenshot_baseName = "screen_";
+/*
+* Take a screenshot, store it in a file named according to the total screenshot count.
+*/
+static void take_screenshot(uint8_t* frame, int size);
 /*
 * Read the input channel to update the displayed informations.
 */
@@ -189,6 +200,7 @@ int video_display_init()
 		fprintf(stderr, "Display : couldn't create com channel.\n");
 		return -1;
 	}
+	prev_update = 0;
 	
 	return 0;
 }
@@ -252,6 +264,11 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 	double new_update = jakopter_com_get_timestamp(com_in);
 	if(new_update > prev_update) {
 		update_infos();
+		if(want_screenshot) {
+			take_screenshot(frame, size);
+			want_screenshot = 0;
+			jakopter_com_write_int(com_in, 24, 0);
+		}
 		prev_update = new_update;
 	}
 
@@ -324,6 +341,8 @@ void update_infos()
 	roll = jakopter_com_read_float(com_in, 12);
 	yaw = jakopter_com_read_float(com_in, 16);
 	speed = jakopter_com_read_float(com_in, 20);
+	//check if the user wants a screenshot
+	want_screenshot = jakopter_com_read_int(com_in, 24);
 }
 
 void draw_attitude_indic()
@@ -386,5 +405,28 @@ void rotate_point(SDL_Point* point, const SDL_Point* center, float angle)
 	//translate back to position
 	point->x = newx + center->x;
 	point->y = newy + center->y;
+}
+
+void take_screenshot(uint8_t* frame, int size)
+{
+	//get the final filename length (+1 for the \0)
+	int name_length = snprintf(NULL, 0, "%s%d.yuv", screenshot_baseName, screenshot_nb) + 1;
+	char* filename = (char*)malloc(sizeof(char)*name_length);
+	if (filename == NULL) {
+		fprintf(stderr, "Display : couldn't allocate memory for screenshot filename\n");
+		return;
+	}
+	snprintf(filename, name_length, "%s%d.yuv", screenshot_baseName, screenshot_nb);
+	//dump the frame to a new file, don't do any conversion for now.
+	FILE* f = fopen(filename, "w");
+	if (f == NULL) {
+		fprintf(stderr, "Display : couldn't open file %s for writing\n", filename);
+		return;
+	}
+	fwrite(frame, sizeof(uint8_t), size/sizeof(uint8_t), f);
+	
+	fclose(f);
+	printf("Display : screenshot taken, saved to %s\n", filename);
+	screenshot_nb++;
 }
 
