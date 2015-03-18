@@ -7,7 +7,7 @@
 
 #define USERINPUT_INTERVAL 	1/3 // interval in seconds
 
-#define CMDFILENAME "cmd.txt"
+#define CMDFILENAME "/tmp/jakopter_cmd.txt"
 
 int user_input_connect();
 int user_input_disconnect();

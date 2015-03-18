@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "/usr/include/ncurses.h"
 
-#define CMDFILENAME "cmd.txt"
+#define CMDFILENAME "/tmp/jakopter_cmd.txt"
 
 int main(){
   char c;

@@ -371,7 +371,7 @@ int jakopter_rotate_left()
 
 int jakopter_rotate_right()
 {
-	char * args[] = {"1","0","0","0","106199773"};
+	char * args[] = {"1","0","0","0","1061997773"};
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
@@ -400,7 +400,7 @@ int jakopter_forward()
 
 int jakopter_backward()
 {
-	char * args[] = {"1","0","104522055","0","0"};
+	char * args[] = {"1","0","1061997773","0","0"};
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
