@@ -32,6 +32,11 @@ void LeapListener::onConnect(const Controller& controller) {
 
 void LeapListener::onFrame(const Controller& controller) {
 	const Frame frame = controller.frame();
+	static int64_t lastFrameID = 0;
+	
+	if(frame.id() < lastFrameID+10)
+		return;
+	
 	Leap::HandList hands = frame.hands();
 	Leap::Hand hand = hands[0];
 	
@@ -41,6 +46,8 @@ void LeapListener::onFrame(const Controller& controller) {
 		leapData.yaw = hand.direction().yaw();
 		leapData.roll = hand.palmNormal().roll();
 		leapData.height = hand.palmPosition().y;
+		
+//		std::cout << "Pitch: " << leapData.pitch << " Yaw: " << leapData.yaw << " Roll: " << leapData.roll << " Height: " << leapData.height << " Frame: " << frame.id() << std::endl;
 		
 // 		switch(gest.type()) {
 // 			case Gesture::TYPE_CIRCLE:
@@ -59,11 +66,23 @@ void LeapListener::onFrame(const Controller& controller) {
 		if(leap_channel)
 			jakopter_com_write_buf(leap_channel, 0, (void*)&leapData, sizeof(leapData));
 	}
+	
+	lastFrameID = frame.id();
 }
 
 int jakopter_connect_leap()
 {
 	leap_channel = jakopter_com_add_channel(CHANNEL_LEAPMOTION, sizeof(LeapData_t));
+	
+	// Init the channel
+	LeapData_t leapData;
+	leapData.pitch = 0.0f;
+	leapData.yaw = 0.0f;
+	leapData.roll = 0.0f;
+	leapData.height = 0.0f;
+	if(leap_channel)
+		jakopter_com_write_buf(leap_channel, 0, (void*)&leapData, sizeof(leapData));
+	
 	controller.addListener(listener);
 	
 	return 0;
