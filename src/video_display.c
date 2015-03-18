@@ -420,6 +420,9 @@ void take_screenshot(uint8_t* frame, int size)
 		fprintf(stderr, "Display : couldn't open file %s for writing\n", f);
 		return;
 	}
-	fwrite(frame, sizeof(uint8_t), )
+	fwrite(frame, sizeof(uint8_t), size/sizeof(uint8_t), f);
+	
+	fclose(f);
+	printf("Display : screenshot taken, saved to %s\n", filename);
 }
 
