@@ -200,6 +200,7 @@ int video_display_init()
 		fprintf(stderr, "Display : couldn't create com channel.\n");
 		return -1;
 	}
+	prev_update = 0;
 	
 	return 0;
 }
