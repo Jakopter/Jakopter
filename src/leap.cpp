@@ -1,17 +1,12 @@
 #include <iostream>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include <Leap.h>
-#include "leapdata.h"
 
-extern "C" {
-	#include "com_master.h"
-	#include "common.h"
-}
+#define CMDFILENAME "/tmp/cmd.txt"
 
 using namespace Leap;
-
-jakopter_com_channel_t* leap_channel = NULL;
 
 class LeapListener : public Listener {
 public:
@@ -24,6 +19,19 @@ private:
 LeapListener listener;
 Controller controller;
 
+int main(int argc, char** argv) {
+	controller.addListener(listener);
+	
+	// Keep this process running until Enter is pressed
+	std::cout << "Press Enter to quit..." << std::endl;
+	std::cin.get();
+	
+	// Remove the sample listener when done
+	controller.removeListener(listener);
+	
+	return 0;
+}
+
 void LeapListener::onConnect(const Controller& controller) {
 	std::cout << "Connected" << std::endl;
 	controller.enableGesture(Gesture::TYPE_CIRCLE);
@@ -32,15 +40,21 @@ void LeapListener::onConnect(const Controller& controller) {
 
 void LeapListener::onFrame(const Controller& controller) {
 	const Frame frame = controller.frame();
+	static int64_t lastFrameID = 0;
+	
+	if(frame.id() < lastFrameID+10)
+		return;
+	
 	Leap::HandList hands = frame.hands();
 	Leap::Hand hand = hands[0];
 	
-	if(hand.isValid()){
-		LeapData_t leapData;
-		leapData.pitch = hand.direction().pitch();
-		leapData.yaw = hand.direction().yaw();
-		leapData.roll = hand.palmNormal().roll();
-		leapData.height = hand.palmPosition().y;
+	if(hand.isValid()) {
+		float pitch = hand.direction().pitch();
+		float yaw = hand.direction().yaw();
+		float roll = hand.palmNormal().roll();
+		float height = hand.palmPosition().y;
+		
+		std::cout << "Pitch: " << RAD_TO_DEG*pitch << " Yaw: " << RAD_TO_DEG*yaw << " Roll: " << RAD_TO_DEG*roll << " Height: " << height << " Frame: " << frame.id() << std::endl;
 		
 // 		switch(gest.type()) {
 // 			case Gesture::TYPE_CIRCLE:
@@ -56,24 +70,28 @@ void LeapListener::onFrame(const Controller& controller) {
 // 			default:
 // 				break;
 // 		}
-		if(leap_channel)
-			jakopter_com_write_buf(leap_channel, 0, (void*)&leapData, sizeof(leapData));
+		
+		char c = 's';
+		
+		if (height > 350)
+			c = 'u';
+		else if (height < 150)
+			c = 'd';
+				
+		if (roll > 0.7)
+			c = 'l';
+		else if (roll < -0.7)
+			c = 'r';
+					
+		if (pitch > 0.7)
+			c = 'b';
+		else if (pitch < -0.7)
+			c = 'f';	
+		
+		FILE *cmd = fopen(CMDFILENAME,"w");
+		fprintf(cmd, "%c\n", c);
+		fclose(cmd);
 	}
-}
-
-int jakopter_connect_leap()
-{
-	leap_channel = jakopter_com_add_channel(CHANNEL_LEAPMOTION, sizeof(LeapData_t));
-	controller.addListener(listener);
 	
-	return 0;
-}
-
-int jakopter_disconnect_leap()
-{
-	if(leap_channel)
-		jakopter_com_remove_channel(CHANNEL_LEAPMOTION);
-	controller.removeListener(listener);
-	
-	return 0;
+	lastFrameID = frame.id();
 }
