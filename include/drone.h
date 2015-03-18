@@ -34,11 +34,13 @@ int jakopter_land();
 int jakopter_emergency();
 int jakopter_reinit();
 int jakopter_disconnect();
-int jakopter_rotate_left();
-int jakopter_rotate_right();
-int jakopter_forward();
-int jakopter_backward();
-int jakopter_move(float ltor, float ftob, float v_speed, float a_speed);
+int jakopter_rotate_left(float speed);
+int jakopter_rotate_right(float speed);
+int jakopter_forward(float speed);
+int jakopter_backward(float speed);
+int jakopter_up(float speed);
+int jakopter_down(float speed);
+int jakopter_move(float l_to_r, float f_to_b, float vertical_speed, float angular_speed);
 
 //DEBUG
 int jakopter_get_no_sq();

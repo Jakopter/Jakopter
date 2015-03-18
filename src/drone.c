@@ -106,6 +106,7 @@ int init_navdata_bootstrap()
 	if (set_cmd(HEAD_CONFIG, bootstrap_cmd, 2) < 0)
 		return -1;
 	ret = send_cmd();
+	nanosleep(&cmd_wait, NULL);
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
 	return ret;
@@ -120,6 +121,7 @@ int init_navdata_ack()
 	if (set_cmd(HEAD_CTRL, ctrl_cmd, 2) < 0)
 		return -1;
 	ret = send_cmd();
+	nanosleep(&cmd_wait, NULL);
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
 	return ret;
@@ -224,8 +226,6 @@ int jakopter_flat_trim()
 		return -1;
 
 	nanosleep(&cmd_wait, NULL);
-
-	printf("[*] Flat trim\n");
 
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
@@ -347,69 +347,60 @@ int jakopter_stay()
 
 	nanosleep(&cmd_wait, NULL);
 
-	if (set_cmd(NULL, NULL, 0) < 0)
-		return -1;
-
 	return 0;
 }
 
-int jakopter_rotate_left()
+int jakopter_rotate_left(float speed)
 {
-	//-0.8
-	char * args[] = {"1","0","0","0","-1085485875"};
-	if (set_cmd(HEAD_PCMD, args, 5) < 0)
-		return -1;
+	int ret = jakopter_move(0, 0, 0, -speed);
 
-	//Condition navdata
-	nanosleep(&cmd_wait, NULL);
+	jakopter_stay();
 
-	if (set_cmd(NULL, NULL, 0) < 0)
-		return -1;
-
-	return 0;
+	return ret;
 }
 
-int jakopter_rotate_right()
+int jakopter_rotate_right(float speed)
 {
-	char * args[] = {"1","0","0","0","1061997773"};
-	if (set_cmd(HEAD_PCMD, args, 5) < 0)
-		return -1;
+	int ret = jakopter_move(0, 0, 0, speed);
 
-	nanosleep(&cmd_wait, NULL);
+	jakopter_stay();
 
-	if (set_cmd(NULL, NULL, 0) < 0)
-		return -1;
-
-	return 0;
+	return ret;
 }
 
-int jakopter_forward()
+int jakopter_forward(float speed)
 {
-	char * args[] = {"1","0","-1102263091","0","0"};
+	int ret = jakopter_move(0, -speed, 0, 0);
 
-	if (set_cmd(HEAD_PCMD, args, 5) < 0)
-		return -1;
+	jakopter_stay():
 
-	nanosleep(&cmd_wait, NULL);
-
-	if (set_cmd(NULL, NULL, 0) < 0)
-		return -1;
-
-	return 0;
+	return ret;
 }
 
-int jakopter_backward()
+int jakopter_backward(float speed)
 {
-	char * args[] = {"1","0","1061997773","0","0"};
-	if (set_cmd(HEAD_PCMD, args, 5) < 0)
-		return -1;
+	int ret = jakopter_move(0, speed, 0, 0);
 
-	nanosleep(&cmd_wait, NULL);
+	jakopter_stay();
 
-	if (set_cmd(NULL, NULL, 0) < 0)
-		return -1;
+	return ret;
+}
+int jakopter_up(float speed)
+{
+	int ret = jakopter_move(0, 0, speed, 0);
 
-	return 0;
+	jakopter_stay();
+
+	return ret;
+}
+
+int jakopter_down(float speed)
+{
+	int ret = jakopter_move(0, 0, -speed, 0);
+
+	jakopter_stay();
+
+	return ret;
 }
 
 int jakopter_reinit()
@@ -418,7 +409,12 @@ int jakopter_reinit()
 		return -1;
 	return 0;
 }
-
+/**
+  * \brief define the movement of the drone
+  * \param l_to_r the speed from left to right
+  * \param f_to_b the speed from forward to backward
+  * \param vertical_speed the speed from down to up
+  */
 int jakopter_move(float l_to_r, float f_to_b, float vertical_speed, float angular_speed)
 {
 	char * args[5];
@@ -442,6 +438,8 @@ int jakopter_move(float l_to_r, float f_to_b, float vertical_speed, float angula
 
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
+
+	nanosleep(&cmd_wait, NULL);
 
 	return 0;
 }
