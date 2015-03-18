@@ -5,7 +5,10 @@ CMake &ge; 2.8
 
 Lua 5.1 or 5.2
 
-FFMPEG (or at least libavcodec)
+For video :
+	*FFMPEG (or at least libavcodec) for decoding
+	*SDL2
+	*SDL2_ttf
 
 ## Build instructions
 The project uses CMake as a build system.
