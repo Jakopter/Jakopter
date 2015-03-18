@@ -78,7 +78,7 @@ static char* screenshot_baseName = "screen_";
 /*
 * Take a screenshot, store it in a file named according to the total screenshot count.
 */
-static void take_screenshot(uint8_t* frame, int width, int height, int size);
+static void take_screenshot(uint8_t* frame, int size);
 /*
 * Read the input channel to update the displayed informations.
 */
@@ -264,8 +264,9 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 	if(new_update > prev_update) {
 		update_infos();
 		if(want_screenshot) {
-			take_screenshot(frame, width, height, size);
+			take_screenshot(frame, size);
 			want_screenshot = 0;
+			jakopter_com_write_int(com_in, 24, 0);
 		}
 		prev_update = new_update;
 	}
@@ -408,21 +409,23 @@ void rotate_point(SDL_Point* point, const SDL_Point* center, float angle)
 void take_screenshot(uint8_t* frame, int size)
 {
 	//get the final filename length (+1 for the \0)
-	int name_length = snprintf(NULL, 0, "%s%s.yuv", screenshot_baseName, screenshot_nb) + 1;
-	char* filemane = (char*)malloc(sizeof(char)*name_length);
+	int name_length = snprintf(NULL, 0, "%s%d.yuv", screenshot_baseName, screenshot_nb) + 1;
+	char* filename = (char*)malloc(sizeof(char)*name_length);
 	if (filename == NULL) {
 		fprintf(stderr, "Display : couldn't allocate memory for screenshot filename\n");
 		return;
 	}
+	snprintf(filename, name_length, "%s%d.yuv", screenshot_baseName, screenshot_nb);
 	//dump the frame to a new file, don't do any conversion for now.
 	FILE* f = fopen(filename, "w");
 	if (f == NULL) {
-		fprintf(stderr, "Display : couldn't open file %s for writing\n", f);
+		fprintf(stderr, "Display : couldn't open file %s for writing\n", filename);
 		return;
 	}
 	fwrite(frame, sizeof(uint8_t), size/sizeof(uint8_t), f);
 	
 	fclose(f);
 	printf("Display : screenshot taken, saved to %s\n", filename);
+	screenshot_nb++;
 }
 
