@@ -42,7 +42,6 @@ int recv_cmd()
 			jakopter_com_write_float(nav_channel, offset, data.demo.vy);
 			offset += sizeof(data.demo.vy);
 			jakopter_com_write_float(nav_channel, offset, data.demo.vz);
-			offset += sizeof(data.demo.vz);
 			break;
 		default:
 			break;
@@ -157,11 +156,6 @@ int navdata_connect()
 		return -1;
 	}
 
-	//com_master doesn't need to be initialized now.
-/*	if (!jakopter_com_master_is_init()) {
-		perror("[~][navdata] Com channel master not init");
-		return -1;
-	}*/
 	nav_channel = jakopter_com_add_channel(CHANNEL_NAVDATA, sizeof(data));
 
 	if(navdata_init() < 0) {
