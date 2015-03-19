@@ -16,24 +16,24 @@ while true do
       if valk1 ~= previous then
          previous = valk1
       	 if valk1 == 10 then
-      	       os.exit()	 
+      	       os.exit()
       	  elseif valk1 == 65 then
 	    l.takeoff()
       	  elseif valk1 == 66 then
 	    l.land()
 	  elseif valk1 == 68 then
-	    l.left()
+	    l.left(0.5)
       	  elseif valk1 == 67 then
-	    l.right()
+	    l.right(0.5)
       	  elseif valk1 == 97 then
 -- letter "a" pour arret
 	    l.stay()
       	  elseif valk1 == 102 then
 -- letter "f" pour forward
-	    l.forward()
+	    l.forward(0.5)
       	  elseif valk1 == 98 then
 -- letter "b" pour backward
-	    l.backward()
+	    l.backward(0.5)
       	  end
       end
       bat = l.cc_read_int(ccn, 0)
