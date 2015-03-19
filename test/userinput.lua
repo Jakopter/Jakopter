@@ -24,10 +24,10 @@ while true do
 	  elseif valk1 == 68 then
 	    l.left(0.5)
       	  elseif valk1 == 67 then
-	    l.right()
+	    l.right(0.5)
       	  elseif valk1 == 97 then
 -- letter "a" pour arret
-	    l.stay(0.5)
+	    l.stay()
       	  elseif valk1 == 102 then
 -- letter "f" pour forward
 	    l.forward(0.5)
