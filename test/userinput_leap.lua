@@ -24,22 +24,22 @@ while true do
 				l.up()
 			end
 		elseif valk1 == 100 then
-			l.down()
+			l.down(0.5)
 		elseif valk1 == 107 then
-			l.land()
+			l.land(0.5)
 		elseif valk1 == 108 then
-			l.left()
+			l.left(0.5)
 		elseif valk1 == 114 then
-			l.right()
+			l.right(0.5)
 		elseif valk1 == 97 then
 			-- letter "a" pour arret
 			l.stay()
 		elseif valk1 == 102 then
 			-- letter "f" pour forward
-			l.forward()
+			l.forward(0.5)
 		elseif valk1 == 98 then
 			-- letter "b" pour backward
-			l.backward()
+			l.backward(0.5)
 		end
 	end
 	bat = l.cc_read_int(ccn, 0)
