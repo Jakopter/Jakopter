@@ -372,7 +372,7 @@ int jakopter_forward(float speed)
 {
 	int ret = jakopter_move(0, -speed, 0, 0);
 
-	jakopter_stay():
+	jakopter_stay();
 
 	return ret;
 }
