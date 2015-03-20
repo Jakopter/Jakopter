@@ -137,7 +137,7 @@ static int video_display_init_size(int width, int height) {
 		fprintf(stderr, "Display : error creating renderer : %s\n", SDL_GetError());
 		return -1;
 	}
-	
+
 	//set the overlay elements to null so that they don't get drawn
 	int i=0;
 	for(i=0 ; i<VIDEO_NB_NAV_INFOS ; i++)
@@ -201,7 +201,7 @@ int video_display_init()
 		return -1;
 	}
 	prev_update = 0;
-	
+
 	return 0;
 }
 
@@ -259,7 +259,7 @@ int video_display_frame(uint8_t* frame, int width, int height, int size) {
 	if(width != current_width || height != current_height)
 		if(video_display_set_size(width, height) < 0)
 			return -1;
-			
+
 	//check whether there's new stuff in the input com buffer
 	double new_update = jakopter_com_get_timestamp(com_in);
 	if(new_update > prev_update) {
@@ -315,7 +315,7 @@ void update_infos()
 	int line_height = TTF_FontLineSkip(font);
 	//buffer to hold the current textto be drawn
 	char buf[TEXT_BUF_SIZE];
-	
+
 	//retrieve navdata one by one
 	int bat = jakopter_com_read_int(com_in, 0);
 	//and format it for textual display
@@ -328,14 +328,14 @@ void update_infos()
 	graphs[0].pos.y = base_y;
 	//go to a new line
 	base_y += line_height;
-	
+
 	int alt = jakopter_com_read_int(com_in, 4);
 	snprintf(buf, TEXT_BUF_SIZE, "Altitude : %d", alt);
 	buf[TEXT_BUF_SIZE-1] = '\0';
 	graphs[1].tex = video_make_text(buf, &graphs[1].pos.w, &graphs[1].pos.h);
 	graphs[1].pos.x = 0;
 	graphs[1].pos.y = base_y;
-	
+
 	//update pitch, roll, yaw and speed
 	pitch = jakopter_com_read_float(com_in, 8);
 	roll = jakopter_com_read_float(com_in, 12);
@@ -421,12 +421,14 @@ void take_screenshot(uint8_t* frame, int size)
 	FILE* f = fopen(filename, "w");
 	if (f == NULL) {
 		fprintf(stderr, "Display : couldn't open file %s for writing\n", filename);
+		free(filename);
 		return;
 	}
 	fwrite(frame, sizeof(uint8_t), size/sizeof(uint8_t), f);
-	
+
 	fclose(f);
 	printf("Display : screenshot taken, saved to %s\n", filename);
+	free(filename);
 	screenshot_nb++;
 }
 
