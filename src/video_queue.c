@@ -7,17 +7,17 @@
 const jakopter_video_frame_t VIDEO_QUEUE_END = {0, 0, 0, NULL};
 
 //the single frame of the queue
-jakopter_video_frame_t myFrame;
+static jakopter_video_frame_t myFrame;
 //is the queue empty ?
-bool isEmpty = true;
+static bool isEmpty = true;
 //condition to wait on the queue to be replenished
-pthread_cond_t condEmpty = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t condEmpty = PTHREAD_COND_INITIALIZER;
 //mutex to make sure the queue is accessed atomically
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 //buffer that will hold the frame's raw data once it's been pulled for processing
-uint8_t* processBuffer = NULL;
+static uint8_t* processBuffer = NULL;
 //if the frame size increases, we need to reallocate the process buffer.
-bool needRealloc = false;
+static bool needRealloc = false;
 
 void video_queue_init()
 {
@@ -37,7 +37,7 @@ void video_queue_free()
 
 void video_queue_push_frame(const jakopter_video_frame_t* frame)
 {
-pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutex);
 	//frame size increase ? Prepare to realloc when the frame will be pulled
 	if(frame->size > myFrame.size)
 		needRealloc = true;
@@ -49,7 +49,7 @@ pthread_mutex_lock(&mutex);
 		isEmpty = false;
 		pthread_cond_signal(&condEmpty);
 	}
-pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&mutex);
 }
 
 
@@ -67,6 +67,7 @@ int video_queue_pull_frame(jakopter_video_frame_t* dest)
 			pthread_mutex_unlock(&mutex);
 			return -1;
 		}
+		needRealloc = false;
 	}
 	//copy ALL of the frame's data, including the raw pixels
 	*dest = myFrame;
