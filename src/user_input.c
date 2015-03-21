@@ -9,7 +9,7 @@ static pthread_mutex_t mutex_user_input = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mutex_stopped_user_input = PTHREAD_MUTEX_INITIALIZER;
 
 int read_cmd(){
-  int ret;
+  int ret = -1;
   char c;
   FILE *inf = NULL;
   pthread_mutex_lock(&mutex_user_input);
@@ -60,19 +60,19 @@ int user_input_connect(){
   pthread_mutex_lock(&mutex_stopped_user_input);
   stopped_user_input = false;
   pthread_mutex_unlock(&mutex_stopped_user_input);
-  
+
   printf("[user_input] connecting user input\n");
 
   // right now it is just 2 int
   user_input_channel = jakopter_com_add_channel(CHANNEL_USERINPUT, 2*sizeof(int));
-  
+
   printf("[user_input] channel created\n");
 
   if(pthread_create(&user_input_thread, NULL, user_input_routine, NULL) < 0) {
     perror("[~][user_input] Can't create thread");
     return -1;
   }
-  
+
   printf("[user_input] thread created\n");
   return 0;
 }
