@@ -10,6 +10,7 @@ FIND_PACKAGE(SDL2TTF)
 FIND_PACKAGE(FFmpeg)
 FIND_PACKAGE(Lua)
 FIND_PACKAGE(Leap)
+FIND_PACKAGE(Curses)
 
 # Debug: print all declared variables
 #get_cmake_property(_variableNames VARIABLES)
@@ -51,6 +52,11 @@ SET(
 )
 
 SET(
+	KEYB_SRC_FILES
+	src/cmd.c
+)
+
+SET(
 	LUA_SRC_FILES
 	src/lua_bindings.c
 )
@@ -84,6 +90,13 @@ ELSE()
 	MESSAGE(WARNING "Compiling WITHOUT leap motion support")
 ENDIF()
 
+IF(CURSES_FOUND)
+	MESSAGE(STATUS "Compiling keyboard command interface")
+	INCLUDE_DIRECTORIES(${CURSES_INCLUDE_DIRS})
+ELSE()
+	MESSAGE(WARNING "Compiling WITHOUT keyboard command interface")
+ENDIF()
+
 IF(LUA_FOUND)
 	MESSAGE(STATUS "Compiling with Lua")
 	INCLUDE_DIRECTORIES(${LUA_INCLUDE_DIR})
@@ -109,6 +122,15 @@ IF(LEAP_FOUND)
 		${LEAP_SRC_FILES}
 	)
 ENDIF()
+
+IF(CURSES_FOUND)
+	ADD_EXECUTABLE(
+		keyb_control
+		${KEYB_SRC_FILES}
+	)
+	TARGET_LINK_LIBRARIES(keyb_control ${CURSES_LIBRARIES})
+ENDIF()
+
 
 TARGET_LINK_LIBRARIES(jakopter ${CMAKE_THREAD_LIBS_INIT})
 
