@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "/usr/include/ncurses.h"
+#include <curses.h>
 
 #define CMDFILENAME "/tmp/jakopter_cmd.txt"
 
