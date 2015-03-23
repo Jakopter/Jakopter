@@ -1,7 +1,7 @@
 # Jakopter Usage Examples
 This folder contains Lua examples of Jakopter usage.  
 To run an example, use the following command :  
-lua <example>  
+lua example.lua  
 To exit, use Ctrl+C (on Linux).
 
 ## test_video.lua
