@@ -1,6 +1,7 @@
 #include "common.h"
 #include "drone.h"
 #include "navdata.h"
+#include "user_input.h"
 
 /* the string sent to the drone */
 char command[PACKET_SIZE];
@@ -202,6 +203,13 @@ int jakopter_connect()
 	int navdata_status = navdata_connect();
 	if (navdata_status == -1) {
 		perror("[~] Navdata connection failed");
+		return -1;
+	}
+
+	int input_status = user_input_connect();
+
+	if (input_status < 0) {
+		perror("[~] Input connection failed");
 		return -1;
 	}
 
@@ -450,7 +458,7 @@ int jakopter_move(float l_to_r, float f_to_b, float vertical_speed, float angula
 int jakopter_disconnect()
 {
 	pthread_mutex_lock(&mutex_stopped);
-	if (navdata_disconnect() == 0 && !stopped) {
+	if (navdata_disconnect() == 0 && user_input_disconnect() == 0 && !stopped) {
 		stopped = 1;
 		pthread_mutex_unlock(&mutex_stopped);
 
