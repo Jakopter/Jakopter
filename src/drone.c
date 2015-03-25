@@ -3,29 +3,29 @@
 #include "navdata.h"
 #include "user_input.h"
 
-/* the string sent to the drone */
+/* The string sent to the drone.*/
 char command[PACKET_SIZE];
-/* REF arguments */
+/* REF arguments.*/
 char *takeoff_arg = "290718208",
 	 *land_arg = "290717696",
 	 *emergency_arg = "290717952";
 
-/*Current sequence number*/
+/* Current sequence number.*/
 int cmd_no_sq = 0;
-/*command currently sent*/
+/* Command currently sent.*/
 char *command_type = NULL;
 char command_args[ARGS_MAX][SIZE_ARG];
 
 /* Waiting time spend by command function */
 struct timespec cmd_wait = {0, NAVDATA_ATTEMPT*TIMEOUT_CMD};
 
-/*Thread which send regularly commands to keep the connection*/
+/* Thread which send regularly commands to keep the connection.*/
 pthread_t cmd_thread;
-/*Guard that stops any function if connection isn't initialized.*/
+/* Guard that stops any function if connection isn't initialized.*/
 volatile int stopped = 1;
-/* Race condition between setting a command and send routine*/
+/* Race condition between setting a command and send routine.*/
 static pthread_mutex_t mutex_cmd = PTHREAD_MUTEX_INITIALIZER;
-/* Race condition between send routine and disconnection */
+/* Race condition between send routine and disconnection.*/
 static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 
 /**
@@ -66,7 +66,6 @@ int send_cmd()
 	pthread_mutex_lock(&mutex_cmd);
 
 	if (command_type != NULL) {
-
 		memset(command, 0, PACKET_SIZE);
 		command[0] = '\0';
 
@@ -100,31 +99,47 @@ int send_cmd()
 	return 0;
 }
 
+/**
+ * \brief Command used by navdata to define the type of navdata to "demo".
+ * \returns send return code or -1 if command couldn't be set.
+*/
 int init_navdata_bootstrap()
 {
 	int ret;
 	char * bootstrap_cmd[] = {"\"general:navdata_demo\"","\"TRUE\""};
+
 	if (set_cmd(HEAD_CONFIG, bootstrap_cmd, 2) < 0)
 		return -1;
+
 	ret = send_cmd();
 	nanosleep(&cmd_wait, NULL);
+
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
+
 	return ret;
 }
 
+/**
+ * \brief Command used by navdata to acknowledge navdata settings.
+ * \returns send return code or -1 if command couldn't be set.
+*/
 int init_navdata_ack()
 {
 	int ret;
 	//5 to reset navdata mask
 	//Send ACK_CONTROL_MODE
 	char * ctrl_cmd[] = {"5","0"};
+
 	if (set_cmd(HEAD_CTRL, ctrl_cmd, 2) < 0)
 		return -1;
+
 	ret = send_cmd();
 	nanosleep(&cmd_wait, NULL);
+
 	if (set_cmd(NULL, NULL, 0) < 0)
 		return -1;
+
 	return ret;
 }
 
@@ -136,6 +151,7 @@ void* cmd_routine(void* args)
 {
 	struct timespec itv = {0, TIMEOUT_CMD};
 	pthread_mutex_lock(&mutex_stopped);
+
 	while (!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
 
@@ -146,6 +162,7 @@ void* cmd_routine(void* args)
 
 		pthread_mutex_lock(&mutex_stopped);
 	}
+
 	pthread_mutex_unlock(&mutex_stopped);
 
 	pthread_exit(NULL);
@@ -155,7 +172,6 @@ void* cmd_routine(void* args)
  * \brief Creates a socket and starts the command thread. Needs the computer to be connected to the drone wifi network.
  * \returns 0 if success, -1 if error
 */
-
 int jakopter_connect()
 {
 	pthread_mutex_lock(&mutex_stopped);
@@ -180,22 +196,17 @@ int jakopter_connect()
 		return -1;
 	}
 
-	//bind du socket client pour le forcer sur le port choisi
 	if (bind(sock_cmd, (struct sockaddr*)&addr_client, sizeof(addr_client)) < 0) {
 		fprintf(stderr, "[~] Can't bind socket to port %d\n", PORT_CMD);
 		return -1;
 	}
 
-	//réinitialiser les commandes
+	//reinitialize commands
 	pthread_mutex_lock(&mutex_cmd);
 	cmd_no_sq = 1;
 	command_type = NULL;
 	pthread_mutex_unlock(&mutex_cmd);
 
-	//com_master doesn't need to be initialized anymore.
-/*	if (!jakopter_com_master_is_init())
-		jakopter_com_init_master(NB_CHANNELS);
-*/
 	pthread_mutex_lock(&mutex_stopped);
 	stopped = 0;
 	pthread_mutex_unlock(&mutex_stopped);
@@ -223,9 +234,12 @@ int jakopter_connect()
 	return 0;
 }
 
+/**
+  * \brief Set the frame of reference of the drone before taking off
+  * \returns 0 if success, -1 if the drone is flying or the command couldn't be set.
+  */
 int jakopter_flat_trim()
 {
-
 	if (jakopter_is_flying()) {
 		fprintf(stderr, "[*] Drone is flying, setting of frame of reference canceled.\n");
 		return -1;
@@ -241,6 +255,10 @@ int jakopter_flat_trim()
 	return 0;
 }
 
+/**
+  * \brief Calibration of the drone for smartphone accelerometer
+  * \returns 0 if success, -1 if the drone isn't flying or the command couldn't be set.
+  */
 int jakopter_calib()
 {
 	if (!jakopter_is_flying()) {
@@ -261,6 +279,10 @@ int jakopter_calib()
 	return 0;
 }
 
+/**
+  * \brief Command to take off the drone
+  * \returns 0 if success, -1 if error.
+  */
 int jakopter_takeoff()
 {
 	if (jakopter_flat_trim() < 0) {
@@ -270,7 +292,6 @@ int jakopter_takeoff()
 
 	char * args[] = {takeoff_arg};
 	set_cmd(HEAD_REF, args, 1);
-
 
 	//set timeout
 	int no_sq = 0;
@@ -285,6 +306,7 @@ int jakopter_takeoff()
 	}
 
 	attempt = 0;
+
 	while(attempt < NAVDATA_ATTEMPT &&
 		(!jakopter_is_flying() || jakopter_height() < HEIGHT_THRESHOLD))
 	{
@@ -298,6 +320,10 @@ int jakopter_takeoff()
 	return 0;
 }
 
+/**
+  * \brief Command to land the drone. If no recent navdata are received, it sends the emergency command.
+  * \returns 0 if success, -1 if error.
+  */
 int jakopter_land()
 {
 	char * args[] = {land_arg};
@@ -312,10 +338,10 @@ int jakopter_land()
 		attempt++;
 	}
 
-
 	int init_no_sq = navdata_no_sq();
 	int emergency = 0;
 	attempt = 0;
+
 	while (jakopter_is_flying() && jakopter_height() > HEIGHT_THRESHOLD && !emergency) {
 		nanosleep(&cmd_wait, NULL);
 		no_sq = navdata_no_sq();
@@ -327,12 +353,15 @@ int jakopter_land()
 		attempt++;
 	}
 
-
-	if (set_cmd(NULL, NULL, 0) < 0)
-		return -1;
+	set_cmd(NULL, NULL, 0);
 
 	return 0;
 }
+
+/**
+  * \brief Command to stop drone rotors.
+  * \returns 0 if success, -1 if command couldn't be set.
+  */
 int jakopter_emergency()
 {
 	char * args[] = {emergency_arg};
@@ -347,6 +376,10 @@ int jakopter_emergency()
 	return 0;
 }
 
+/**
+  * \brief Command to make the drone stay at its position.
+  * \returns 0 if success, -1 if command couldn't be set.
+  */
 int jakopter_stay()
 {
 	char * args[5] = {"0","0","0","0","0"};
@@ -358,6 +391,11 @@ int jakopter_stay()
 	return 0;
 }
 
+/**
+  * \brief Command to make the drone rotate to the left with an angular speed.
+  * \param speed the angular speed in percentage between 0 and 1
+  * \returns 0 if success, -1 if command couldn't be set.
+  */
 int jakopter_rotate_left(float speed)
 {
 	int ret = jakopter_move(0, 0, 0, -speed);
@@ -367,6 +405,11 @@ int jakopter_rotate_left(float speed)
 	return ret;
 }
 
+/**
+  * \brief Command to make the drone rotate to the right with an angular speed.
+  * \param speed the angular speed in percentage between 0 and 1
+  * \returns 0 if success, -1 if command couldn't be set.
+  */
 int jakopter_rotate_right(float speed)
 {
 	int ret = jakopter_move(0, 0, 0, speed);
@@ -376,6 +419,11 @@ int jakopter_rotate_right(float speed)
 	return ret;
 }
 
+/**
+  * \brief Command to make the drone go forward with a defined speed.
+  * \param speed the speed in percentage between 0 and 1
+  * \returns 0 if success, -1 if command couldn't be set.
+  */
 int jakopter_forward(float speed)
 {
 	int ret = jakopter_move(0, -speed, 0, 0);
@@ -385,6 +433,11 @@ int jakopter_forward(float speed)
 	return ret;
 }
 
+/**
+  * \brief Command to make the drone go backward with a defined speed.
+  * \param speed the speed in percentage between 0 and 1
+  * \returns 0 if success, -1 if command couldn't be set.
+  */
 int jakopter_backward(float speed)
 {
 	int ret = jakopter_move(0, speed, 0, 0);
@@ -393,6 +446,12 @@ int jakopter_backward(float speed)
 
 	return ret;
 }
+
+/**
+  * \brief Command to make the drone go up with a defined speed.
+  * \param speed the speed in percentage between 0 and 1
+  * \returns 0 if success, -1 if command couldn't be set.
+  */
 int jakopter_up(float speed)
 {
 	int ret = jakopter_move(0, 0, speed, 0);
@@ -402,6 +461,11 @@ int jakopter_up(float speed)
 	return ret;
 }
 
+/**
+  * \brief Command to make the drone go down with a defined speed.
+  * \param speed the speed in percentage between 0 and 1
+  * \returns 0 if success, -1 if command couldn't be set.
+  */
 int jakopter_down(float speed)
 {
 	int ret = jakopter_move(0, 0, -speed, 0);
@@ -411,10 +475,20 @@ int jakopter_down(float speed)
 	return ret;
 }
 
+/**
+  * \brief Command to reset the communication watchdog.
+  * \returns 0 if success, -1 if command couldn't be set.
+  */
 int jakopter_reinit()
 {
 	if (set_cmd(HEAD_COM_WATCHDOG, NULL, 0) < 0)
 		return -1;
+
+	nanosleep(&cmd_wait, NULL);
+
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
+
 	return 0;
 }
 /**
@@ -422,6 +496,8 @@ int jakopter_reinit()
   * \param l_to_r the speed from left to right
   * \param f_to_b the speed from forward to backward
   * \param vertical_speed the speed from down to up
+  * \param angular_speed the angular speed to rotate the drone
+  * \return 0 if success, -1 if command couldn't be set.
   */
 int jakopter_move(float l_to_r, float f_to_b, float vertical_speed, float angular_speed)
 {
@@ -453,8 +529,9 @@ int jakopter_move(float l_to_r, float f_to_b, float vertical_speed, float angula
 }
 
 /**
- * \brief Stop main thread (End of drone connection)
-*/
+  * \brief Stop main thread (End of drone connection)
+  * \return pthread_join value or -1 if the communication is already stopped
+  */
 int jakopter_disconnect()
 {
 	pthread_mutex_lock(&mutex_stopped);
@@ -470,9 +547,4 @@ int jakopter_disconnect()
 		fprintf(stderr, "[~] Communication is already stopped\n");
 		return -1;
 	}
-}
-
-int jakopter_get_no_sq()
-{
-	return cmd_no_sq;
 }

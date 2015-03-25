@@ -4,6 +4,7 @@
 #include "common.h"
 #include "com_channel.h"
 #include "com_master.h"
+
 #define PORT_NAVDATA	5554
 #define NAVDATA_INTERVAL 	1/15 // interval in seconds
 #define TAG_DEMO 0
@@ -17,8 +18,8 @@ struct navdata_option {
 
 
 struct navdata {
-	uint32_t    header;
-	uint32_t    ardrone_state;
+	uint32_t    header; //Always 88776655
+	uint32_t    ardrone_state; //Bit mask
 	uint32_t    sequence; //Sequence number
 	bool		vision_defined;
 
