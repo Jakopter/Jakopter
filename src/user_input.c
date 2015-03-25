@@ -74,7 +74,9 @@ int user_input_connect()
 
 	// right now it is just 2 int
 	user_input_channel = jakopter_com_add_channel(CHANNEL_USERINPUT, 2*sizeof(int));
-
+	jakopter_com_write_int(user_input_channel, 0, 0);
+	jakopter_com_write_int(user_input_channel, 4, 0);
+	
 	printf("[user_input] channel created\n");
 
 	if(pthread_create(&user_input_thread, NULL, user_input_routine, NULL) < 0) {

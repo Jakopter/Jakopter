@@ -73,12 +73,13 @@ void LeapListener::onFrame(const Controller& controller) {
 		
 		char c = 's';
 		
-		if (height > 350)
+		if (height > 300)
 			c = 'u';
+		else if(height < 75)
+			c = 'k';		
 		else if (height < 150)
 			c = 'd';
-		else if(height < 75)
-			c = 'k';
+
 				
 		if (roll > 0.7)
 			c = 'l';
