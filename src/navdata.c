@@ -2,30 +2,36 @@
 #include "navdata.h"
 #include "drone.h"
 
+/* The structure which contains navdata  */
 static union navdata_t data;
 
 jakopter_com_channel_t* nav_channel;
 
 pthread_t navdata_thread;
-bool stopped_navdata = true;      //Guard that stops any function if connection isn't initialized.
+
+/* Guard that stops any function if connection isn't initialized.*/
+bool stopped_navdata = true;
+/* Race condition between navdata reception and read the navdata.*/
 static pthread_mutex_t mutex_navdata = PTHREAD_MUTEX_INITIALIZER;
+/* Race condition between receive routine and disconnection.*/
 static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 
-
-/*Network data*/
-/* drone address + client address (required to set the port number)*/
+/* Drone address + client address (required to set the port number)*/
 struct sockaddr_in addr_drone_navdata, addr_client_navdata;
 int sock_navdata;
 
+/**
+  * \brief Receive the navdata from the drone and write it in NAVDATA_CHANNEL.
+  * \return the result of recvfrom
+  */
 int recv_cmd()
 {
-
 	pthread_mutex_lock(&mutex_navdata);
 	socklen_t len = sizeof(addr_drone_navdata);
 	int ret = recvfrom(sock_navdata, &data, sizeof(data), 0, (struct sockaddr*)&addr_drone_navdata, &len);
-	//Write
 	size_t offset = 0;
-	switch(data.demo.tag) {
+
+	switch (data.demo.tag) {
 		case TAG_DEMO:
 			jakopter_com_write_int(nav_channel, offset, data.demo.vbat_flying_percentage);
 			offset += sizeof(data.demo.vbat_flying_percentage);
@@ -46,10 +52,16 @@ int recv_cmd()
 		default:
 			break;
 	}
+
 	pthread_mutex_unlock(&mutex_navdata);
+
 	return ret;
 }
 
+/**
+  * \brief Procedure to initialize the communication of navdata with the drone.
+  * \return 0 if success, -1 if an error occured
+  */
 int navdata_init()
 {
 	fd_set fds;
@@ -59,82 +71,89 @@ int navdata_init()
 	timeout.tv_sec = 5;
 	timeout.tv_usec = 0;
 
-	if(sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
+	if (sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
 		perror("[~][navdata] Can't send ping\n");
 		return -1;
 	}
 
-	if(select(sock_navdata+1, &fds, NULL, NULL, &timeout) <= 0) {
+	if (select(sock_navdata+1, &fds, NULL, NULL, &timeout) <= 0) {
 		perror("[~][navdata] Ping ack not received\n");
 		return -1;
 	}
 
 
-	if(recv_cmd() < 0) {
+	if (recv_cmd() < 0) {
 		perror("[~][navdata] First navdata packet not received\n");
 		return -1;
 	}
 
-	if(data.raw.ardrone_state & (1 << 11)) {
+	if (data.raw.ardrone_state & (1 << 11)) {
 		fprintf(stderr, "[*][navdata] bootstrap: %d\n", (data.raw.ardrone_state & (1 << 11))%2);
 	}
 
-	if(data.raw.ardrone_state & (1 << 15)) {
+	if (data.raw.ardrone_state & (1 << 15)) {
 		fprintf(stderr, "[*][navdata] Battery charge too low: %d\n", data.raw.ardrone_state & (1 << 15));
 		return -1;
 	}
 
-	if(init_navdata_bootstrap() < 0){
+	if (init_navdata_bootstrap() < 0){
 		fprintf(stderr, "[~][navdata] bootstrap init failed\n");
 		return -1;
 	}
 
-	if(recv_cmd() < 0)
+	if (recv_cmd() < 0)
 		perror("[~][navdata] Second navdata packet not received");
 
-	if(data.raw.ardrone_state & (1 << 6)) {
+	if (data.raw.ardrone_state & (1 << 6)) {
 		fprintf(stderr, "[*][navdata] control command ACK: %d\n", (data.raw.ardrone_state & (1 << 6))%2);
 	}
 
-	if(init_navdata_ack() < 0){
+	if (init_navdata_ack() < 0){
 		fprintf(stderr, "[~][navdata] Init ack failed\n");
 		return -1;
 	}
 
-	if(data.raw.ardrone_state & (1 << 11)) {
+	if (data.raw.ardrone_state & (1 << 11)) {
 		fprintf(stderr, "[~][navdata] bootstrap end: %d\n", (data.raw.ardrone_state & (1 << 11))%2);
 	}
 
 	return 0;
 }
 
-/*navdata_thread function*/
+/**
+  * \brief navdata_thread routine which keep the connection alive.
+  */
 void* navdata_routine(void* args)
 {
 	pthread_mutex_lock(&mutex_stopped);
-	while(!stopped_navdata) {
+
+	while (!stopped_navdata) {
 		pthread_mutex_unlock(&mutex_stopped);
 
-		if(recv_cmd() < 0)
+		if (recv_cmd() < 0)
 			perror("[~][navdata] Failed to receive navdata");
 		usleep(NAVDATA_INTERVAL*1000);
 
-		if(sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
+		if (sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
 			perror("[~][navdata] Failed to send ping\n");
 			pthread_exit(NULL);
 		}
 
 		pthread_mutex_lock(&mutex_stopped);
 	}
+
 	pthread_mutex_unlock(&mutex_stopped);
 
 	pthread_exit(NULL);
 }
 
+/**
+  * \brief Start navdata thread
+  * \return 0 if success, -1 if error
+  */
 int navdata_connect()
 {
-
-	if(!stopped_navdata)
+	if (!stopped_navdata)
 		return -1;
 
 	addr_drone_navdata.sin_family      = AF_INET;
@@ -146,19 +165,20 @@ int navdata_connect()
 	addr_client_navdata.sin_port        = htons(PORT_NAVDATA);
 
 	sock_navdata = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if(sock_navdata < 0) {
+
+	if (sock_navdata < 0) {
 		fprintf(stderr, "[~][navdata] Can't establish socket \n");
 		return -1;
 	}
 
-	if(bind(sock_navdata, (struct sockaddr*)&addr_client_navdata, sizeof(addr_client_navdata)) < 0) {
+	if (bind(sock_navdata, (struct sockaddr*)&addr_client_navdata, sizeof(addr_client_navdata)) < 0) {
 		fprintf(stderr, "[~][navdata] Can't bind socket to port %d\n", PORT_NAVDATA);
 		return -1;
 	}
 
 	nav_channel = jakopter_com_add_channel(CHANNEL_NAVDATA, sizeof(data));
 
-	if(navdata_init() < 0) {
+	if (navdata_init() < 0) {
 		perror("[~][navdata] Init sequence failed");
 		return -1;
 	}
@@ -175,7 +195,9 @@ int navdata_connect()
 	return 0;
 }
 
-
+/**
+  * \return a boolean
+  */
 int jakopter_is_flying()
 {
 	int flyState = -1;
@@ -185,25 +207,33 @@ int jakopter_is_flying()
 	return flyState;
 }
 
-
-
+/**
+  * \return the height in millimeters or -1 if navdata are not received
+  */
 int jakopter_height()
 {
 	int height = -1;
-	if(data.raw.options[0].tag != TAG_DEMO){
+
+	if (data.raw.options[0].tag != TAG_DEMO && data.raw.sequence < 1) {
 		perror("[~][navdata] Current tag does not match TAG_DEMO.");
 		return height;
 	}
+
 	pthread_mutex_lock(&mutex_navdata);
 	height = data.demo.altitude;
 	pthread_mutex_unlock(&mutex_navdata);
+
 	return height;
 }
 
+/**
+  * \return the percentage of the relative angle between -1.0 and 1.0 or -2.0 if navdata are not received
+  */
 float jakopter_y_axis()
 {
-	float y_axis = -1.0;
-	if(data.raw.options[0].tag != TAG_DEMO){
+	float y_axis = -2.0;
+
+	if (data.raw.options[0].tag != TAG_DEMO && data.raw.sequence < 1) {
 		perror("[~][navdata] Current tag does not match TAG_DEMO.");
 		return y_axis;
 	}
@@ -211,9 +241,13 @@ float jakopter_y_axis()
 	pthread_mutex_lock(&mutex_navdata);
 	y_axis = data.demo.psi;
 	pthread_mutex_unlock(&mutex_navdata);
+
 	return y_axis;
 }
 
+/**
+  * \return the sequence number of navdata
+  */
 int navdata_no_sq()
 {
 	int ret;
@@ -223,30 +257,37 @@ int navdata_no_sq()
 	return ret;
 }
 
-
+/**
+  * \brief Stop navdata thread.
+  * \return the pthread_join value or -1 if communication already stopped.
+  */
 int navdata_disconnect()
 {
+	int ret;
 	pthread_mutex_lock(&mutex_stopped);
-	if(!stopped_navdata) {
+
+	if (!stopped_navdata) {
 		stopped_navdata = true;
 		pthread_mutex_unlock(&mutex_stopped);
-		int ret = pthread_join(navdata_thread, NULL);
+		ret = pthread_join(navdata_thread, NULL);
 
 		jakopter_com_remove_channel(CHANNEL_NAVDATA);
 
 		close(sock_navdata);
-
-		return ret;
 	}
 	else {
 		pthread_mutex_unlock(&mutex_stopped);
 
 		fprintf(stderr, "[~][navdata] Communication already stopped\n");
-		return -1;
+		ret = -1;
 	}
 
+	return ret;
 }
 
+/**
+  * \brief Print the content of received navdata
+  */
 void debug_navdata_demo() {
 	pthread_mutex_lock(&mutex_navdata);
 	printf("Header: %x\n",data.demo.header);
