@@ -400,7 +400,8 @@ int jakopter_rotate_left(float speed)
 {
 	int ret = jakopter_move(0, 0, 0, -speed);
 
-	jakopter_stay();
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 
 	return ret;
 }
@@ -414,7 +415,8 @@ int jakopter_rotate_right(float speed)
 {
 	int ret = jakopter_move(0, 0, 0, speed);
 
-	jakopter_stay();
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 
 	return ret;
 }
@@ -428,7 +430,8 @@ int jakopter_forward(float speed)
 {
 	int ret = jakopter_move(0, -speed, 0, 0);
 
-	jakopter_stay();
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 
 	return ret;
 }
@@ -442,7 +445,8 @@ int jakopter_backward(float speed)
 {
 	int ret = jakopter_move(0, speed, 0, 0);
 
-	jakopter_stay();
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 
 	return ret;
 }
@@ -456,7 +460,8 @@ int jakopter_up(float speed)
 {
 	int ret = jakopter_move(0, 0, speed, 0);
 
-	jakopter_stay();
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 
 	return ret;
 }
@@ -470,7 +475,8 @@ int jakopter_down(float speed)
 {
 	int ret = jakopter_move(0, 0, -speed, 0);
 
-	jakopter_stay();
+	if (set_cmd(NULL, NULL, 0) < 0)
+		return -1;
 
 	return ret;
 }
