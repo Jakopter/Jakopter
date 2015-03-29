@@ -86,11 +86,6 @@ int jakopter_disconnect_lua(lua_State* L) {
 	return 1;
 }
 
-int jakopter_get_no_sq_lua(lua_State* L) {
-	lua_pushnumber(L, jakopter_get_no_sq());
-	return 1;
-}
-
 #ifdef WITH_VIDEO
 int jakopter_init_video_lua(lua_State* L) {
 	lua_pushnumber(L, jakopter_init_video());
@@ -292,7 +287,6 @@ static const luaL_Reg jakopterlib[] = {
 	{"up", jakopter_up_lua},
 	{"down", jakopter_down_lua},
 	{"disconnect", jakopter_disconnect_lua},
-	{"get_no_sq", jakopter_get_no_sq_lua},
 #ifdef WITH_VIDEO
 	{"connect_video", jakopter_init_video_lua},
 	{"stop_video", jakopter_stop_video_lua},
