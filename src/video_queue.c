@@ -6,17 +6,17 @@
 
 const jakopter_video_frame_t VIDEO_QUEUE_END = {0, 0, 0, NULL};
 
-//the single frame of the queue
+/*the single frame of the queue*/
 static jakopter_video_frame_t myFrame;
-//is the queue empty ?
+/*is the queue empty ?*/
 static bool isEmpty = true;
-//condition to wait on the queue to be replenished
+/*condition to wait on the queue to be replenished*/
 static pthread_cond_t condEmpty = PTHREAD_COND_INITIALIZER;
-//mutex to make sure the queue is accessed atomically
+/*mutex to ensure the queue is accessed atomically*/
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-//buffer that will hold the frame's raw data once it's been pulled for processing
+/*buffer that will hold the frame's raw data once it's been pulled for processing*/
 static uint8_t* processBuffer = NULL;
-//if the frame size increases, we need to reallocate the process buffer.
+/*if the frame size increases, we need to reallocate the process buffer.*/
 static bool needRealloc = false;
 
 void video_queue_init()
@@ -30,7 +30,7 @@ void video_queue_init()
 
 void video_queue_free()
 {
-	if(processBuffer != NULL)
+	if (processBuffer != NULL)
 		free(processBuffer);
 	processBuffer = NULL;
 }
@@ -39,13 +39,13 @@ void video_queue_push_frame(const jakopter_video_frame_t* frame)
 {
 	pthread_mutex_lock(&mutex);
 	//frame size increase ? Prepare to realloc when the frame will be pulled
-	if(frame->size > myFrame.size)
+	if (frame->size > myFrame.size)
 		needRealloc = true;
 	/*Simply copy the structure. Don't copy the raw pixel data to save time.*/
 	myFrame = *frame;
 	/*if the queue was previously empty, send a signal
 	to the possibly waiting processing thread so it can go on*/
-	if(isEmpty) {
+	if (isEmpty) {
 		isEmpty = false;
 		pthread_cond_signal(&condEmpty);
 	}
@@ -57,13 +57,13 @@ int video_queue_pull_frame(jakopter_video_frame_t* dest)
 {
 	pthread_mutex_lock(&mutex);
 	//if the queue is empty, wait for a frame to be pushed
-	while(isEmpty)
+	while (isEmpty)
 		pthread_cond_wait(&condEmpty, &mutex);
 	//reallocate memory for the output buffer if needed
-	if(needRealloc) {
+	if (needRealloc) {
 		free(processBuffer);
 		processBuffer = malloc(myFrame.size);
-		if(processBuffer == NULL) {
+		if (processBuffer == NULL) {
 			pthread_mutex_unlock(&mutex);
 			return -1;
 		}

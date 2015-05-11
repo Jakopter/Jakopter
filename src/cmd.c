@@ -1,3 +1,5 @@
+/** NCurses interface for keyboard handling */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <curses.h>

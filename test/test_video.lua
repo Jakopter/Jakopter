@@ -33,5 +33,7 @@ while true do
 	l.cc_write_float(2, 8, pitch)
 	l.cc_write_float(2, 12, roll)
 	l.cc_write_float(2, 16, yaw)
+	l.draw_icon(path, x, y)
+	l.draw_text("Batterie : " .. bat)
 end
 

@@ -4,20 +4,20 @@
 #include "user_input.h"
 
 /* The string sent to the drone.*/
-char command[PACKET_SIZE];
+static char command[PACKET_SIZE];
 /* REF arguments.*/
-char *takeoff_arg = "290718208",
+static char *takeoff_arg = "290718208",
 	 *land_arg = "290717696",
 	 *emergency_arg = "290717952";
 
 /* Current sequence number.*/
-int cmd_no_sq = 0;
+static int cmd_no_sq = 0;
 /* Command currently sent.*/
-char *command_type = NULL;
-char command_args[ARGS_MAX][SIZE_ARG];
+static char *command_type = NULL;
+static char command_args[ARGS_MAX][SIZE_ARG];
 
 /* Waiting time spend by command function */
-struct timespec cmd_wait = {0, NAVDATA_ATTEMPT*TIMEOUT_CMD};
+static struct timespec cmd_wait = {0, NAVDATA_ATTEMPT*TIMEOUT_CMD};
 
 /* Thread which send regularly commands to keep the connection.*/
 pthread_t cmd_thread;
@@ -79,7 +79,7 @@ int send_cmd()
 
 		int i = 0;
 
-		while((i < ARGS_MAX) && (command_args[i][0] != '\0')) {
+		while ((i < ARGS_MAX) && (command_args[i][0] != '\0')) {
 			strncat(command, ",", 2);
 			strncat(command, command_args[i], SIZE_ARG);
 			i++;
