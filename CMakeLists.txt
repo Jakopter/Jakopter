@@ -20,7 +20,7 @@ FIND_PACKAGE(OpenCV)
 #	message(STATUS "${_variableName}=${${_variableName}}")
 #endforeach()
 
-# SET (CMAKE_C_COMPILER "/usr/bin/clang")
+# SET (CMAKE_C_COMPILER "/usr/bin/clang")
 
 INCLUDE_DIRECTORIES("include/")
 
@@ -67,9 +67,7 @@ SET(
 	SRC_FILES
 	${CORE_SRC_FILES}
 )
-if(SDL2IMAGE_FOUND)
-	message(STATUS "Found sdl2image")
-endif()
+
 IF(AVCODEC_FOUND AND SDL2_FOUND AND SDL2TTF_FOUND AND SDL2IMAGE_FOUND)
 	MESSAGE(STATUS "Compiling with libavcodec and SDL2")
 	INCLUDE_DIRECTORIES(${AVCODEC_INCLUDE_DIRS} ${SDL2_INCLUDE_DIR} ${SDL2TTF_INCLUDE_DIR} ${SDL2IMAGE_INCLUDE_DIR})

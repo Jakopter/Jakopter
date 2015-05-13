@@ -14,23 +14,21 @@ pthread_t video_thread, processing_thread;
 fd_set vid_fd_set;
 struct timeval video_timeout = {VIDEO_TIMEOUT, 0};
 
-/*callback to which is sent every decoded frame.
-Parameters:
-	buffer containing the raw frame data, encoded in YUV420p.
-		A value of NULL for this parameter means the video stream has ended.
-	frame width
-	frame height
-	size of the buffer in bytes
-Return value:
-	the return value of the callback will be checked by the decoding routine.
-	LESS THAN 0 : the video thread will stop.
-	Anything else : no effect.
-*/
-static int (*frame_processing_callback)(uint8_t*, int, int, int) = video_display_process;
-/*initialize and clean the processing module used by the callback, if needed.
-Can be NULL.*/
-static int (*frame_processing_init)(void) = video_display_init;
-static void (*frame_processing_clean)(void) = video_display_destroy;
+/** Video processing API implementation */
+static const struct jakopter_frame_processing frame_process = {
+	.callback = video_display_process,
+	.init     = video_display_init,
+	.clean    = video_display_destroy
+};
+
+/** Drawing API implementation */
+
+static const struct jakopter_drawing draw_implementation = {
+	.draw_icon   = display_draw_icon,
+	.remove      = display_graphic_remove,
+	.resize      = display_graphic_resize,
+	.move        = display_graphic_move
+};
 
 /*Set to 1 when we want to tell the video thread to stop.*/
 static volatile int stopped = 1;
@@ -65,25 +63,25 @@ void* video_routine(void* args)
 			perror("[~][video] Cannot select()");
 			video_set_stopped();
 		}
-		else if(FD_ISSET(sock_video, &vid_fd_set)) {
+		else if (FD_ISSET(sock_video, &vid_fd_set)) {
 			/*receive the video data from the drone. Only BASE_SIZE, since
 			TCP_SIZE may be larger on purpose.*/
 			pack_size = recv(sock_video, tcp_buf, BASE_VIDEO_BUF_SIZE, 0);
-			if(pack_size == 0) {
+			if (pack_size == 0) {
 				printf("[*][video] Stream ended by server. Ending the video thread.\n");
 				video_set_stopped();
 			}
-			else if(pack_size < 0)
+			else if (pack_size < 0)
 				perror("[~][video] Cannot recv()");
 			else {
 				//we actually got some data, send it for decoding !
 				got_frame = video_decode_packet(tcp_buf, pack_size, &decoded_frame);
-				if(got_frame < 0) {
+				if (got_frame < 0) {
 					fprintf(stderr, "[~][video] Cannot decoding video\n");
 					video_set_stopped();
 				}
 				//if we have a complete decoded frame, push it onto the queue for decoding
-				else if(got_frame == 1)
+				else if (got_frame == 1)
 					video_queue_push_frame(&decoded_frame);
 			}
 		}
@@ -117,13 +115,13 @@ void* processing_routine(void* args)
 	while (!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
 		if (video_queue_pull_frame(&frame) < 0) {
-			fprintf(stderr, "[Video Processing] Error retrieving frame !\n");
+			fprintf(stderr, "[~][Video Processing] Cannot retrieving frame\n");
 			video_set_stopped();
 		}
 		//a 0-sized frame means we're about to quit.
 		else if (frame.size != 0) {
-			if (frame_processing_callback(frame.pixels, frame.w, frame.h, frame.size) < 0) {
-				fprintf(stderr, "[Video Processing] Error processing frame !\n");
+			if (frame_process.callback(frame.pixels, frame.w, frame.h, frame.size) < 0) {
+				fprintf(stderr, "[~][Video Processing] Cannot processing frame\n");
 				video_set_stopped();
 			}
 		}
@@ -131,8 +129,8 @@ void* processing_routine(void* args)
 	}
 	pthread_mutex_unlock(&mutex_stopped);
 	//free the resources of the processing module
-	if (frame_processing_clean != NULL)
-		frame_processing_clean();
+	if (frame_process.clean != NULL)
+		frame_process.clean();
 	pthread_exit(NULL);
 }
 
@@ -203,12 +201,30 @@ int jakopter_init_video()
 	}
 	//pthread_attr_destroy(&thread_attribs);
 	//Initialization went OK -> set the guard variables so that the threads can start.
-	if (frame_processing_init != NULL)
-		frame_processing_init();
+	if (frame_process.init != NULL)
+		frame_process.init();
 	stopped = 0;
 	terminated = 0;
 	pthread_mutex_unlock(&mutex_stopped);
 	return 0;
+}
+
+int jakopter_draw_icon(char *p, int x, int y, int w, int h) {
+	if(draw_implementation.draw_icon == NULL)
+		return -1;
+	return draw_implementation.draw_icon(p, x, y, w, h);
+}
+
+void jakopter_draw_remove(int id){
+	draw_implementation.remove(id);
+}
+
+void jakopter_draw_resize(int id, int width, int height) {
+	draw_implementation.resize(id, width, height);
+}
+
+void jakopter_draw_move(int id, int x, int y) {
+	draw_implementation.move(id, x, y);
 }
 
 void video_clean()
