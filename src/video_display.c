@@ -597,8 +597,6 @@ int display_draw_icon(char *path, int x, int y, int width, int height)
 {
 	struct graphics_list *element = NULL;
 	int id = graphic_append(&element);
-	if(element == NULL)
-		printf("Element null\n");
 
 	pthread_mutex_lock(&mutex_user_queue);
 	struct user_queue *current = malloc(sizeof(struct user_queue));
