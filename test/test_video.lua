@@ -1,6 +1,7 @@
 --Boucle de contrôle du drone + affichage vidéo
 
 l=require("libjakopter")
+path="../../resources/test.png")
 l.connect_video()
 l.connect()
 --Canal de com navdata (lecture des données)
@@ -34,6 +35,6 @@ while true do
 	l.cc_write_float(2, 12, roll)
 	l.cc_write_float(2, 16, yaw)
 	l.draw_icon(path, x, y)
-	l.draw_text("Batterie : " .. bat)
+	-- l.draw_text("Batterie : " .. bat)
 end
 
