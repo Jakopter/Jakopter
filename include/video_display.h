@@ -2,30 +2,52 @@
 #define JAKOPTER_VIDEO_DISPLAY_H
 
 #include <stdint.h>
+#include <pthread.h>
 
 #define FONT_PATH "../../resources/FreeSans.ttf"
-//size of the input com channel for this module
+/* size of the input com channel for this module*/
 #define DISPLAY_COM_IN_SIZE 32
 
 /**
-* "Got frame" callback.
+* \brief "Got frame" callback.
 * Fills the texture with the given frame, and displays it on the window.
 */
-int video_display_frame(uint8_t* frame, int width, int height, int size);
+int video_display_process(uint8_t* frame, int width, int height, int size);
 
 /**
-* Create the com_channel needed to communicate with the display module.
+* \brief Create the com_channel needed to communicate with the display module.
 */
 int video_display_init();
 
 /**
-* Free the memory associated with the module
+* \brief Free the memory associated with the module
 */
-void video_display_clean();
+void video_display_destroy();
+
 
 /**
-* Navdata values that are to be received by the display module
+* \brief Draw an icon on the video display. width and height are facultative, set it to 0.
 */
+int display_draw_icon(char *path, int x, int y, int width, int height);
+/**
+* \brief Free the memory associated with the graphic element.
+*/
+void display_graphic_remove(int id);
+/**
+* \brief Resize a graphic element on the display window.
+*/
+void display_graphic_resize(int id, int width, int height);
+/**
+* \brief Move a graphic element on the display window.
+*/
+void display_graphic_move(int id, int x, int y);
+
+/**
+* \brief Navdata values that are going to be received by the display module
+*/
+#define VIDEO_ICON 1
+#define VIDEO_TEXT 2
+#define VIDEO_NUMBER 3
 enum video_nav_infos {
 	VIDEO_BAT,
 	VIDEO_ALT,

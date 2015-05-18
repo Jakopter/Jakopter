@@ -5,7 +5,7 @@
 #endif
 #include "com_channel.h"
 #include "com_master.h"
-//pour le yield
+//for yield function
 #include <sched.h>
 #include "lauxlib.h"
 #include "lua.h"
@@ -13,7 +13,7 @@
 /*
 * Lua helper functions
 */
-//check whether the first argument is a com channel.
+/*check whether the first argument is a com channel.*/
 jakopter_com_channel_t** check_com_channel(lua_State* L)
 {
 	void* arg = luaL_checkudata(L, 1, "jakopter.com_channel");
@@ -24,106 +24,124 @@ jakopter_com_channel_t** check_com_channel(lua_State* L)
 /*
 Lua bindings to user-exposed functions
 */
-int jakopter_connect_lua(lua_State* L) {
+int jakopter_connect_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_connect());
 	return 1; //Number of returned values
 }
 
-int jakopter_takeoff_lua(lua_State* L) {
+int jakopter_takeoff_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_takeoff());
 	return 1;
 }
 
-int jakopter_land_lua(lua_State* L) {
+int jakopter_land_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_land());
 	return 1;
 }
 
-int jakopter_rotate_left_lua(lua_State* L) {
+int jakopter_rotate_left_lua(lua_State* L)
+{
 	float angular_speed = luaL_checknumber(L, 1);
 
 	lua_pushnumber(L, jakopter_rotate_left(angular_speed));
 	return 1;
 }
 
-int jakopter_rotate_right_lua(lua_State* L) {
+int jakopter_rotate_right_lua(lua_State* L)
+{
 	float angular_speed = luaL_checknumber(L, 1);
 
 	lua_pushnumber(L, jakopter_rotate_right(angular_speed));
 	return 1;
 }
 
-int jakopter_forward_lua(lua_State* L) {
+int jakopter_forward_lua(lua_State* L)
+{
 	float speed = luaL_checknumber(L, 1);
 
 	lua_pushnumber(L, jakopter_forward(speed));
 	return 1;
 }
 
-int jakopter_backward_lua(lua_State* L) {
+int jakopter_backward_lua(lua_State* L)
+{
 	float speed = luaL_checknumber(L, 1);
 
 	lua_pushnumber(L, jakopter_backward(speed));
 	return 1;
 }
 
-int jakopter_up_lua(lua_State* L) {
+int jakopter_up_lua(lua_State* L)
+{
 	float speed = luaL_checknumber(L, 1);
 
 	lua_pushnumber(L, jakopter_up(speed));
 	return 1;
 }
 
-int jakopter_down_lua(lua_State* L) {
+int jakopter_down_lua(lua_State* L)
+{
 	float speed = luaL_checknumber(L, 1);
 
 	lua_pushnumber(L, jakopter_down(speed));
 	return 1;
 }
 
-int jakopter_disconnect_lua(lua_State* L) {
+int jakopter_disconnect_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_disconnect());
 	return 1;
 }
 
 #ifdef WITH_VIDEO
-int jakopter_init_video_lua(lua_State* L) {
+int jakopter_init_video_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_init_video());
 	return 1;
 }
 
-int jakopter_stop_video_lua(lua_State* L) {
+int jakopter_stop_video_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_stop_video());
 	return 1;
 }
 #endif
 
-int jakopter_is_flying_lua(lua_State* L){
+int jakopter_is_flying_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_is_flying());
 	return 1;
 }
 
-int jakopter_height_lua(lua_State* L){
+int jakopter_height_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_height());
 	return 1;
 }
 
-int jakopter_reinit_lua(lua_State* L){
+int jakopter_reinit_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_reinit());
 	return 1;
 }
 
-int jakopter_ftrim_lua(lua_State* L){
+int jakopter_ftrim_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_flat_trim());
 	return 1;
 }
 
-int jakopter_calib_lua(lua_State* L){
+int jakopter_calib_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_calib());
 	return 1;
 }
 
-int jakopter_move_lua(lua_State* L){
+int jakopter_move_lua(lua_State* L)
+{
 	float l = luaL_checknumber(L, 1);
 	float f = luaL_checknumber(L, 2);
 	float v = luaL_checknumber(L, 3);
@@ -133,7 +151,8 @@ int jakopter_move_lua(lua_State* L){
 	return 1;
 }
 
-int jakopter_stay_lua(lua_State* L){
+int jakopter_stay_lua(lua_State* L)
+{
 	lua_pushnumber(L, jakopter_stay());
 	return 1;
 }
@@ -144,7 +163,8 @@ int jakopter_emergency_lua(lua_State* L)
 	return 1;
 }
 
-int jakopter_com_create_channel_lua(lua_State* L){
+int jakopter_com_create_channel_lua(lua_State* L)
+{
 	lua_Integer s = luaL_checkinteger(L, 1);
 	luaL_argcheck(L, s > 0, 1, "Channel size must be > 0");
 	//store the cc pointer as user data, so that we can assign our custom metatable to it.
@@ -153,22 +173,24 @@ int jakopter_com_create_channel_lua(lua_State* L){
 	lua_setmetatable(L, -2);
 	//actually create the channel. Raise an error if it fails.
 	*cc = jakopter_com_create_channel((size_t)s);
-	if(*cc == NULL)
-		return luaL_error(L, "Failed to create a com_channel of size %d", s);
+	if (*cc == NULL)
+		return luaL_error(L, "[~][lua] Failed to create a com_channel of size %d", s);
 
 	return 1;
 }
 
-int jakopter_com_destroy_channel_lua(lua_State* L){
+int jakopter_com_destroy_channel_lua(lua_State* L)
+{
 	jakopter_com_channel_t** cc = check_com_channel(L);
 	jakopter_com_destroy_channel(cc);
-	if(*cc != NULL)
-		return luaL_error(L, "Failed to destroy the com_channel");
+	if (*cc != NULL)
+		return luaL_error(L, "[~][lua] Failed to destroy the com_channel");
 
 	return 0;
 }
 
-int jakopter_com_get_channel_lua(lua_State* L) {
+int jakopter_com_get_channel_lua(lua_State* L)
+{
 	lua_Integer id = luaL_checkinteger(L, 1);
 
 	jakopter_com_channel_t** cc = lua_newuserdata(L, sizeof(jakopter_com_channel_t*));
@@ -176,8 +198,8 @@ int jakopter_com_get_channel_lua(lua_State* L) {
 	lua_setmetatable(L, -2);
 
 	*cc = jakopter_com_get_channel(id);
-	if(*cc == NULL)
-		return luaL_error(L, "Failed to retrieve com_channel of id %d", id);
+	if (*cc == NULL)
+		return luaL_error(L, "[~][lua] Failed to retrieve com_channel of id %d", id);
 
 	return 1;
 }
@@ -186,26 +208,28 @@ int jakopter_com_get_channel_lua(lua_State* L) {
 * \param id of the com channel to read from.
 * \param offset of the data to read in the channel.
 */
-int jakopter_com_read_int_lua(lua_State* L) {
+int jakopter_com_read_int_lua(lua_State* L)
+{
 	//jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 
 	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
-	if(cc == NULL)
-		return luaL_error(L, "com_channel of id %d doesn't exist", id);
+	if (cc == NULL)
+		return luaL_error(L, "[~][lua] com_channel of id %d doesn't exist", id);
 
 	lua_pushnumber(L, jakopter_com_read_int(cc, offset));
 	return 1;
 }
-int jakopter_com_read_float_lua(lua_State* L) {
+int jakopter_com_read_float_lua(lua_State* L)
+{
 	//jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 
 	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
-	if(cc == NULL)
-		return luaL_error(L, "com_channel of id %d doesn't exist", id);
+	if (cc == NULL)
+		return luaL_error(L, "[~][lua] com_channel of id %d doesn't exist", id);
 
 	lua_pushnumber(L, jakopter_com_read_float(cc, offset));
 	return 1;
@@ -216,49 +240,96 @@ int jakopter_com_read_float_lua(lua_State* L) {
 * \param offset of the data to write in the channel.
 * \param value to be written at the given offset.
 */
-int jakopter_com_write_int_lua(lua_State* L) {
+int jakopter_com_write_int_lua(lua_State* L)
+{
 	//jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	lua_Integer value = luaL_checkinteger(L, 3);
 
 	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
-	if(cc == NULL)
-		return luaL_error(L, "com_channel of id %d doesn't exist", id);
+	if (cc == NULL)
+		return luaL_error(L, "[~][lua] com_channel of id %d doesn't exist", id);
 
 	jakopter_com_write_int(cc, offset, value);
 	return 0;
 }
-int jakopter_com_write_float_lua(lua_State* L) {
+int jakopter_com_write_float_lua(lua_State* L)
+{
 	//jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer id = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	lua_Integer value = luaL_checknumber(L, 3);
 
 	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
-	if(cc == NULL)
-		return luaL_error(L, "com_channel of id %d doesn't exist", id);
+	if (cc == NULL)
+		return luaL_error(L, "[~][lua] com_channel of id %d doesn't exist", id);
 
 	jakopter_com_write_float(cc, offset, value);
 	return 0;
 }
-int jakopter_com_get_timestamp_lua(lua_State* L) {
+int jakopter_com_get_timestamp_lua(lua_State* L)
+{
 	lua_Integer id = luaL_checkinteger(L, 1);
 
 	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
-	if(cc == NULL)
-		return luaL_error(L, "com_channel of id %d doesn't exist", id);
+	if (cc == NULL)
+		return luaL_error(L, "[~][lua] com_channel of id %d doesn't exist", id);
 
 	lua_pushnumber(L, jakopter_com_get_timestamp(cc));
 	return 1;
 }
 
-int usleep_lua(lua_State* L) {
+/** Drawing API */
+int jakopter_draw_icon_lua(lua_State* L)
+{
+	char *path = luaL_checkstring(L, 1);
+	lua_Integer x = luaL_checkinteger(L, 2);
+	lua_Integer y = luaL_checkinteger(L, 3);
+	lua_Integer width = luaL_checkinteger(L, 4);
+	lua_Integer height = luaL_checkinteger(L, 5);
+	if (path == NULL || strncmp(path, "", 1) == 0)
+		return luaL_error(L, "[~][lua] the path can't be an empty string");
+
+	lua_pushnumber(L, jakopter_draw_icon(path, x, y, width, height));
+	return 1;
+}
+
+int jakopter_draw_remove_lua(lua_State* L)
+{
+	lua_Integer id = luaL_checknumber(L, 1);
+
+	jakopter_draw_remove(id);
+	return 0;
+}
+
+int jakopter_draw_resize_lua(lua_State* L)
+{
+	lua_Integer id = luaL_checkinteger(L, 1);
+	lua_Integer width = luaL_checkinteger(L, 2);
+	lua_Integer height = luaL_checkinteger(L, 3);
+
+	jakopter_draw_resize(id, width, height);
+	return 0;
+}
+int jakopter_draw_move_lua(lua_State* L)
+{
+	lua_Integer id = luaL_checkinteger(L, 1);
+	lua_Integer x = luaL_checkinteger(L, 2);
+	lua_Integer y = luaL_checkinteger(L, 3);
+
+	jakopter_draw_move(id, x, y);
+	return 0;
+}
+
+int usleep_lua(lua_State* L)
+{
 	lua_Integer duration = luaL_checkinteger(L, 1);
 	usleep(duration);
 	return 0;
 }
-int yield_lua(lua_State* L) {
+int yield_lua(lua_State* L)
+{
 	sched_yield();
 	return 0;
 }
@@ -266,7 +337,8 @@ int yield_lua(lua_State* L) {
 * Cleanup function called when the library is unloaded.
 * Makes sure all threads started by the library are terminated.
 */
-int jakopter_cleanup_lua(lua_State* L) {
+int jakopter_cleanup_lua(lua_State* L)
+{
 #ifdef WITH_VIDEO
 	jakopter_stop_video();
 #endif
@@ -309,6 +381,10 @@ static const luaL_Reg jakopterlib[] = {
 	{"cc_write_int", jakopter_com_write_int_lua},
 	{"cc_write_float", jakopter_com_write_float_lua},
 	{"cc_get_timestamp", jakopter_com_get_timestamp_lua},
+	{"draw_icon", jakopter_draw_icon_lua},
+	{"draw_remove", jakopter_draw_remove_lua},
+	{"draw_resize", jakopter_draw_resize_lua},
+	{"draw_move", jakopter_draw_move_lua},
 	{"usleep", usleep_lua},
 	{"yield", yield_lua},
 	{NULL, NULL}
@@ -321,7 +397,8 @@ static const luaL_Reg jakopterlib[] = {
 * so that it gets garbage collected when Lua exits,
 * allowing the cleanup function to be executed.
 */
-int create_cleanup_udata(lua_State* L) {
+static int create_cleanup_udata(lua_State* L)
+{
 	//metatable with cleanup method for the lib
 	luaL_newmetatable(L, "jakopter.cleanup");
 	//set our cleanup method as the __gc callback
@@ -339,7 +416,8 @@ int create_cleanup_udata(lua_State* L) {
 	return 0;
 }
 
-int luaopen_libjakopter(lua_State* L) {
+int luaopen_libjakopter(lua_State* L)
+{
 	//the metatable is used for type-checking our custom structs in lua.
 	//here, define a table for com channels pointers.
 	luaL_newmetatable(L, "jakopter.com_channel");

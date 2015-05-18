@@ -22,15 +22,15 @@ int video_init_decoder() {
 
 	//try to load h264
 	codec = avcodec_find_decoder(AV_CODEC_ID_H264);
-	if(codec == NULL) {
-		fprintf(stderr, "FFmpeg error : Counldn't find needed codec H264 for video decoding.\n");
+	if (codec == NULL) {
+		fprintf(stderr, "[~][decode][FFmpeg] Counldn't find needed codec H264 for video decoding.\n");
 		return -1;
 	}
 
 	//inilialize the ffmpeg codec context
 	context = avcodec_alloc_context3(codec);
-	if(avcodec_open2(context, codec, NULL) < 0) {
-		fprintf(stderr, "FFmpeg error : Couldn't open codec.\n");
+	if (avcodec_open2(context, codec, NULL) < 0) {
+		fprintf(stderr, "[~][decode][FFmpeg] Couldn't open codec.\n");
 		return -1;
 	}
 
@@ -40,10 +40,10 @@ int video_init_decoder() {
 	av_init_packet(&video_packet);
 	current_frame = av_frame_alloc();
 	frameOffset = 0;
-	
+
 	//prevent h264 from logging error messages that we have no interest in
 	av_log_set_level(JAKO_FFMPEG_LOG);
-	
+
 	//temp buffer to store raw frame; for now, don't make assumptions on its size,
 	//wait til frames come in to allocate it.
 	tempBufferSize = 0;
@@ -59,11 +59,11 @@ int video_init_decoder() {
 * Update current_width/height and tempBufferSize to match these new dimensions.
 */
 static int video_alloc_frame_buffer() {
-	if(tempBuffer != NULL)
+	if (tempBuffer != NULL)
 		free(tempBuffer);
 	tempBufferSize = avpicture_get_size(AV_PIX_FMT_YUV420P, current_frame->width, current_frame->height);
 	tempBuffer = calloc(tempBufferSize, 1);
-	if(tempBuffer == NULL)
+	if (tempBuffer == NULL)
 		return -1;
 	current_width = current_frame->width;
 	current_height = current_frame->height;
@@ -85,40 +85,40 @@ int video_decode_packet(uint8_t* buffer, int buf_size, jakopter_video_frame_t* r
 	//how many frames have we decoded ?
 	int nb_frames = 0;
 
-	if(buf_size <= 0 || buffer == NULL)
+	if (buf_size <= 0 || buffer == NULL)
 		return 0;
 
 	//parse the video packet. If the parser returns a frame, decode it.
-	while(buf_size > 0) {
+	while (buf_size > 0) {
 		//1. parse the newly-received packet. If the parser has assembled a whole frame, store it in the video_packet structure.
 		//TODO: confirm/infirm usefulness of frameOffset
 		parsedLen = av_parser_parse2(cpContext, context, &video_packet.data, &video_packet.size, buffer, buf_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
-		
+
 		//2. modify our buffer's data offset to reflect the parser's progression.
 		buffer += parsedLen;
 		buf_size -= parsedLen;
 		frameOffset += parsedLen;
-		
+
 		//3. do we have a frame to decode ?
-		if(video_packet.size > 0) {
+		if (video_packet.size > 0) {
 			//printf("Packet size : %d\n", video_packet.size);
 			decodedLen = avcodec_decode_video2(context, current_frame, &complete_frame, &video_packet);
-			if(decodedLen < 0) {
-				fprintf(stderr, "Error : couldn't decode frame.\n");
+			if (decodedLen < 0) {
+				fprintf(stderr, "[~][decode] couldn't decode frame.\n");
 				return 0;
 			}
 			//If we get there, we should've decoded a frame.
-			if(complete_frame) {
+			if (complete_frame) {
 				nb_frames++;
 				//check if the video size has changed
-				if(current_frame->width != current_width || current_frame->height != current_height)
-					if(video_alloc_frame_buffer() < 0) {
-						fprintf(stderr, "Error : couldn't allocate memory for decoding.\n");
+				if (current_frame->width != current_width || current_frame->height != current_height)
+					if (video_alloc_frame_buffer() < 0) {
+						fprintf(stderr, "[~][decode] couldn't allocate memory for decoding.\n");
 						return -1;
 					}
 				//write the raw frame data in our temporary buffer
-				int picsize = avpicture_layout((const AVPicture*)current_frame, current_frame->format, 
-				current_frame->width, current_frame->height, tempBuffer, tempBufferSize);
+				int picsize = avpicture_layout((const AVPicture*)current_frame, current_frame->format,
+					current_frame->width, current_frame->height, tempBuffer, tempBufferSize);
 				//write the final result in the output structure
 				result->pixels = tempBuffer;
 				result->w = current_frame->width;
@@ -129,7 +129,7 @@ int video_decode_packet(uint8_t* buffer, int buf_size, jakopter_video_frame_t* r
 				//free the frame's references for reuse
 				av_frame_unref(current_frame);
 			}
-			
+
 			//reinit frame offset for next frame
 			frameOffset = 0;
 		}
@@ -144,6 +144,6 @@ void video_stop_decoder() {
 	//avcodec_free_context(&context);
 	av_parser_close(cpContext);
 	av_frame_free(&current_frame);
-	if(tempBuffer != NULL)
+	if (tempBuffer != NULL)
 		free(tempBuffer);
 }

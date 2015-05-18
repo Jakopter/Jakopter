@@ -10,21 +10,21 @@ jakopter_com_channel_t* nav_channel;
 pthread_t navdata_thread;
 
 /* Guard that stops any function if connection isn't initialized.*/
-bool stopped_navdata = true;
+static bool stopped_navdata = true;
 /* Race condition between navdata reception and read the navdata.*/
 static pthread_mutex_t mutex_navdata = PTHREAD_MUTEX_INITIALIZER;
 /* Race condition between receive routine and disconnection.*/
 static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 
 /* Drone address + client address (required to set the port number)*/
-struct sockaddr_in addr_drone_navdata, addr_client_navdata;
-int sock_navdata;
+static struct sockaddr_in addr_drone_navdata, addr_client_navdata;
+static int sock_navdata;
 
 /**
   * \brief Receive the navdata from the drone and write it in NAVDATA_CHANNEL.
   * \return the result of recvfrom
   */
-int recv_cmd()
+static int recv_cmd()
 {
 	pthread_mutex_lock(&mutex_navdata);
 	socklen_t len = sizeof(addr_drone_navdata);
@@ -62,7 +62,7 @@ int recv_cmd()
   * \brief Procedure to initialize the communication of navdata with the drone.
   * \return 0 if success, -1 if an error occured
   */
-int navdata_init()
+static int navdata_init()
 {
 	fd_set fds;
 	FD_ZERO(&fds);
@@ -288,7 +288,8 @@ int navdata_disconnect()
 /**
   * \brief Print the content of received navdata
   */
-void debug_navdata_demo() {
+void debug_navdata_demo()
+{
 	pthread_mutex_lock(&mutex_navdata);
 	printf("Header: %x\n",data.demo.header);
 	printf("Mask: %x\n",data.demo.ardrone_state);

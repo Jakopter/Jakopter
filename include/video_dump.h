@@ -8,14 +8,14 @@
 * that can be used as callbacks by the video decoding routine
 * in order to process video frames received from the drone.
 */
-
-/*Dump the video frame to a file.
-Ends the video thread once it's reached its limit (see below).*/
-int jako_dumpFrameToFile(uint8_t* frame, int width, int height, int size);
-
 //Name of the file where frames will be dumped
 #define JAKO_FRAMEDUMP_FILENAME "frames.yuv"
 //Number of frames we want to dump into this file. -1 = unlimited.
 #define JAKO_FRAMEDUMP_COUNT 250
+
+/*Dump the video frame to a file.
+Ends the video thread once it's reached its limit (see below).*/
+int jakopter_dumpFrameToFile(uint8_t* frame, int width, int height, int size);
+
 
 #endif
