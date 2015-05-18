@@ -12,7 +12,6 @@ FIND_PACKAGE(FFmpeg)
 FIND_PACKAGE(Lua)
 FIND_PACKAGE(Leap)
 FIND_PACKAGE(Curses)
-FIND_PACKAGE(OpenCV)
 
 # Debug: print all declared variables
 #get_cmake_property(_variableNames VARIABLES)
