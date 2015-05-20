@@ -40,6 +40,8 @@ jakopter_com_channel_t* jakopter_com_create_channel(size_t size)
 	cc->buf_size = size;
 	cc->buffer = buffer;
 
+	memset(cc->buffer, 0, size);
+
 	//check allocation failure
 	if (error) {
 		free(cc);

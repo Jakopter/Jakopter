@@ -248,7 +248,8 @@ struct graphics_list* video_graphic_create(int type)
 void video_graphic_destroy(struct graphics_list* del)
 {
 	if(del->graphic != NULL) {
-		SDL_DestroyTexture(del->graphic->tex);
+		if(del->graphic->tex != NULL)
+			SDL_DestroyTexture(del->graphic->tex);
 		free(del->graphic);
 	}
 	free(del);
@@ -327,7 +328,6 @@ int video_display_process(uint8_t* frame, int width, int height, int size) {
 	double new_update = jakopter_com_get_timestamp(com_in);
 	if (new_update > prev_update) {
 		update_infos();
-		want_screenshot = 0;
 		if (want_screenshot) {
 			take_screenshot(frame, size);
 			want_screenshot = 0;
@@ -448,20 +448,29 @@ int load_element()
 		pthread_mutex_unlock(&mutex_graphics_list);
 		return -1;
 	}
+	current->graphic->tex = NULL;
 
-	printf("Chemin : %s\n", current->string);
+	char* string = current->string;
+	if (current->type == VIDEO_TEXT) {
+		graphics_t* graph = current->graphic;
+		graph->tex = video_make_text(string, &graph->pos.w, &graph->pos.h);
 
-	if (current->type == VIDEO_TEXT)
-		current->graphic->tex = video_make_text(current->string, &current->graphic->pos.w, &current->graphic->pos.h);
+		if (graph->pos.x >= current_width-(graph->pos.w) || graph->pos.y >= current_height-(graph->pos.h)) {
+			fprintf(stderr, "[~][display] Position of \"%s\" doesn't fit the bounds of the window\n", string);
+			pthread_mutex_unlock(&mutex_graphics_list);
+			display_graphic_remove(current->id);
+			return -1;
+		}
+	}
 	else if (current->type == VIDEO_ICON) {
 		graphics_t* graph = current->graphic;
 		int width = 0;
 		int height = 0;
-		SDL_Texture *icon = video_import_png(current->string, &width, &height);
+		SDL_Texture *icon = video_import_png(string, &width, &height);
 		if (icon == NULL) {
-			fprintf(stderr, "[~][display] Couldn't import the image %s\n", current->string);
-			display_graphic_remove(current->id);
+			fprintf(stderr, "[~][display] Couldn't import the image %s\n", string);
 			pthread_mutex_unlock(&mutex_graphics_list);
+			display_graphic_remove(current->id);
 			return -1;
 		}
 		graph->tex = icon;
@@ -472,16 +481,17 @@ int load_element()
 		}
 
 		if (graph->pos.x >= current_width-(graph->pos.w)
-			&& graph->pos.y >= current_height-(graph->pos.h)) {
-			fprintf(stderr, "[~][display] Position of %s doesn't fit the bounds of the window\n", current->string);
-			display_graphic_remove(current->id);
+			|| graph->pos.y >= current_height-(graph->pos.h)) {
+			fprintf(stderr, "[~][display] Position of %s doesn't fit the bounds of the window\n", string);
 			pthread_mutex_unlock(&mutex_graphics_list);
+			display_graphic_remove(current->id);
 			return -1;
 		}
-		printf("Add icon at %d %d ,%d x %d\n", graph->pos.x, graph->pos.y, graph->pos.w, graph->pos.h);
 	}
 
+	//String used for load, indicates now the item is loaded
 	current->string = NULL;
+	free(string);
 
 	pthread_mutex_unlock(&mutex_graphics_list);
 
@@ -555,8 +565,11 @@ int display_draw_icon(const char* path, int x, int y, int width, int height)
 
 	pthread_mutex_lock(&mutex_graphics_list);
 	graphics_t* graph = malloc(sizeof(graphics_t));
-	item->string = path;
+	int size_str = strlen(path)+1;
+	item->string = (char*)malloc(size_str*sizeof(char));
+	strncpy(item->string, path, size_str);
 	item->graphic = graph;
+	item->graphic->tex = NULL;
 
 	//user defined resolution
 	if (width > 0 && height > 0) {
@@ -587,14 +600,16 @@ int display_draw_text(const char* string, int x, int y)
 {
 	struct graphics_list* item = video_graphic_create(VIDEO_TEXT);
 	int id = graphic_append(item);
-	printf("Text with id %d\n", id);
 
 	pthread_mutex_lock(&mutex_graphics_list);
 	graphics_t* graph = malloc(sizeof(graphics_t));
-	item->string = string;
+	int size_str = strlen(string)+1;
+	item->string = (char*)malloc(size_str*sizeof(char));
+	strncpy(item->string, string, size_str);
 	item->graphic = graph;
+	item->graphic->tex = NULL;
 
-	if (x >= 0 && y >= 0 && x < current_width-(graph->pos.w) && y < current_height-(graph->pos.h)) {
+	if (x >= 0 && y >= 0) {
 		graph->pos.x = x;
 		graph->pos.y = y;
 	}
@@ -642,7 +657,6 @@ void display_graphic_remove(int id)
 	if (current != NULL) {
 		fprintf(stderr, "[*][display] Icon %d not referenced\n", id);
 	}
-	printf("Id removed: %d\n", id);
 
 	pthread_mutex_unlock(&mutex_graphics_list);
 }

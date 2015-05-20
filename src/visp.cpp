@@ -25,11 +25,7 @@ int visp_process(uint8_t* frame, int width, int height, int size)
 		opt_video = "video.mpeg";
 		unsigned char * rgb_frame;
 
-		// vpImageConvert::::YUV420ToRGB((unsigned char *)frame,
-		unsigned char *  	rgb,
-		unsigned int  	width,
-		unsigned int  	height
-	)
+		// vpImageConvert::::YUV420ToRGB((unsigned char *)frame,rgb_frame, width, height)
 		vpImage<unsigned char> I;
 		vpFrameGrabber *g;
 

@@ -12,8 +12,8 @@ find_path(VISP_INCLUDE_DIR
 	/usr/local/include/visp
 	/usr/include/visp
 	/sw # Fink
-	/opt/local # DarwinPorts
-	/opt/csw # Blastwave
+	/opt/local # DarwinPorts/MacPorts
+	/opt/csw # Blastwave/OpenCSW
 	/opt
 )
 

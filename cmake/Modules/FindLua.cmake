@@ -104,7 +104,7 @@ find_path(LUA_INCLUDE_DIR lua.h
   ~/Library/Frameworks
   /Library/Frameworks
   /sw # Fink
-  /opt/local # DarwinPorts
+  /opt/local # DarwinPorts/MacPorts
   /opt/csw # Blastwave
   /opt
 )

@@ -31,7 +31,7 @@ if(APPLE)
 		/usr/local/include/SDL2
 		/usr/include/SDL2
 		/sw # Fink
-		/opt/local # DarwinPorts
+		/opt/local # DarwinPorts/MacPorts
 		/opt/csw # Blastwave
 		/opt
 		DOC "Include directory for SDL2_image under MacOS X"
