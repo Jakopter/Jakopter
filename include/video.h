@@ -43,11 +43,14 @@ struct jakopter_frame_processing {
 
 /** Drawing API*/
 struct jakopter_drawing {
-	int (*draw_icon)(char* path,
+	int (*draw_icon)(const char* path,
 		int x,
 		int y,
 		int width,
 		int height);
+	int (*draw_text)(const char* string,
+		int x,
+		int y);
 	void (*remove)(int id);
 	void (*resize)(int id,
 		int x,
@@ -57,7 +60,9 @@ struct jakopter_drawing {
 		int height);
 };
 
-int jakopter_draw_icon(char *p, int x, int y, int w, int h);
+int jakopter_draw_icon(const char *p, int x, int y, int w, int h);
+
+int jakopter_draw_text(const char *s, int x, int y);
 
 void jakopter_draw_remove(int id);
 

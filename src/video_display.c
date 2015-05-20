@@ -26,35 +26,19 @@ graphics_t graphs[VIDEO_NB_NAV_INFOS];
 struct graphics_list
 {
 	int id;
+	int type;
+	char* string;
 	graphics_t* graphic;
 	struct graphics_list* next;
 };
 
 static struct graphics_list* icon_registry = NULL;
+static struct graphics_list* video_graphic_create();
+static void video_graphic_destroy(struct graphics_list* del);
+static int load_element();
 
 /** Race condition between rendering and list append*/
 static pthread_mutex_t mutex_graphics_list = PTHREAD_MUTEX_INITIALIZER;
-
-/*
-* List of graphical elements queried by another thread.
-*/
-struct user_queue {
-	//type of the graphical element: text, icon, ...
-	int type;
-	char* string;
-	struct graphics_list* element;
-	int width;
-	int height;
-	int x;
-	int y;
-	struct user_queue* next;
-};
-
-static struct user_queue* user_queue_head = NULL;
-static struct user_queue* user_queue_tail = NULL;
-
-/** Race condition between rendering and list append*/
-static pthread_mutex_t mutex_user_queue = PTHREAD_MUTEX_INITIALIZER;
 
 /*
 * channels for data input and output.
@@ -105,7 +89,6 @@ static void video_clean_text();
 static SDL_Texture* video_make_text(char* text, int* res_w, int* res_h);
 
 /******** Icon-related functions (for img) ********/
-static int load_img();
 static SDL_Texture* video_import_png(char* path, int* res_w, int* res_h);
 /*
 * Read the input channel to update the displayed informations.
@@ -189,6 +172,7 @@ static int video_display_init_size(int width, int height) {
 
 	if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
 		fprintf(stderr, "[~][display] IMG_Init failed : %s\n", IMG_GetError());
+		return -1;
 	}
 
 	pitch = 0;
@@ -249,6 +233,27 @@ int video_display_init()
 	return 0;
 }
 
+struct graphics_list* video_graphic_create(int type)
+{
+	struct graphics_list* l = (struct graphics_list *)malloc(sizeof(struct graphics_list));
+	l->id = 0;
+	l->type = type;
+	l->string = NULL;
+	l->graphic = NULL;
+	l->next = NULL;
+
+	return l;
+}
+
+void video_graphic_destroy(struct graphics_list* del)
+{
+	if(del->graphic != NULL) {
+		SDL_DestroyTexture(del->graphic->tex);
+		free(del->graphic);
+	}
+	free(del);
+}
+
 /**
 * Clean the display context : close the window and clean SDL structures.
 */
@@ -269,26 +274,12 @@ void video_display_destroy() {
 	pthread_mutex_lock(&mutex_graphics_list);
 	struct graphics_list *current = icon_registry;
 	while (current != NULL) {
-		if(current->graphic != NULL)
-			free(current->graphic);
 		struct graphics_list *del = current;
 		current = current->next;
-		free(del);
+		video_graphic_destroy(del);
 	}
 	icon_registry = NULL;
 	pthread_mutex_unlock(&mutex_graphics_list);
-
-	//Free queue of elements waiting to be loaded
-	pthread_mutex_lock(&mutex_user_queue);
-	struct user_queue *current_q = user_queue_head;
-	while (current_q != NULL) {
-		struct user_queue *del = current_q;
-		current_q = current_q->next;
-		free(del);
-	}
-	user_queue_head = NULL;
-	user_queue_tail = NULL;
-	pthread_mutex_unlock(&mutex_user_queue);
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(win);
@@ -325,8 +316,6 @@ int video_display_process(uint8_t* frame, int width, int height, int size) {
 		if(video_display_set_size(width, height) < 0)
 			return -1;
 		initialized = 1;
-		// display_draw_icon("test.png", 640-65, 0, 64, 64);
-		// display_draw_icon("test.png",120,0,64,64);
 	}
 
 	//check whether the size of the video has changed
@@ -338,6 +327,7 @@ int video_display_process(uint8_t* frame, int width, int height, int size) {
 	double new_update = jakopter_com_get_timestamp(com_in);
 	if (new_update > prev_update) {
 		update_infos();
+		want_screenshot = 0;
 		if (want_screenshot) {
 			take_screenshot(frame, size);
 			want_screenshot = 0;
@@ -346,9 +336,10 @@ int video_display_process(uint8_t* frame, int width, int height, int size) {
 		prev_update = new_update;
 	}
 
-	if (load_img() < 0)
-		fprintf(stderr, "Couldn't load img\n");
-	//update the texture with our new frame
+	if (load_element() < 0)
+		fprintf(stderr, "Couldn't load graphic element\n");
+
+	// update the texture with our new frame
 	if (SDL_UpdateTexture(frameTex, NULL, frame, width) < 0) {
 		fprintf(stderr, "[~][Display] Failed to update frame texture : %s\n", SDL_GetError());
 		return -1;
@@ -372,9 +363,13 @@ int video_display_process(uint8_t* frame, int width, int height, int size) {
 			if (ret < 0)
 				fprintf(stderr, "[~][display] RenderCopy failed: %s\n", SDL_GetError());
 		}
+		else
+			fprintf(stderr, "[*][display] Texture of %d not loaded\n", current->id);
+
 		current = current->next;
 	}
 	pthread_mutex_unlock(&mutex_graphics_list);
+
 	draw_attitude_indic();
 	draw_compass();
 	SDL_RenderPresent(renderer);
@@ -397,6 +392,7 @@ SDL_Texture* video_make_text(char* text, int* res_w, int* res_h)
 
 SDL_Texture* video_import_png(char* path, int* res_w, int* res_h)
 {
+	SDL_Texture *img_tex = NULL;
 	if (path == NULL) {
 		fprintf(stderr, "[~][display] Path not defined\n");
 		return NULL;
@@ -410,13 +406,13 @@ SDL_Texture* video_import_png(char* path, int* res_w, int* res_h)
 	SDL_Surface *img_surf = IMG_LoadPNG_RW(rwop);
 	if (img_surf == NULL) {
 		fprintf(stderr, "[~][display] Load PNG: %s\n", IMG_GetError());
+		SDL_RWclose(rwop);
 		return NULL;
 	}
 
-	SDL_Texture *img_tex = SDL_CreateTextureFromSurface(renderer, img_surf);
+	img_tex = SDL_CreateTextureFromSurface(renderer, img_surf);
 	if (img_tex  == NULL) {
 		fprintf(stderr, "[~][display] Create Texture failed: %s\n", SDL_GetError());
-		return NULL;
 	}
 
 	*res_w = img_surf->w;
@@ -427,70 +423,68 @@ SDL_Texture* video_import_png(char* path, int* res_w, int* res_h)
 	return img_tex;
 }
 
-/* With SDL, we can't call functions from a different thread than the rendering one */
-//renommer pop_queue
-int load_img()
+/* With SDL, we can't create texture from a different thread than the rendering one */
+int load_element()
 {
+	pthread_mutex_lock(&mutex_graphics_list);
+	struct graphics_list* current =	icon_registry;
 
-	pthread_mutex_lock(&mutex_user_queue);
-	if (user_queue_head == NULL || user_queue_head->type != VIDEO_ICON
-		|| user_queue_head->element == NULL) {
-		pthread_mutex_unlock(&mutex_user_queue);
+	if (current == NULL) {
+		pthread_mutex_unlock(&mutex_graphics_list);
 		return 0;
 	}
 
-	char *load_path = user_queue_head->string;
-	int width = user_queue_head->width;
-	int height = user_queue_head->height;
-	int x = user_queue_head->x;
-	int y = user_queue_head->y;
+	//find the first that isn't loaded yet
+	while (current->next != NULL && current->string == NULL)
+		current = current->next;
 
-	//graph* pop_queue()
-	graphics_t * graph = malloc(sizeof(graphics_t));
-	user_queue_head->element->graphic = graph;
+	if (current->next == NULL && current->string == NULL) {
+		pthread_mutex_unlock(&mutex_graphics_list);
+		return 0;
+	}
 
-	//Moving the head
-	struct user_queue *del = user_queue_head;
-	user_queue_head = user_queue_head->next;
-	free(del);
-	if(user_queue_head == NULL)
-		user_queue_tail = NULL;
-
-	pthread_mutex_unlock(&mutex_user_queue);
-
-	pthread_mutex_lock(&mutex_graphics_list);
-	//load_img(char* load_path, int x, int y, int width, int height, graphics_t *graph)
-
-	SDL_Texture *icon = video_import_png(load_path, &graph->pos.w, &graph->pos.h);
-	if (icon == NULL) {
+	if (current->graphic == NULL) {
+		fprintf(stderr, "[~][display] Graphic element isn't initialized\n");
 		pthread_mutex_unlock(&mutex_graphics_list);
 		return -1;
 	}
-	graph->tex = icon;
 
-	//user defined resolution
-	if (width > 0 && height > 0) {
-		if (width <= current_width && height <= current_height) {
+	printf("Chemin : %s\n", current->string);
+
+	if (current->type == VIDEO_TEXT)
+		current->graphic->tex = video_make_text(current->string, &current->graphic->pos.w, &current->graphic->pos.h);
+	else if (current->type == VIDEO_ICON) {
+		graphics_t* graph = current->graphic;
+		int width = 0;
+		int height = 0;
+		SDL_Texture *icon = video_import_png(current->string, &width, &height);
+		if (icon == NULL) {
+			fprintf(stderr, "[~][display] Couldn't import the image %s\n", current->string);
+			display_graphic_remove(current->id);
+			pthread_mutex_unlock(&mutex_graphics_list);
+			return -1;
+		}
+		graph->tex = icon;
+
+		if (graph->pos.w == 0 || graph->pos.h == 0) {
 			graph->pos.w = width;
 			graph->pos.h = height;
 		}
-		else {
-			fprintf(stderr, "[*][display] Width or height of %s greater than the window. Ignoring user values\n", load_path);
+
+		if (graph->pos.x >= current_width-(graph->pos.w)
+			&& graph->pos.y >= current_height-(graph->pos.h)) {
+			fprintf(stderr, "[~][display] Position of %s doesn't fit the bounds of the window\n", current->string);
+			display_graphic_remove(current->id);
+			pthread_mutex_unlock(&mutex_graphics_list);
+			return -1;
 		}
+		printf("Add icon at %d %d ,%d x %d\n", graph->pos.x, graph->pos.y, graph->pos.w, graph->pos.h);
 	}
 
-	if (x >= 0 && y >= 0 && x < current_width-(graph->pos.w) && y < current_height-(graph->pos.h)) {
-		graph->pos.x = x;
-		graph->pos.y = y;
-	}
-	else {
-		fprintf(stderr, "[~][display] Position values of %s don't fit the bounds of the window\n", load_path);
-		pthread_mutex_unlock(&mutex_graphics_list);
-		return -1;
-	}
+	current->string = NULL;
 
-	printf("Add icon at %d %d ,%d x %d\n", graph->pos.x, graph->pos.y, graph->pos.w, graph->pos.h);
 	pthread_mutex_unlock(&mutex_graphics_list);
+
 	return 0;
 }
 
@@ -532,47 +526,111 @@ void update_infos()
 	want_screenshot = jakopter_com_read_int(com_in, 24);
 }
 
-static int graphic_append(struct graphics_list **element)
+static int graphic_append(struct graphics_list *item)
 {
-	int id = 0;
+	int id = 1;
 	pthread_mutex_lock(&mutex_graphics_list);
 	if (icon_registry == NULL) {
-		icon_registry = (struct graphics_list *)malloc(sizeof(struct graphics_list));
-		icon_registry->graphic = NULL;
-		icon_registry->next = NULL;
-		icon_registry->id = 0;
-		*element = icon_registry;
+		icon_registry = item;
+		icon_registry->id = id;
 	}
 	else {
 		struct graphics_list *current = icon_registry;
 		while (current->next != NULL)
 			current = current->next;
-
-		current->next = (struct graphics_list *)malloc(sizeof(struct graphics_list));
-		current->next->graphic = NULL;
-		current->next->next = NULL;
+		current->next = item;
 		id = current->next->id = current->id + 1;
-		*element = current->next;
 	}
 
 	pthread_mutex_unlock(&mutex_graphics_list);
 
 	return id;
 }
+
+/** \return the icon id*/
+int display_draw_icon(const char* path, int x, int y, int width, int height)
+{
+	struct graphics_list* item = video_graphic_create(VIDEO_ICON);
+	int id = graphic_append(item);
+
+	pthread_mutex_lock(&mutex_graphics_list);
+	graphics_t* graph = malloc(sizeof(graphics_t));
+	item->string = path;
+	item->graphic = graph;
+
+	//user defined resolution
+	if (width > 0 && height > 0) {
+		if (width <= current_width && height <= current_height) {
+			graph->pos.w = width;
+			graph->pos.h = height;
+		}
+		else {
+			fprintf(stderr, "[*][display] Width or height of %s greater than the window. Ignoring user values\n", path);
+		}
+	}
+
+	if (x >= 0 && y >= 0 && x < current_width-(graph->pos.w) && y < current_height-(graph->pos.h)) {
+		graph->pos.x = x;
+		graph->pos.y = y;
+	}
+	else {
+		fprintf(stderr, "[~][display] Position of %s doesn't fit the bounds of the window\n", path);
+		pthread_mutex_unlock(&mutex_graphics_list);
+		return -1;
+	}
+	pthread_mutex_unlock(&mutex_graphics_list);
+
+	return id;
+}
+
+int display_draw_text(const char* string, int x, int y)
+{
+	struct graphics_list* item = video_graphic_create(VIDEO_TEXT);
+	int id = graphic_append(item);
+	printf("Text with id %d\n", id);
+
+	pthread_mutex_lock(&mutex_graphics_list);
+	graphics_t* graph = malloc(sizeof(graphics_t));
+	item->string = string;
+	item->graphic = graph;
+
+	if (x >= 0 && y >= 0 && x < current_width-(graph->pos.w) && y < current_height-(graph->pos.h)) {
+		graph->pos.x = x;
+		graph->pos.y = y;
+	}
+	else {
+		fprintf(stderr, "[~][display] Position of \"%s\" doesn't fit the bounds of the window\n", string);
+		pthread_mutex_unlock(&mutex_graphics_list);
+		return -1;
+	}
+	pthread_mutex_unlock(&mutex_graphics_list);
+
+	return id;
+}
+
 void display_graphic_remove(int id)
 {
 	pthread_mutex_lock(&mutex_graphics_list);
 	if (icon_registry == NULL) {
 		fprintf(stderr, "[*][display] Not any icon referenced\n");
+		pthread_mutex_unlock(&mutex_graphics_list);
 		return;
 	}
+
 	struct graphics_list *current = icon_registry;
+
+	//First item
+	if (current->id == id) {
+		icon_registry = current->next;
+		video_graphic_destroy(current);
+		current = NULL;
+	}
+
 	while (current != NULL && current->next != NULL) {
+		//Item inside
 		if (current->next->id == id) {
 			struct graphics_list *next = current->next->next;
-			if (current->next->graphic != NULL)
-				free(current->next->graphic);
-			free(current->next);
+			video_graphic_destroy(current->next);
 			current->next = next;
 			//Drop the pointer
 			current = NULL;
@@ -580,45 +638,13 @@ void display_graphic_remove(int id)
 		else
 			current = current->next;
 	}
-	//First element
+	//Last item
 	if (current != NULL) {
-		if (current->id == id) {
-			free(current);
-			icon_registry = NULL;
-		}
-		else
-			fprintf(stderr, "[*][display] Icon %d not referenced\n", id);
+		fprintf(stderr, "[*][display] Icon %d not referenced\n", id);
 	}
+	printf("Id removed: %d\n", id);
+
 	pthread_mutex_unlock(&mutex_graphics_list);
-}
-
-/** \return the icon id*/
-int display_draw_icon(char *path, int x, int y, int width, int height)
-{
-	struct graphics_list *element = NULL;
-	int id = graphic_append(&element);
-
-	pthread_mutex_lock(&mutex_user_queue);
-	struct user_queue *current = malloc(sizeof(struct user_queue));
-	current->type    = VIDEO_ICON;
-	current->string  = path;
-	current->element = element;
-	current->height  = height;
-	current->width   = width;
-	current->x       = x;
-	current->y       = y;
-	current->next    = NULL;
-
-	//push_queue(current)
-	if (user_queue_head == NULL)
-		user_queue_head = current;
-	else
-		user_queue_tail->next = current;
-
-	user_queue_tail = current;
-	pthread_mutex_unlock(&mutex_user_queue);
-
-	return id;
 }
 
 void display_graphic_resize(int id, int width, int height)
@@ -646,6 +672,8 @@ void display_graphic_resize(int id, int width, int height)
 
 void display_graphic_move(int id, int x, int y)
 {
+	if (!initialized)
+		return;
 	if (x < 0 || y < 0) {
 		fprintf(stderr, "[~][display] Position values don't fit the bounds of the window\n");
 		return;
@@ -682,7 +710,7 @@ void display_graphic_move(int id, int x, int y)
 */
 void draw_attitude_indic()
 {
-	int i=0;
+	int i = 0;
 	//nose inclination = y offset from the horizon
 	int nose_incl = (int)(horiz_pitchScale * pitch);
 	//"center" of the drone, unaffected by roll

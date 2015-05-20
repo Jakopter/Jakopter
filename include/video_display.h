@@ -28,7 +28,11 @@ void video_display_destroy();
 /**
 * \brief Draw an icon on the video display. width and height are facultative, set it to 0.
 */
-int display_draw_icon(char *path, int x, int y, int width, int height);
+int display_draw_icon(const char *path, int x, int y, int width, int height);
+/**
+* \brief Draw a string on the video display.
+*/
+int display_draw_text(const char *string, int x, int y);
 /**
 * \brief Free the memory associated with the graphic element.
 */
