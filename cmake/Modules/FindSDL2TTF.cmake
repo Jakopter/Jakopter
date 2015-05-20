@@ -71,7 +71,7 @@ SET(SDL2TTF_SEARCH_PATHS
 	/usr/local
 	/usr
 	/sw # Fink
-	/opt/local # DarwinPorts
+	/opt/local # DarwinPorts/MacPorts
 	/opt/csw # Blastwave
 	/opt
 )

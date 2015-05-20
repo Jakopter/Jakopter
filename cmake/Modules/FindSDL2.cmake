@@ -80,7 +80,7 @@ FIND_PATH(SDL2_INCLUDE_DIR SDL.h
   /usr/local/include/SDL2
   /usr/include/SDL2
   /sw # Fink
-  /opt/local # DarwinPorts
+  /opt/local # DarwinPorts/MacPorts
   /opt/csw # Blastwave
   /opt
 )

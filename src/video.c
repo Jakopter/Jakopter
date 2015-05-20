@@ -25,6 +25,7 @@ static const struct jakopter_frame_processing frame_process = {
 
 static const struct jakopter_drawing draw_implementation = {
 	.draw_icon   = display_draw_icon,
+	.draw_text   = display_draw_text,
 	.remove      = display_graphic_remove,
 	.resize      = display_graphic_resize,
 	.move        = display_graphic_move
@@ -209,10 +210,16 @@ int jakopter_init_video()
 	return 0;
 }
 
-int jakopter_draw_icon(char *p, int x, int y, int w, int h) {
+int jakopter_draw_icon(const char *p, int x, int y, int w, int h) {
 	if(draw_implementation.draw_icon == NULL)
 		return -1;
 	return draw_implementation.draw_icon(p, x, y, w, h);
+}
+
+int jakopter_draw_text(const char *s, int x, int y) {
+	if(draw_implementation.draw_text == NULL)
+		return -1;
+	return draw_implementation.draw_text(s, x, y);
 }
 
 void jakopter_draw_remove(int id){
