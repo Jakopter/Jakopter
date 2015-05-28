@@ -2,6 +2,7 @@
 #include "video_queue.h"
 #include "video_decode.h"
 #include "video_display.h"
+#include "visp.h"
 
 
 /*addresses for video communication*/
@@ -19,6 +20,9 @@ static const struct jakopter_frame_processing frame_process = {
 	.callback = video_display_process,
 	.init     = video_display_init,
 	.clean    = video_display_destroy
+//	.callback = visp_process,
+//	.init     = visp_init,
+//	.clean    = visp_destroy
 };
 
 /** Drawing API implementation */
@@ -29,6 +33,11 @@ static const struct jakopter_drawing draw_implementation = {
 	.remove      = display_graphic_remove,
 	.resize      = display_graphic_resize,
 	.move        = display_graphic_move
+//	.draw_icon   = NULL,
+//	.draw_text   = NULL,
+//	.remove      = NULL,
+//	.resize      = NULL,
+//	.move        = NULL
 };
 
 /*Set to 1 when we want to tell the video thread to stop.*/
@@ -140,7 +149,7 @@ int jakopter_init_video()
 	//do not try to initialize the thread if it's already running !
 	pthread_mutex_lock(&mutex_stopped);
 	if (!stopped) {
-		fprintf(stderr, "Video thread already running.\n");
+		fprintf(stderr, "[~][video] Video thread already running.\n");
 		pthread_mutex_unlock(&mutex_stopped);
 		return -1;
 	}
@@ -156,14 +165,14 @@ int jakopter_init_video()
 
 	//initialize the video decoder
 	if (video_init_decoder() < 0) {
-		fprintf(stderr, "Error initializing decoder, aborting.\n");
+		fprintf(stderr, "[~][video] cannot initialize decoder, aborting.\n");
 		pthread_mutex_unlock(&mutex_stopped);
 		return -1;
 	}
 
 	sock_video = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock_video < 0) {
-		fprintf(stderr, "Error : couldn't bind TCP socket.\n");
+		fprintf(stderr, "[~][video] couldn't bind TCP socket.\n");
 		video_stop_decoder();
 		pthread_mutex_unlock(&mutex_stopped);
 		return -1;
@@ -171,7 +180,7 @@ int jakopter_init_video()
 
 	//bind the client socket to force it on the drone's port
 	if (connect(sock_video, (struct sockaddr*)&addr_drone_video, sizeof(addr_drone_video)) < 0) {
-		perror("Error connecting to video stream");
+		perror("[~][video] cannot connect to video stream");
 		video_clean();
 		pthread_mutex_unlock(&mutex_stopped);
 		return -1;
@@ -183,7 +192,7 @@ int jakopter_init_video()
 	video_queue_init();
 	//start the threads responsible for video processing and reception
 	if (pthread_create(&processing_thread, NULL, processing_routine, NULL) < 0) {
-		perror("Error creating the video processing thread");
+		perror("[~][video] cannot create the video processing thread");
 		video_clean();
 		pthread_mutex_unlock(&mutex_stopped);
 		return -1;
@@ -194,7 +203,7 @@ int jakopter_init_video()
 	pthread_attr_init(&thread_attribs);
 	pthread_attr_setdetachstate(&thread_attribs, PTHREAD_CREATE_DETACHED);*/
 	if (pthread_create(&video_thread, NULL, video_routine, NULL) < 0) {
-		perror("Error creating the main video thread");
+		perror("[~][video] cannot create the main video thread");
 		video_clean();
 		//pthread_attr_destroy(&thread_attribs);
 		pthread_mutex_unlock(&mutex_stopped);
@@ -210,34 +219,39 @@ int jakopter_init_video()
 	return 0;
 }
 
-int jakopter_draw_icon(const char *p, int x, int y, int w, int h) {
+int jakopter_draw_icon(const char *p, int x, int y, int w, int h)
+{
 	if(draw_implementation.draw_icon == NULL)
 		return -1;
 	return draw_implementation.draw_icon(p, x, y, w, h);
 }
 
-int jakopter_draw_text(const char *s, int x, int y) {
+int jakopter_draw_text(const char *s, int x, int y)
+{
 	if(draw_implementation.draw_text == NULL)
 		return -1;
 	return draw_implementation.draw_text(s, x, y);
 }
 
-void jakopter_draw_remove(int id){
+void jakopter_draw_remove(int id)
+{
 	draw_implementation.remove(id);
 }
 
-void jakopter_draw_resize(int id, int width, int height) {
+void jakopter_draw_resize(int id, int width, int height)
+{
 	draw_implementation.resize(id, width, height);
 }
 
-void jakopter_draw_move(int id, int x, int y) {
+void jakopter_draw_move(int id, int x, int y)
+{
 	draw_implementation.move(id, x, y);
 }
 
 void video_clean()
 {
 	if (close(sock_video) < 0)
-		perror("Error stopping video connection");
+		perror("[~][video] cannot stop video connection");
 	video_stop_decoder();
 	video_queue_free();
 }
@@ -271,7 +285,7 @@ int jakopter_stop_video()
 	video_set_stopped();
 	int exit_status = video_join_thread();
 	if (exit_status == 1)
-		fprintf(stderr, "Video thread is already shut down.\n");
+		fprintf(stderr, "[*][video] Video thread is already shut down.\n");
 	else if (exit_status < 0)
 		return -1;
 
@@ -291,7 +305,7 @@ int video_join_thread()
 	int prev_state = terminated;
 	if (!terminated) {
 		if (pthread_join(video_thread, NULL) < 0) {
-			perror("Error joining with the video thread");
+			perror("[~][video] cannot join with the video thread");
 			pthread_mutex_unlock(&mutex_terminated);
 			return -1;
 		}

@@ -1,4 +1,3 @@
-#include "common.h"
 #include "user_input.h"
 
 jakopter_com_channel_t* user_input_channel;

@@ -276,6 +276,7 @@ int jakopter_draw_resize_lua(lua_State* L)
 	jakopter_draw_resize(id, width, height);
 	return 0;
 }
+
 int jakopter_draw_move_lua(lua_State* L)
 {
 	lua_Integer id = luaL_checkinteger(L, 1);
