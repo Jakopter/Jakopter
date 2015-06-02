@@ -29,15 +29,15 @@ if [ -z `which lua` ]; then
 	sudo port install lua
 fi
 
-if [ -z `find $MACPORT_PREFIX/include/SDL2 -name "SDL.h"` ]; then
+if [ ! -d "$MACPORT_PREFIX/include/SDL2" && ! -e "$MACPORT_PREFIX/include/SDL2/SDL.h" ]; then
 	sudo port install libsdl2
 fi
 
-if [ -z `find $MACPORT_PREFIX/include/SDL2 -name "SDL_ttf.h"` ]; then
+if [ ! -d "$MACPORT_PREFIX/include/SDL2" && ! -e "$MACPORT_PREFIX/include/SDL2/SDL_ttf.h" ]; then
 	sudo port install libsdl2_ttf
 fi
 
-if [ -z `find $MACPORT_PREFIX/include/SDL2 -name "SDL_image.h"` ]; then
+if [ ! -d "$MACPORT_PREFIX/include/SDL2" && ! -e "$MACPORT_PREFIX/include/SDL2/SDL_image.h" ]; then
 	sudo port install libsdl2_image
 fi
 
@@ -49,6 +49,6 @@ if [ -z `which ffmpeg` ]; then
 	sudo port install ffmpeg -sdl
 fi
 
-if [ -z `find $MACPORT_PREFIX/include -name "curses.h"` ] ; then
+if [ ! -e $MACPORT_PREFIX/include/curses.h ] ; then
 	sudo port install ncurses
 fi
