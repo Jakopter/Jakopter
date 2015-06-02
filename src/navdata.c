@@ -93,7 +93,8 @@ static int navdata_init()
 
 	if (data.raw.ardrone_state & (1 << 15)) {
 		fprintf(stderr, "[*][navdata] Battery charge too low: %d\n", data.raw.ardrone_state & (1 << 15));
-		return -1;
+		//TODO: Use errcode instead
+		//return -1;
 	}
 
 	if (init_navdata_bootstrap() < 0){

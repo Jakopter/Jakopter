@@ -51,7 +51,7 @@ void display_graphic_move(int id, int x, int y);
 */
 #define VIDEO_ICON 1
 #define VIDEO_TEXT 2
-#define VIDEO_NUMBER 3
+#define DISPLAY_CYCLES 1
 enum video_nav_infos {
 	VIDEO_BAT,
 	VIDEO_ALT,
