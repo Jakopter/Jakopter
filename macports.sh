@@ -29,15 +29,15 @@ if [ -z `which lua` ]; then
 	sudo port install lua
 fi
 
-if [ ! -d "$MACPORT_PREFIX/include/SDL2" ] && [ ! -e "$MACPORT_PREFIX/include/SDL2/SDL.h" ]; then
+if [ ! -d "$MACPORT_PREFIX/include/SDL2" ] || [ ! -e "$MACPORT_PREFIX/include/SDL2/SDL.h" ]; then
 	sudo port install libsdl2
 fi
 
-if [ ! -d "$MACPORT_PREFIX/include/SDL2" ] &&  [ ! -e "$MACPORT_PREFIX/include/SDL2/SDL_ttf.h" ]; then
+if [ ! -d "$MACPORT_PREFIX/include/SDL2" ] ||  [ ! -e "$MACPORT_PREFIX/include/SDL2/SDL_ttf.h" ]; then
 	sudo port install libsdl2_ttf
 fi
 
-if [ ! -d "$MACPORT_PREFIX/include/SDL2" ] && [ ! -e "$MACPORT_PREFIX/include/SDL2/SDL_image.h" ]; then
+if [ ! -d "$MACPORT_PREFIX/include/SDL2" ] || [ ! -e "$MACPORT_PREFIX/include/SDL2/SDL_image.h" ]; then
 	sudo port install libsdl2_image
 fi
 
