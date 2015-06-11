@@ -1,6 +1,9 @@
 #include "user_input.h"
+#include <fcntl.h>
 
 jakopter_com_channel_t* user_input_channel;
+
+//static int fdpipe;
 
 pthread_t user_input_thread;
 //Guard that stops any function if connection isn't initialized.
@@ -20,6 +23,13 @@ int read_cmd()
 		ret = (int) c;
 		fclose(keyboard_cmd);
 	}
+	// char* buf = NULL;
+	// if (fdpipe) {
+	// 	read(fdpipe, &buf, 256);
+	// 	if(buf != NULL)
+	// 		ret = atoi(buf);
+	// }
+
 	pthread_mutex_unlock(&mutex_user_input);
 	return ret;
 }
@@ -68,16 +78,23 @@ int user_input_connect()
 {
 	if (!stopped_user_input)
 		return -1;
+
+	printf("[user_input] connecting user input\n");
 	pthread_mutex_lock(&mutex_stopped_user_input);
 	stopped_user_input = false;
 	pthread_mutex_unlock(&mutex_stopped_user_input);
-
-	printf("[user_input] connecting user input\n");
 
 	// right now it is just 2 int
 	user_input_channel = jakopter_com_add_channel(CHANNEL_USERINPUT, 2*sizeof(int));
 	jakopter_com_write_int(user_input_channel, 0, 0);
 	jakopter_com_write_int(user_input_channel, 4, 0);
+
+	// fdpipe = open(CMDFILENAME, O_RDONLY);
+
+	// if (fdpipe < 0) {
+	// 	perror("[~][user_input] Can't open named pipe");
+	// 	return -1;
+	// }
 
 	printf("[user_input] channel created\n");
 
@@ -98,6 +115,7 @@ int user_input_disconnect()
 		pthread_mutex_unlock(&mutex_stopped_user_input);
 		int ret = pthread_join(user_input_thread, NULL);
 
+		//close(fdpipe);
 		jakopter_com_remove_channel(CHANNEL_USERINPUT);
 
 		return ret;

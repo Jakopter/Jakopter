@@ -3,34 +3,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <curses.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define CMDFILENAME "/tmp/jakopter_cmd.txt"
 
 int main(){
 	char c;
-	int i = 100;
 	FILE *cmd;
 	initscr();
+	// if (mkfifo(CMDFILENAME, 0644) < 0) {
+	// 	perror("mkfifo failed()");
+	// 	return -1;
+	// }
 
+	// int fdpipe = open(CMDFILENAME, O_WRONLY|O_NONBLOCK);
+	// if (fdpipe < 0) {
+	// 	perror("Jakopter not listening");
+	// 	return -1;
+	// }
 	while (1) {
 		c = getch();
 
 		if (c == 's') {
 			endwin();
+			// close(fdpipe);
 			return 0;
 		}
+
+		// fprintf(fdpipe, "%c\n", (int) c);
 
 		cmd = fopen(CMDFILENAME, "w");
 		fprintf(cmd, "%c\n", (int) c);
 		fclose(cmd);
 	}
 
-	i--;
-
-	if (i <0) {
-		endwin();
-		return 0;
-	}
+	// close(fdpipe);
+	unlink(CMDFILENAME);
 
 	return 0;
 }

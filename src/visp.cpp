@@ -33,7 +33,7 @@ int visp_init()
 
 void visp_destroy()
 {
-	if(initialized) {
+	if (initialized) {
 		delete display_X;
 		delete display_img;
 	}
@@ -42,8 +42,7 @@ void visp_destroy()
 
 int visp_process(uint8_t* frame, int width, int height, int size)
 {
-	std::string opt_face_cascade_name;
-	opt_face_cascade_name = "/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml";
+	std::string face_cascade_script = "/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml";
 
 	try {
 		if (!initialized) {
@@ -53,22 +52,16 @@ int visp_process(uint8_t* frame, int width, int height, int size)
 		#endif
 			vpDisplay::setTitle(*display_img, "Video reader");
 
-    		face_detector.setCascadeClassifierFile(opt_face_cascade_name);
+    		face_detector.setCascadeClassifierFile(face_cascade_script);
 
 			initialized = true;
 		}
 		if (initialized) {
-
-			// unsigned char* rgb_frame = (unsigned char*)malloc(width*height*sizeof(unsigned char));
-
+			//In order to use color, RGBa
 			vpImageConvert::YUV420ToGrey((unsigned char *)frame, display_img->bitmap, width*height);
 
-			// memcpy(display_img->bitmap, rgb_frame, display_img->getNumberOfPixel());
-
-			// free(rgb_frame);
-
 			vpDisplay::display(*display_img);
-			//traitement
+			//compute face detection
 			bool face_found = face_detector.detect(*display_img);
 			if (face_found) {
 				std::ostringstream text;

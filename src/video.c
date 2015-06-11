@@ -26,7 +26,6 @@ static const struct jakopter_frame_processing frame_process = {
 };
 
 /** Drawing API implementation */
-
 static const struct jakopter_drawing draw_implementation = {
 	.draw_icon   = display_draw_icon,
 	.draw_text   = display_draw_text,
@@ -51,18 +50,18 @@ static pthread_mutex_t mutex_terminated = PTHREAD_MUTEX_INITIALIZER;
 
 /*clean things that have been initiated/created by init_video and need manual cleaning.*/
 static void video_clean();
-int video_join_thread();
+static int video_join_thread();
 
 
 void* video_routine(void* args)
 {
-	//TCP segment of encoded video received from the drone
+	/*TCP segment of encoded video received from the drone*/
 	static uint8_t tcp_buf[TCP_VIDEO_BUF_SIZE];
-	//size of this segment in bytes
+	/*size of this segment in bytes*/
 	ssize_t pack_size = 0;
-	//set to 1 by the decoding function if a decoded video frame is available
+	/*set to 1 by the decoding function if a decoded video frame is available*/
 	int got_frame = 0;
-	//structure that will hold our latest decoded video frame
+	/*structure that will hold our latest decoded video frame*/
 	jakopter_video_frame_t decoded_frame;
 
 	pthread_mutex_lock(&mutex_stopped);
@@ -144,7 +143,7 @@ void* processing_routine(void* args)
 	pthread_exit(NULL);
 }
 
-int jakopter_init_video()
+int jakopter_init_video(const char* drone_ip)
 {
 	//do not try to initialize the thread if it's already running !
 	pthread_mutex_lock(&mutex_stopped);
@@ -157,8 +156,16 @@ int jakopter_init_video()
 	video_join_thread();
 
 	addr_drone_video.sin_family      = AF_INET;
-	addr_drone_video.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
+	if (drone_ip == NULL)
+		addr_drone_video.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
+	else
+		addr_drone_video.sin_addr.s_addr = inet_addr(drone_ip);
 	addr_drone_video.sin_port        = htons(PORT_VIDEO);
+
+	if (addr_drone_video.sin_addr.s_addr == INADDR_NONE) {
+		perror("[~] The drone adress is invalid \n");
+		return -1;
+	}
 
 	//initialize the fdset
 	FD_ZERO(&vid_fd_set);
@@ -235,17 +242,21 @@ int jakopter_draw_text(const char *s, int x, int y)
 
 void jakopter_draw_remove(int id)
 {
+	if(draw_implementation.remove == NULL)
+		return;
 	draw_implementation.remove(id);
 }
 
 void jakopter_draw_resize(int id, int width, int height)
 {
-	draw_implementation.resize(id, width, height);
+	if (draw_implementation.resize != NULL)
+		draw_implementation.resize(id, width, height);
 }
 
 void jakopter_draw_move(int id, int x, int y)
 {
-	draw_implementation.move(id, x, y);
+	if (draw_implementation.move != NULL)
+		draw_implementation.move(id, x, y);
 }
 
 void video_clean()
@@ -256,11 +267,6 @@ void video_clean()
 	video_queue_free();
 }
 
-/**
-  * \brief Ask the video thread to stop without joining with it.
-  * Useful for stopping it from the inside.
-  * \return 0 if stopped was 0, 1 if it wasn't.
-  */
 int video_set_stopped()
 {
 	pthread_mutex_lock(&mutex_stopped);
@@ -275,11 +281,6 @@ int video_set_stopped()
 	}
 }
 
-/*
-* Ask the thread to stop with set_stopped, then
-* call join_thread, print a message if the thread has already ended.
-* \return -1 on error, 0 otherwise.
-*/
 int jakopter_stop_video()
 {
 	video_set_stopped();

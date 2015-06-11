@@ -439,7 +439,7 @@ SDL_Texture* video_import_png(char* path, int* res_w, int* res_h)
 	return img_tex;
 }
 
-/* With SDL, we can't create texture from a different thread than the rendering one */
+/* With SDL, we can't create or destroy texture from a different thread than the rendering one */
 int load_element()
 {
 	pthread_mutex_lock(&mutex_graphics_list);
@@ -455,7 +455,7 @@ int load_element()
 	//find the first that isn't loaded yet
 	while (load_icon->next != NULL && load_icon->string == NULL)
 		load_icon = load_icon->next;
-
+	//nothing found
 	if (load_icon->string == NULL) {
 		pthread_mutex_unlock(&mutex_graphics_list);
 		return 0;
@@ -466,14 +466,16 @@ int load_element()
 		pthread_mutex_unlock(&mutex_graphics_list);
 		return -1;
 	}
-	load_icon->graphic->tex = NULL;
 
+	load_icon->graphic->tex = NULL;
 	char* string = load_icon->string;
+
 	if (load_icon->type == VIDEO_TEXT) {
 		graphics_t* graph = load_icon->graphic;
 		graph->tex = video_make_text(string, &graph->pos.w, &graph->pos.h);
 
-		if (graph->pos.x >= current_width-(graph->pos.w) || graph->pos.y >= current_height-(graph->pos.h)) {
+		if (graph->pos.x >= current_width-(graph->pos.w)
+			|| graph->pos.y >= current_height-(graph->pos.h)) {
 			fprintf(stderr, "[~][display] Position of \"%s\" doesn't fit the bounds of the window\n", string);
 			pthread_mutex_unlock(&mutex_graphics_list);
 			display_graphic_remove(load_icon->id);
@@ -484,6 +486,7 @@ int load_element()
 		graphics_t* graph = load_icon->graphic;
 		int width = 0;
 		int height = 0;
+
 		SDL_Texture *icon = video_import_png(string, &width, &height);
 		if (icon == NULL) {
 			fprintf(stderr, "[~][display] Couldn't import the image %s\n", string);

@@ -6,9 +6,12 @@
 #include "com_master.h"
 
 #define PORT_NAVDATA	5554
-#define NAVDATA_INTERVAL 	1/15 // interval in seconds
+/* interval in seconds*/
+#define NAVDATA_INTERVAL 	1/15
 #define TAG_DEMO 0
+/*Tag for the checksum packet in full mode*/
 #define TAG_CKS 0
+#define DEMO_LEN 4*INT_LEN+6*DECIMAL_DIG+10
 
 struct navdata_option {
 	uint16_t  tag;
@@ -45,9 +48,9 @@ struct navdata_demo
 
 	int32_t    altitude;               /* UAV's altitude in centimeters */
 
-	float32_t  vx;                     /* UAV's estimated linear velocity */
-	float32_t  vy;                     /* UAV's estimated linear velocity */
-	float32_t  vz;                     /* UAV's estimated linear velocity */
+	float32_t  vx;                     /* UAV's estimated linear velocity in  */
+	float32_t  vy;                     /* UAV's estimated linear velocity in  */
+	float32_t  vz;                     /* UAV's estimated linear velocity in  */
 
 	uint32_t   num_frames; // Useless
 
@@ -66,12 +69,69 @@ union navdata_t {
 	struct navdata_demo demo;
 };
 
+/**
+  * \brief Start navdata thread
+  * \param drone_ip used by simulator, if you are with a real drone, set it to NULL
+  * \return 0 if success, -1 if error
+  */
 int navdata_connect();
+/**
+  * \brief Stop navdata thread.
+  * \return the pthread_join value or -1 if communication already stopped.
+  */
 int navdata_disconnect();
+/**
+  * \return a boolean
+  */
 int jakopter_is_flying();
+/**
+  * \return the battery charge in percentage or -1 if navdata are not received
+  */
+int jakopter_battery();
+/**
+  * \return the height in millimeters or -1 if navdata are not received
+  */
 int jakopter_height();
-float jakopter_y_axis();
-
+/**
+  * \return the percentage of the relative angle between -1.0 and 1.0 or -2.0 if navdata are not received
+  */
+float jakopter_angular_x_axis();
+/**
+  * \return the percentage of the relative angle between -1.0 and 1.0 or -2.0 if navdata are not received
+  */
+float jakopter_angular_y_axis();
+/**
+  * \return the percentage of the relative angle between -1.0 and 1.0 or -2.0 if navdata are not received
+  */
+float jakopter_angular_z_axis();
+/**
+  * \return the percentage of the relative angle between -1.0 and 1.0 or -2.0 if navdata are not received
+  */
+float jakopter_velocity_x_axis();
+float jakopter_velocity_y_axis();
+float jakopter_velocity_z_axis();
+/**
+  * \return the sequence number of navdata
+  */
 int navdata_no_sq();
+/**
+  * \return the mask of ardrone state in hexadecimal.
+  */
+const char* jakopter_navdata_state();
+/**
+  * \brief Print the content of received navdata
+  */
+void debug_navdata_demo();
+/**
+  * \brief Return the timestamp of the last request: is_flying, etc.
+  * Must be called _after_ the request, so be sure to store the result of the request before.
+  * \return a string containing the timestamp under this format: "sec.nsec:" or NULL if stopped
+  */
+const char* jakopter_navdata_timestamp();
+/**
+  * \brief Return all the data stored with a timestamp.
+  * \return a string containing the data under this format: "sec.nsec:data1 data2 " or NULL if stopped
+  */
+const char* jakopter_log_navdata();
 
 #endif
