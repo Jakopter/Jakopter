@@ -1,43 +1,70 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+## CMake Settings ##
+cmake_minimum_required(VERSION 2.8)
 
-PROJECT(jakopter)
+project(jakopter)
 
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-FIND_PACKAGE(Threads REQUIRED)
-FIND_PACKAGE(SDL2)
-FIND_PACKAGE(SDL2TTF)
-FIND_PACKAGE(SDL2Image)
-FIND_PACKAGE(FFmpeg)
-FIND_PACKAGE(Lua)
-FIND_PACKAGE(Leap)
-FIND_PACKAGE(Curses)
-FIND_PACKAGE(Visp)
-FIND_PACKAGE(Vicon)
 
-# Debug: print all declared variables
+## User definitions ##
+set(USE_VISP OFF)
+
+
+## Packages ##
+find_package(Threads REQUIRED)
+find_package(SDL2)
+find_package(SDL2TTF)
+find_package(SDL2Image)
+find_package(FFmpeg)
+find_package(Lua)
+find_package(Leap)
+find_package(Curses)
+find_package(Visp)
+find_package(Vicon)
+
+## Debug: print all declared variables
 #get_cmake_property(_variableNames VARIABLES)
 #foreach (_variableName ${_variableNames})
 #	message(STATUS "${_variableName}=${${_variableName}}")
 #endforeach()
 
-# SET (CMAKE_C_COMPILER "/usr/bin/clang")
-# LIST(APPEND CMAKE_CXX_FLAGS "-pthread")
 
-INCLUDE_DIRECTORIES("include/")
+## Compiler Infos ##
 
-SET(CMAKE_BUILD_TYPE DEBUG)
+set (CMAKE_C_COMPILER "/usr/bin/clang")
 
-ADD_DEFINITIONS("-Wall") # Not compatible with MSVC
+include_directories("include/")
 
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY build/${CMAKE_BUILD_TYPE})
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY build/${CMAKE_BUILD_TYPE})
+set(CMAKE_BUILD_TYPE DEBUG)
 
-IF(apple)
-	CMAKE_POLICY(SET CMP0042 NEW)
-ENDIF()
+add_definitions("-Wall") # Not compatible with MSVC
+list(APPEND CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftest-coverage -fprofile-arcs")
 
-SET(
+### C++11 ###
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_CXX11)
+check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif(COMPILER_SUPPORTS_CXX0X)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+else()
+        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+endif()
+
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY build/${CMAKE_BUILD_TYPE})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY build/${CMAKE_BUILD_TYPE})
+
+# Use rpath on Mac OS X
+if(APPLE)
+	cmake_policy(SET CMP0042 NEW)
+endif()
+
+
+## Core Source files ##
+
+set(
 	CORE_SRC_FILES
 	src/drone.c
 	src/navdata.c
@@ -47,181 +74,187 @@ SET(
 	src/coords.c
 )
 
-SET(
+set(
 	VIDEO_SRC_FILES
 	src/video.c
 	src/video_queue.c
 	src/video_decode.c
 )
 
-SET(
+set(
 	SDL2_SRC_FILES
 	src/video_display.c
 )
-SET(
+set(
 	VISP_SRC_FILES
 	src/visp.cpp
 )
 
-SET(
+set(
 	LEAP_SRC_FILES
 	src/leap.cpp
 )
 
-SET(
+set(
 	VICON_SRC_FILES
 	src/vicon.cpp
 )
 
-SET(
+set(
 	KEYB_SRC_FILES
 	src/cmd.c
 )
 
-SET(
+set(
 	LUA_SRC_FILES
 	src/lua_bindings.c
 )
 
-SET(
+set(
 	SRC_FILES
 	${CORE_SRC_FILES}
 )
 
+## Include Packages header and source files ##
 
-IF(AVCODEC_FOUND)
-	MESSAGE(STATUS "Compiling with libavcodec")
-	INCLUDE_DIRECTORIES(${AVCODEC_INCLUDE_DIRS})
-	SET(
+if(AVCODEC_FOUND)
+	message(STATUS "Compiling with libavcodec")
+	include_directories(${AVCODEC_INCLUDE_DIRS})
+	set(
 		SRC_FILES
 		${SRC_FILES}
 		${VIDEO_SRC_FILES}
 	)
 
-	ADD_DEFINITIONS(${AVCODEC_DEFINITIONS})
+	add_definitions(${AVCODEC_DEFINITIONS})
+else()
+	message(WARNING "Compiling WITHOUT libavcodec")
+	set(WITH_VIDEO OFF)
+endif()
 
-
-ELSE()
-	MESSAGE(WARNING "Compiling WITHOUT libavcodec")
-	SET(WITH_VIDEO OFF)
-ENDIF()
-
-IF(AVCODEC_FOUND AND SDL2_FOUND AND SDL2TTF_FOUND AND SDL2IMAGE_FOUND)
-	MESSAGE(STATUS "Compiling with SDL2")
-	INCLUDE_DIRECTORIES(${SDL2_INCLUDE_DIR} ${SDL2TTF_INCLUDE_DIR} ${SDL2IMAGE_INCLUDE_DIR})
-	SET(
+if(AVCODEC_FOUND AND SDL2_FOUND AND SDL2TTF_FOUND AND SDL2IMAGE_FOUND AND NOT USE_VISP)
+	message(STATUS "Compiling with SDL2")
+	include_directories(${SDL2_INCLUDE_DIR} ${SDL2TTF_INCLUDE_DIR} ${SDL2IMAGE_INCLUDE_DIR})
+	set(
 		SRC_FILES
 		${SRC_FILES}
 		${SDL2_SRC_FILES}
 	)
 
-	SET(WITH_VIDEO ON)
-ELSE()
-	MESSAGE(WARNING "Compiling WITHOUT SDL2")
-	SET(WITH_VIDEO OFF)
-ENDIF()
+	set(WITH_VIDEO ON)
+else()
+	message(WARNING "Compiling WITHOUT SDL2")
+	set(WITH_VIDEO OFF)
+endif()
 
 
-# IF(AVCODEC_FOUND AND VISP_FOUND)
-# 	MESSAGE(STATUS "Compiling with libvisp")
-# 	INCLUDE_DIRECTORIES(${VISP_INCLUDE_DIR})
-# 	SET(
-# 		SRC_FILES
-# 		${SRC_FILES}
-# 		${VISP_SRC_FILES}
-# 	)
-# 	SET(WITH_VIDEO ON)
-# ELSE()
-# 	MESSAGE(WARNING "Compiling WITHOUT visp")
-# 	SET(WITH_VIDEO OFF)
-# ENDIF()
+if(AVCODEC_FOUND AND VISP_FOUND AND USE_VISP)
+	message(STATUS "Compiling with libvisp")
+	include_directories(${VISP_INCLUDE_DIR})
+	set(
+		SRC_FILES
+		${SRC_FILES}
+		${VISP_SRC_FILES}
+	)
+	set(WITH_VIDEO ON)
+elseif(USE_VISP)
+	message(WARNING "Compiling WITHOUT visp")
+	set(WITH_VIDEO OFF)
+endif()
 
-IF(LEAP_FOUND)
-	MESSAGE(STATUS "Compiling with leap motion support")
-	INCLUDE_DIRECTORIES(${LEAP_INCLUDE_DIRS})
-ELSE()
-	MESSAGE(WARNING "Compiling WITHOUT leap motion support")
-ENDIF()
+if(LEAP_FOUND)
+	message(STATUS "Compiling with leap motion support")
+	include_directories(${LEAP_INCLUDE_DIRS})
+else()
+	message(WARNING "Compiling WITHOUT leap motion support")
+endif()
 
-IF(VICON_FOUND)
-	MESSAGE(STATUS "Compiling with vicon motion capture support")
-	INCLUDE_DIRECTORIES(${VICON_INCLUDE_DIRS})
-ELSE()
-	MESSAGE(WARNING "Compiling WITHOUT vicon motion capture support")
-ENDIF()
+if(VICON_FOUND)
+	message(STATUS "Compiling with vicon motion capture support")
+	include_directories(${VICON_INCLUDE_DIRS})
 
-IF(CURSES_FOUND)
-	MESSAGE(STATUS "Compiling keyboard command interface")
-	INCLUDE_DIRECTORIES(${CURSES_INCLUDE_DIRS})
-ELSE()
-	MESSAGE(WARNING "Compiling WITHOUT keyboard command interface")
-ENDIF()
+	set(WITH_COORDS ON)
+else()
+	message(WARNING "Compiling WITHOUT vicon motion capture support")
+	set(WITH_COORDS OFF)
+endif()
 
-IF(LUA_FOUND AND LUA_VERSION_MAJOR EQUAL 5 AND (LUA_VERSION_MINOR EQUAL 1 OR LUA_VERSION_MINOR EQUAL 2 OR LUA_VERSION_MINOR EQUAL 3))
-	MESSAGE(STATUS "Compiling with Lua")
-	INCLUDE_DIRECTORIES(${LUA_INCLUDE_DIR})
-	SET(
+if(CURSES_FOUND)
+	message(STATUS "Compiling keyboard command interface")
+	include_directories(${CURSES_INCLUDE_DIRS})
+else()
+	message(WARNING "Compiling WITHOUT keyboard command interface")
+endif()
+
+if(LUA_FOUND AND LUA_VERSION_MAJOR EQUAL 5 AND (LUA_VERSION_MINOR EQUAL 1 OR LUA_VERSION_MINOR EQUAL 2 OR LUA_VERSION_MINOR EQUAL 3))
+	message(STATUS "Compiling with Lua")
+	include_directories(${LUA_INCLUDE_DIR})
+	set(
 		SRC_FILES
 		${SRC_FILES}
 		${LUA_SRC_FILES}
 	)
-ELSE()
-	MESSAGE(WARNING "Compiling WITHOUT Lua")
-ENDIF()
+else()
+	message(WARNING "Compiling WITHOUT Lua")
+endif()
 
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/include/common.h.in ${CMAKE_SOURCE_DIR}/include/common.h)
 
-ADD_LIBRARY(
+configure_file(${CMAKE_SOURCE_DIR}/include/common.h.in ${CMAKE_SOURCE_DIR}/include/common.h)
+
+## Executables ##
+
+add_library(
 	jakopter SHARED
 	${SRC_FILES}
 )
 
-IF(LEAP_FOUND)
-	ADD_EXECUTABLE(
+if(LEAP_FOUND)
+	add_executable(
 		leap
 		${LEAP_SRC_FILES}
 	)
-ENDIF()
+endif()
 
-IF(VICON_FOUND)
-	ADD_EXECUTABLE(
+if(WITH_COORDS AND VICON_FOUND)
+	add_executable(
 		vicon
 		${VICON_SRC_FILES}
 	)
-ENDIF()
+endif()
 
-IF(CURSES_FOUND)
-	ADD_EXECUTABLE(
+## Linking libraries ##
+
+if(CURSES_FOUND)
+	add_executable(
 		keyb_control
 		${KEYB_SRC_FILES}
 	)
-	TARGET_LINK_LIBRARIES(keyb_control ${CURSES_LIBRARIES})
-ENDIF()
+	target_link_libraries(keyb_control ${CURSES_LIBRARIES})
+endif()
 
 
-TARGET_LINK_LIBRARIES(jakopter ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(jakopter ${CMAKE_THREAD_LIBS_INIT})
 
-IF(LUA_FOUND)
-	TARGET_LINK_LIBRARIES(jakopter ${LUA_LIBRARIES})
-ENDIF()
+if(LUA_FOUND)
+	target_link_libraries(jakopter ${LUA_LIBRARIES})
+endif()
 
-IF(WITH_VIDEO)
-	TARGET_LINK_LIBRARIES(jakopter ${AVCODEC_LIBRARIES} ${AVUTIL_LIBRARIES})
-ENDIF()
+if(WITH_VIDEO)
+	target_link_libraries(jakopter ${AVCODEC_LIBRARIES} ${AVUTIL_LIBRARIES})
+endif()
 
-IF(WITH_VIDEO AND SDL2_FOUND AND SDL2TTF_FOUND AND SDL2IMAGE_FOUND)
-	TARGET_LINK_LIBRARIES(jakopter ${SDL2_LIBRARY} ${SDL2TTF_LIBRARY} ${SDL2IMAGE_LIBRARY})
-ENDIF()
+if(WITH_VIDEO AND SDL2_FOUND AND SDL2TTF_FOUND AND SDL2IMAGE_FOUND AND NOT USE_VISP)
+	target_link_libraries(jakopter ${SDL2_LIBRARY} ${SDL2TTF_LIBRARY} ${SDL2IMAGE_LIBRARY})
+endif()
 
-# IF(WITH_VIDEO AND VISP_FOUND)
-# 	TARGET_LINK_LIBRARIES(jakopter ${VISP_LIBRARY})
-# ENDIF()
+if(WITH_VIDEO AND VISP_FOUND AND USE_VISP)
+	target_link_libraries(jakopter ${VISP_LIBRARY})
+endif()
 
-IF(LEAP_FOUND)
-	TARGET_LINK_LIBRARIES(leap ${LEAP_LIBRARIES})
-ENDIF()
+if(LEAP_FOUND)
+	target_link_libraries(leap ${LEAP_LIBRARIES})
+endif()
 
-
-IF(VICON_FOUND)
-	TARGET_LINK_LIBRARIES(vicon ${CMAKE_THREAD_LIBS_INIT} ${VICON_LIBRARIES})
-ENDIF()
+if(WITH_COORDS AND VICON_FOUND)
+	target_link_libraries(vicon ${CMAKE_THREAD_LIBS_INIT} ${VICON_LIBRARIES})
+endif()

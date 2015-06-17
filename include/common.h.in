@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <float.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -17,11 +18,15 @@
 #include <unistd.h>
 
 #cmakedefine WITH_VIDEO
+#cmakedefine WITH_COORDS
 
 #define float32_t float
 #define float64_t double
 
 #define WIFI_ARDRONE_IP	"192.168.1.1"
+/* Max number of digit into an integer. */
+#define INT_LEN     11
+#define TSTAMP_LEN  2*INT_LEN+2
 
 struct sockaddr_in addr_drone, addr_client;
 int sock_cmd;

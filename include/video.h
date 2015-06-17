@@ -43,21 +43,48 @@ struct jakopter_frame_processing {
 
 /** Drawing API*/
 struct jakopter_drawing {
+	/** \brief incrust an image on the frame
+	  * \param path the path from the jakopter current working directory
+	  * \param x horizontal position in pixels
+	  * \param y vertical position in pixels
+	  * \param width desired width for this icon in pixels
+	  * \param height desired height for this icon in pixels
+	  * \return an id use to manipulate this icon
+	  */
 	int (*draw_icon)(const char* path,
 		int x,
 		int y,
 		int width,
 		int height);
+	/** \brief incrust a text on the frame.
+	  * There is interlacing if you delete then create the text just after.
+	  * \param path the path from the jakopter current working directory
+	  * \param x horizontal position in pixels
+	  * \param y vertical position in pixels
+	  */
 	int (*draw_text)(const char* string,
 		int x,
 		int y);
+	/** \brief remove a graphic element
+	  * \param the id of the graphic element
+	  */
 	void (*remove)(int id);
+	/** \brief resize a graphic element. Can be NULL.
+	  * \param the id of the graphic element
+	  * \param width desired width for this icon in pixels
+	  * \param height desired height for this icon in pixels
+	  */
 	void (*resize)(int id,
-		int x,
-		int y);
-	void (*move)(int id,
 		int width,
 		int height);
+	/** \brief move a graphic element. Can be NULL.
+	  * \param the id of the graphic element
+	  * \param x horizontal position in pixels
+	  * \param y vertical position in pixels
+	  */
+	void (*move)(int id,
+		int x,
+		int y);
 };
 
 int jakopter_draw_icon(const char *p, int x, int y, int w, int h);
@@ -74,12 +101,16 @@ void jakopter_draw_move(int id, int x, int y);
 */
 int jakopter_init_video();
 /*
-Close the connection and stop the threads
+* \brief Ask the thread to stop with set_stopped, then
+* call join_thread, print a message if the thread has already ended.
+* \return -1 on error, 0 otherwise.
 */
 int jakopter_stop_video();
-/*
-Ask the video thread to stop, but don't wait for it. Shouldn't be called by the user.
-*/
+/**
+  * \brief Ask the video thread to stop without joining with it. Shouldn't be called by user.
+  * Useful for stopping it from the inside.
+  * \return 0 if stopped was 0, 1 if it wasn't.
+  */
 int video_set_stopped();
 
 #endif

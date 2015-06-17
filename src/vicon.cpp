@@ -2,20 +2,29 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <cfloat>
 extern "C" {
 #include <stdio.h>
 #include <pthread.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 }
 
 #define COORDS_FILENAME "/tmp/jakopter_coords.txt"
+/* size of float digits plus 3 spaces and \0*/
+#define TEXT_BUF_SIZE DECIMAL_DIG*3+4
+#define VICON_DRONE_NAME "ardrone2_"
 
 namespace Vicon = ViconDataStreamSDK::CPP;
 namespace Direction = Vicon::Direction;
 namespace Result = Vicon::Result;
 
 Vicon::Client* sdk;
+
+struct sockaddr_un addr_client_coords;
+int sock_vicon;
 
 bool initialized = false;
 pthread_t vicon_thread;
@@ -38,32 +47,34 @@ void* vicon_routine(void* args)
 			std::cout << "Number of subjects : " << sdk->GetSubjectCount().SubjectCount << std::endl;
 
 		unsigned int subjects = sdk->GetSubjectCount().SubjectCount;
-		std::string name = sdk->GetSubjectName(0).SubjectName;
 
-		unsigned int segments = sdk->GetSegmentCount(name).SegmentCount;
 
-		unsigned int ForcePlateCount = sdk->GetForcePlateCount().ForcePlateCount;
-		std::cout << "Force Plates: " << ForcePlateCount << std::endl;
+		for (unsigned int i = 0 ; i < subjects ; i++) {
+			std::string name = sdk->GetSubjectName(i).SubjectName;
 
-		for (unsigned int i = 0; i < ForcePlateCount; ++i) {
-			double *center = sdk->GetGlobalCentreOfPressure(i).CentreOfPressure;
-			std::cout << "Center of pressure of #"<< i <<" : " << center[0] << " " << center[1] << " " << center[3] << std::endl;
-		}
+			if (name != VICON_DRONE_NAME)
+				continue;
 
-		if (!name.empty()) {
-			std::string segment = sdk->GetSegmentName(name, 0).SegmentName;
+			unsigned int segments = sdk->GetSegmentCount(name).SegmentCount;
+			for (unsigned int j = 0 ; j < segments ; j++) {
+				std::string segment = sdk->GetSegmentName(name, j).SegmentName;
+				std::cout << "Writing global translation " << segment
+						<< " for " << name << std::endl;
 
-			if (!segment.empty()) {
-				std::cout << "Writing global translation" << std::endl;
-				FILE *coords;
-				coords = fopen(COORDS_FILENAME, "w");
-				fprintf(coords, "%f ", sdk->GetSegmentGlobalTranslation(name, segment).Translation[0]);
-				fprintf(coords, "%f ", sdk->GetSegmentGlobalTranslation(name, segment).Translation[1]);
-				fprintf(coords, "%f ", sdk->GetSegmentGlobalTranslation(name, segment).Translation[2]);
-				fclose(coords);
+				float x = sdk->GetSegmentGlobalTranslation(name, segment).Translation[0];
+				float y = sdk->GetSegmentGlobalTranslation(name, segment).Translation[1];
+				float z = sdk->GetSegmentGlobalTranslation(name, segment).Translation[2];
+
+
+				char buf [TEXT_BUF_SIZE];
+				snprintf(buf, TEXT_BUF_SIZE, "%f %f %f ", x, y, z);
+
+				std::cout << x << " " << y << " " << z << std::endl;
+				sendto(sock_vicon, buf, TEXT_BUF_SIZE, 0, (struct sockaddr*)&addr_client_coords, sizeof(addr_client_coords));
 			}
 		}
-		usleep(2000);
+
+		usleep(500*1000);
 	}
 
 	pthread_exit(NULL);
@@ -89,6 +100,8 @@ int main(int argc, char const *argv[])
 	}
 	std::cout << std::endl;
 
+	//Handle argv1=drone id in vicon
+
 
 	sdk->EnableSegmentData();
 	sdk->EnableMarkerData();
@@ -100,9 +113,21 @@ int main(int argc, char const *argv[])
 	//Z-Up
 	sdk->SetAxisMapping(Direction::Forward, Direction::Left, Direction::Up);
 
+	memset(&addr_client_coords, '\0', sizeof(struct sockaddr_un));
+	addr_client_coords.sun_family = AF_UNIX;
+	strncpy(addr_client_coords.sun_path, COORDS_FILENAME, sizeof(addr_client_coords.sun_path)-1);
+
+	sock_vicon = socket(AF_UNIX, SOCK_DGRAM, 0);
+
+	if (sock_vicon < 0) {
+		perror("[~][coords] Can't create the socket");
+		return -1;
+	}
+
 	initialized = true;
 	if (pthread_create(&vicon_thread, NULL, vicon_routine, NULL) < 0) {
 		perror("Can't create thread");
+		close(sock_vicon);
 		return -1;
 	}
 
@@ -111,6 +136,8 @@ int main(int argc, char const *argv[])
 
 	initialized = false;
 	pthread_join(vicon_thread, NULL);
+
+	close(sock_vicon);
 
 	sdk->DisableSegmentData();
 	sdk->DisableMarkerData();
