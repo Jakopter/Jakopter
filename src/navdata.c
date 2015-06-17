@@ -280,114 +280,6 @@ int jakopter_height()
 	return height;
 }
 
-float jakopter_angular_x_axis()
-{
-	float x_axis = -2.0;
-
-	if (data.raw.options[0].tag != TAG_DEMO && data.raw.sequence < 1) {
-		fprintf(stderr, "[~][navdata] Current tag does not match TAG_DEMO.");
-		return x_axis;
-	}
-
-	pthread_mutex_lock(&mutex_navdata);
-	x_axis = data.demo.theta;
-	pthread_mutex_unlock(&mutex_navdata);
-
-	navdata_timestamp();
-
-	return x_axis;
-}
-
-float jakopter_angular_y_axis()
-{
-	float y_axis = -2.0;
-
-	if (data.raw.options[0].tag != TAG_DEMO && data.raw.sequence < 1) {
-		fprintf(stderr, "[~][navdata] Current tag does not match TAG_DEMO.");
-		return y_axis;
-	}
-
-	pthread_mutex_lock(&mutex_navdata);
-	y_axis = data.demo.phi;
-	pthread_mutex_unlock(&mutex_navdata);
-
-	navdata_timestamp();
-
-	return y_axis;
-}
-
-float jakopter_angular_z_axis()
-{
-	float z_axis = -2.0;
-
-	if (data.raw.options[0].tag != TAG_DEMO && data.raw.sequence < 1) {
-		fprintf(stderr, "[~][navdata] Current tag does not match TAG_DEMO.");
-		return z_axis;
-	}
-
-	pthread_mutex_lock(&mutex_navdata);
-	z_axis = data.demo.psi;
-	pthread_mutex_unlock(&mutex_navdata);
-
-	navdata_timestamp();
-
-	return z_axis;
-}
-
-float jakopter_velocity_x_axis()
-{
-	float x_axis = -2.0;
-
-	if (data.raw.options[0].tag != TAG_DEMO && data.raw.sequence < 1) {
-		fprintf(stderr, "[~][navdata] Current tag does not match TAG_DEMO.");
-		return x_axis;
-	}
-
-	pthread_mutex_lock(&mutex_navdata);
-	x_axis = data.demo.vx;
-	pthread_mutex_unlock(&mutex_navdata);
-
-	navdata_timestamp();
-
-	return x_axis;
-}
-
-float jakopter_velocity_y_axis()
-{
-	float y_axis = -2.0;
-
-	if (data.raw.options[0].tag != TAG_DEMO && data.raw.sequence < 1) {
-		fprintf(stderr, "[~][navdata] Current tag does not match TAG_DEMO.");
-		return y_axis;
-	}
-
-	pthread_mutex_lock(&mutex_navdata);
-	y_axis = data.demo.vy;
-	pthread_mutex_unlock(&mutex_navdata);
-
-	navdata_timestamp();
-
-	return y_axis;
-}
-
-float jakopter_velocity_z_axis()
-{
-	float z_axis = -2.0;
-
-	if (data.raw.options[0].tag != TAG_DEMO && data.raw.sequence < 1) {
-		fprintf(stderr, "[~][navdata] Current tag does not match TAG_DEMO.");
-		return z_axis;
-	}
-
-	pthread_mutex_lock(&mutex_navdata);
-	z_axis = data.demo.vz;
-	pthread_mutex_unlock(&mutex_navdata);
-
-	navdata_timestamp();
-
-	return z_axis;
-}
-
 int navdata_no_sq()
 {
 	int ret;
@@ -396,20 +288,6 @@ int navdata_no_sq()
 	pthread_mutex_unlock(&mutex_navdata);
 	navdata_timestamp();
 	return ret;
-}
-
-const char* jakopter_navdata_state()
-{
-	static char ret[INT_LEN];
-	if (!stopped_navdata) {
-		pthread_mutex_lock(&mutex_navdata);
-		snprintf(ret, INT_LEN, "%x", data.demo.ardrone_state);
-		pthread_mutex_unlock(&mutex_navdata);
-		navdata_timestamp();
-		return ret;
-	}
-	else
-		return NULL;
 }
 
 void debug_navdata_demo()
@@ -425,19 +303,6 @@ void debug_navdata_demo()
 	printf("Phi: %f\n",data.demo.phi); //Roll
 	printf("Psi: %f\n",data.demo.psi); //Yaw
 	pthread_mutex_unlock(&mutex_navdata);
-}
-
-const char* jakopter_navdata_timestamp()
-{
-	static char ret[TSTAMP_LEN+1];
-	if (!stopped_navdata) {
-		pthread_mutex_lock(&mutex_timestamp);
-		strncpy(ret, timestamp, TSTAMP_LEN+1);
-		pthread_mutex_unlock(&mutex_timestamp);
-		return ret;
-	}
-	else
-		return NULL;
 }
 
 const char* jakopter_log_navdata()

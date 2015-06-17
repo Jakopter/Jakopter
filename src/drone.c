@@ -519,7 +519,9 @@ int jakopter_down(float speed)
 int jakopter_move(float l_to_r, float b_to_f, float vertical_speed, float angular_speed)
 {
 	//inverted in Parrot ARdrone Protocol
-	b_to_f = -b_to_f;
+	if (b_to_f != 0.0) {
+		b_to_f = -b_to_f;
+	}
 	char * args[5];
 	args[0] = "1";
 

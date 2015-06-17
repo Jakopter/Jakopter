@@ -93,31 +93,9 @@ int jakopter_battery();
   */
 int jakopter_height();
 /**
-  * \return the percentage of the relative angle between -1.0 and 1.0 or -2.0 if navdata are not received
-  */
-float jakopter_angular_x_axis();
-/**
-  * \return the percentage of the relative angle between -1.0 and 1.0 or -2.0 if navdata are not received
-  */
-float jakopter_angular_y_axis();
-/**
-  * \return the percentage of the relative angle between -1.0 and 1.0 or -2.0 if navdata are not received
-  */
-float jakopter_angular_z_axis();
-/**
-  * \return the percentage of the relative angle between -1.0 and 1.0 or -2.0 if navdata are not received
-  */
-float jakopter_velocity_x_axis();
-float jakopter_velocity_y_axis();
-float jakopter_velocity_z_axis();
-/**
   * \return the sequence number of navdata
   */
 int navdata_no_sq();
-/**
-  * \return the mask of ardrone state in hexadecimal.
-  */
-const char* jakopter_navdata_state();
 /**
   * \brief Print the content of received navdata
   */

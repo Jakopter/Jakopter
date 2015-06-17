@@ -353,54 +353,6 @@ int jakopter_battery_lua(lua_State* L)
 	return 1;
 }
 
-int jakopter_angular_x_axis_lua(lua_State* L)
-{
-	lua_pushnumber(L, jakopter_angular_x_axis());
-	return 1;
-}
-
-int jakopter_angular_y_axis_lua(lua_State* L)
-{
-	lua_pushnumber(L, jakopter_angular_y_axis());
-	return 1;
-}
-
-int jakopter_angular_z_axis_lua(lua_State* L)
-{
-	lua_pushnumber(L, jakopter_angular_z_axis());
-	return 1;
-}
-
-int jakopter_velocity_x_axis_lua(lua_State* L)
-{
-	lua_pushnumber(L, jakopter_velocity_x_axis());
-	return 1;
-}
-
-int jakopter_velocity_y_axis_lua(lua_State* L)
-{
-	lua_pushnumber(L, jakopter_velocity_y_axis());
-	return 1;
-}
-
-int jakopter_velocity_z_axis_lua(lua_State* L)
-{
-	lua_pushnumber(L, jakopter_velocity_z_axis());
-	return 1;
-}
-
-int jakopter_navdata_state_lua(lua_State* L)
-{
-	lua_pushstring(L, jakopter_navdata_state());
-	return 1;
-}
-
-int jakopter_navdata_timestamp_lua(lua_State* L)
-{
-	lua_pushstring(L, jakopter_navdata_timestamp());
-	return 1;
-}
-
 int jakopter_log_navdata_lua(lua_State* L)
 {
 	lua_pushstring(L, jakopter_log_navdata());
@@ -474,14 +426,6 @@ static const luaL_Reg jakopterlib[] = {
 	{"is_flying", jakopter_is_flying_lua},
 	{"battery", jakopter_battery_lua},
 	{"height", jakopter_height_lua},
-	{"angular_x", jakopter_angular_x_axis_lua},
-	{"angular_y", jakopter_angular_y_axis_lua},
-	{"angular_z", jakopter_angular_z_axis_lua},
-	{"velocity_x", jakopter_velocity_x_axis_lua},
-	{"velocity_y", jakopter_velocity_y_axis_lua},
-	{"velocity_z", jakopter_velocity_z_axis_lua},
-	{"drone_state", jakopter_navdata_state_lua},
-	{"navdata_timestamp", jakopter_navdata_timestamp_lua},
 	{"log_navdata", jakopter_log_navdata_lua},
 	{"cc_read_int", jakopter_com_read_int_lua},
 	{"cc_read_float", jakopter_com_read_float_lua},
