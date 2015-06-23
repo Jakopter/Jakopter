@@ -309,6 +309,7 @@ const char* jakopter_log_navdata()
 {
 	static char ret[LOG_LEN];
 	if (!stopped_navdata) {
+		memset(ret, 0, LOG_LEN);
 		char buf[DEMO_LEN];
 		pthread_mutex_lock(&mutex_timestamp);
 		strncat(ret, timestamp, TSTAMP_LEN);

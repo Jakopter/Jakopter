@@ -22,16 +22,16 @@ Now that we use a frame parser before decoding, we don't need to pad it.*/
 Perform the initialization steps required by FFmpeg.*/
 int video_init_decoder();
 
-/*
-Decode a video buffer.
-Returns:
-	0 : buffer decoded, but no image produce (incomplete).
-	> 0 : decoded n images.
-	-1 : error while decoding.
+/**
+  * \brief Decode a video buffer.
+  * \return
+  * 0 : buffer decoded, but no image produce (incomplete).
+  * > 0 : decoded n images.
+  * -1 : error while decoding.
 */
 int video_decode_packet(uint8_t* buffer, int buf_size, jakopter_video_frame_t* result);
 
-/*Free the decoder and its associated structures.*/
+/** \brief Free the decoder and its associated structures.*/
 void video_stop_decoder();
 
 #endif

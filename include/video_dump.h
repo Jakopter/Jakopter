@@ -13,7 +13,7 @@
 //Number of frames we want to dump into this file. -1 = unlimited.
 #define JAKO_FRAMEDUMP_COUNT 250
 
-/*Dump the video frame to a file.
+/** \brief Dump the video frame to a file.
 Ends the video thread once it's reached its limit (see below).*/
 int jakopter_dumpFrameToFile(uint8_t* frame, int width, int height, int size);
 

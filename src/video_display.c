@@ -2,8 +2,8 @@
 #include "SDL_ttf.h"
 #include "SDL_image.h"
 
-#include "navdata.h"
 #include "video_display.h"
+#include "navdata.h"
 #include "com_master.h"
 
 /*maximum size in bytes of a text to be displayed*/

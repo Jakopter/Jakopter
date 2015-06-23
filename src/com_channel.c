@@ -1,10 +1,10 @@
-#include "com_channel.h"
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
 #include <string.h>
 #include <stdio.h>
 
+#include "com_channel.h"
 
 
 struct jakopter_com_channel_t {

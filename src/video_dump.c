@@ -1,9 +1,10 @@
-#include "video_dump.h"
-#include "video.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
+
+#include "video_dump.h"
+#include "video.h"
 
 /*file descriptor pointing to a location where we will dump raw decoded frames.*/
 static int outfd;

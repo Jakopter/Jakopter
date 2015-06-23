@@ -1,8 +1,9 @@
+#include <time.h>
+
 #include "common.h"
 #include "drone.h"
 #include "navdata.h"
 #include "user_input.h"
-#include <time.h>
 
 #define LOG_LEN TSTAMP_LEN+PACKET_SIZE
 
