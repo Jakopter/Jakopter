@@ -1,3 +1,6 @@
+//for yield function
+#include <sched.h>
+
 #include "drone.h"
 #include "navdata.h"
 #ifdef WITH_VIDEO
@@ -8,8 +11,6 @@
 #endif
 #include "com_channel.h"
 #include "com_master.h"
-//for yield function
-#include <sched.h>
 #include "lauxlib.h"
 #include "lua.h"
 
@@ -376,6 +377,7 @@ int yield_lua(lua_State* L)
 */
 int jakopter_cleanup_lua(lua_State* L)
 {
+	jakopter_land();
 #ifdef WITH_VIDEO
 	jakopter_stop_video();
 #endif
@@ -386,8 +388,8 @@ int jakopter_cleanup_lua(lua_State* L)
 	return 0;
 }
 
-//enregistrer les fonctions pour lua
-//ou luaL_reg
+/*define functions used by lua
+or luaL_Reg*/
 static const luaL_Reg jakopterlib[] = {
 	{"connect", jakopter_connect_lua},
 	{"takeoff", jakopter_takeoff_lua},
@@ -465,14 +467,14 @@ static int create_cleanup_udata(lua_State* L)
 
 int luaopen_libjakopter(lua_State* L)
 {
-	//the metatable is used for type-checking our custom structs in lua.
-	//here, define a table for com channels pointers.
+	/*the metatable is used for type-checking our custom structs in lua.
+	here, define a table for com channels pointers.*/
 	luaL_newmetatable(L, "jakopter.com_channel");
 	/*create the cleanup registry entry so that cleanup will be executed
 	when the lib is unloaded.*/
 	create_cleanup_udata(L);
 
-	//lua 5.1 et 5.2 incompatibles...
+	/* lua 5.1 and 5.2 incompatibles... */
 #if LUA_VERSION_NUM <= 501
 	luaL_register(L, "jakopter", jakopterlib);
 #else

@@ -1,7 +1,8 @@
-#include "com_master.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <pthread.h>
+
+#include "com_master.h"
 
 //jakopter_com_channel_t* master = NULL;
 

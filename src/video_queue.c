@@ -1,8 +1,9 @@
-#include "video_queue.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
+
+#include "video_queue.h"
 
 const jakopter_video_frame_t VIDEO_QUEUE_END = {0, 0, 0, NULL};
 

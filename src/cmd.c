@@ -25,7 +25,7 @@ int main(){
 	while (1) {
 		c = getch();
 
-		if (c == 's') {
+		if (c == '\t') {
 			endwin();
 			// close(fdpipe);
 			return 0;

@@ -1,4 +1,3 @@
-#include "Client.h"
 #include <iostream>
 #include <string>
 #include <cstdlib>
@@ -11,6 +10,7 @@ extern "C" {
 #include <sys/socket.h>
 #include <sys/un.h>
 }
+#include "Client.h"
 
 #define COORDS_FILENAME "/tmp/jakopter_coords.txt"
 /* size of float digits plus 3 spaces and \0*/
@@ -49,6 +49,7 @@ void* vicon_routine(void* args)
 		unsigned int subjects = sdk->GetSubjectCount().SubjectCount;
 
 
+		//Loop until it finds the drone id as defined in Vicon Tracker
 		for (unsigned int i = 0 ; i < subjects ; i++) {
 			std::string name = sdk->GetSubjectName(i).SubjectName;
 
