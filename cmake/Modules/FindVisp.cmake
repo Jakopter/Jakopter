@@ -29,5 +29,4 @@ find_library(VISP_LIBRARY
 	/opt/csw
 	/opt
 )
-
 find_package_handle_standard_args(VISP REQUIRED_VARS VISP_LIBRARY VISP_INCLUDE_DIR)

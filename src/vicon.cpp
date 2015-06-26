@@ -25,6 +25,7 @@ Vicon::Client* sdk;
 
 struct sockaddr_un addr_client_coords;
 int sock_vicon;
+std::string drone_id = std::string(VICON_DRONE_NAME);
 
 bool initialized = false;
 pthread_t vicon_thread;
@@ -53,7 +54,7 @@ void* vicon_routine(void* args)
 		for (unsigned int i = 0 ; i < subjects ; i++) {
 			std::string name = sdk->GetSubjectName(i).SubjectName;
 
-			if (name != VICON_DRONE_NAME)
+			if (name != drone_id)
 				continue;
 
 			unsigned int segments = sdk->GetSegmentCount(name).SegmentCount;
@@ -85,6 +86,12 @@ int main(int argc, char const *argv[])
 {
 	sdk = new Vicon::Client();
 
+
+	if (argc == 2)
+		drone_id += argv[1];
+
+	std::cout << drone_id << std::endl;
+
 	while(!sdk->IsConnected().Connected)
 	{
 		unsigned int ret = sdk->Connect("192.168.10.1:801").Result;
@@ -102,8 +109,6 @@ int main(int argc, char const *argv[])
 	std::cout << std::endl;
 
 	//Handle argv1=drone id in vicon
-
-
 	sdk->EnableSegmentData();
 	sdk->EnableMarkerData();
 	sdk->EnableUnlabeledMarkerData();
