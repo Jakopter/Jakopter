@@ -6,7 +6,8 @@ extern "C"
 {
 #endif
 #include "com_master.h"
-#define DISPLAY_COM_IN_SIZE 32
+#define VISP_COM_IN_SIZE 32
+#define VISP_COM_OUT_SIZE 3*sizeof(float)
 int visp_process(uint8_t* frame, int width, int height, int size);
 int visp_init();
 void visp_destroy();
