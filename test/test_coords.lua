@@ -39,12 +39,12 @@ end
 function transformation_matrix(coords)
 	-- Based on ViSP rotation matrix building under GPL
 	-- The last line of the matrix is ignored, it is always supposed to be 0,0,0,1
-	cos_x = math.cos(math.rad(coords["r_x"]))
-	cos_y = math.cos(math.rad(coords["r_y"]))
-	cos_z = math.cos(math.rad(coords["r_z"]))
-	sin_x = math.sin(math.rad(coords["r_x"]))
-	sin_y = math.sin(math.rad(coords["r_y"]))
-	sin_z = math.sin(math.rad(coords["r_z"]))
+	local cos_x = math.cos(math.rad(coords["r_x"]))
+	local cos_y = math.cos(math.rad(coords["r_y"]))
+	local cos_z = math.cos(math.rad(coords["r_z"]))
+	local sin_x = math.sin(math.rad(coords["r_x"]))
+	local sin_y = math.sin(math.rad(coords["r_y"]))
+	local sin_z = math.sin(math.rad(coords["r_z"]))
 	return {
 		cos_y*cos_z,
 		-cos_y*sin_z,
@@ -63,7 +63,7 @@ end
 
 -- 4*3 and 3*1
 function mult_TransformMatrix_Vector(matrix, vector)
-	ret = {}
+	local ret = {}
 	for i=1,3 do
 		ret[i] = 0
 		for j=1,3 do
@@ -81,30 +81,30 @@ end
 -- In the case of drone, x axis is linked with y axis, we need to apply an incline correction
 
 function create_horizontal_control(p_coeff_, d_coeff_)
-	prev_corr_r_x = 0
-	prev_corr_r_y = 0
-	p_coeff = p_coeff_
-	d_coeff = d_coeff_
+	local prev_corr_r_x = 0
+	local prev_corr_r_y = 0
+	local p_coeff = p_coeff_
+	local d_coeff = d_coeff_
 	return function(diff, prev_diff)
 --matrice 4*3 de transformation
-		matrix = transformation_matrix(global_coords())
+		local matrix = transformation_matrix(global_coords())
 		for index,v in ipairs(matrix) do
 			print("[$]m:"..index.." "..v)
 		end
 
 		--effect of y rotation, we substract z translation added by the matrix computing
-		vector_x = {1, 0, 0}
+		local vector_x = {1, 0, 0}
 		vector_x = mult_TransformMatrix_Vector(matrix, vector_x)
-		corr_r_y = vector_x[3] - matrix[12]
+		local corr_r_y = vector_x[3] - matrix[12]
 		-- prop & deriv for x
-		xCorr = -0.25*corr_r_y --- 2.1*(corr_r_y - prev_corr_r_y)
+		local xCorr = -0.25*corr_r_y --- 2.1*(corr_r_y - prev_corr_r_y)
 		--effect of x rotation, we substract z translation added by the matrix computing
-		vector_y = {0, 1, 0}
+		local vector_y = {0, 1, 0}
 		vector_y = mult_TransformMatrix_Vector(matrix, vector_y)
 		print("v "..vector_y[3])
-		corr_r_x = vector_y[3] - matrix[12]
+		local corr_r_x = vector_y[3] - matrix[12]
 		--prop & deriv for y
-		yCorr = 0.25*corr_r_x --+ 2.1*(corr_r_x - prev_corr_r_x)
+		local yCorr = 0.25*corr_r_x --+ 2.1*(corr_r_x - prev_corr_r_x)
 		--include the incline parameter
 		yCorr = yCorr + p_coeff["t_y"]*diff["t_y"]*0.001 --+ d_coeff["t_y"]*(diff["t_y"] - prev_diff["t_y"])
 		xCorr  = xCorr + p_coeff["t_x"]*diff["t_x"]*0.001 --+ d_coeff["t_x"]*(diff["t_x"] - prev_diff["t_x"])
@@ -126,24 +126,24 @@ function rotation_control(diff, prev_diff, p_coeff, d_coeff)
 end
 
 function complete_pid(prev_diff_, gain_, p_coeff_, i_coeff_, d_coeff_)
-	prev_diff = prev_diff_
-	gain = gain_
-	p_coeff = p_coeff_
-	i_coeff = i_coeff_
-	d_coeff = d_coeff_
-	horizontal_control = create_horizontal_control(p_coeff_, d_coeff_)
-	v_coeff = -2
-	old_time = 0
+	local prev_diff = prev_diff_
+	local gain = gain_
+	local p_coeff = p_coeff_
+	local i_coeff = i_coeff_
+	local d_coeff = d_coeff_
+	local horizontal_control = create_horizontal_control(p_coeff_, d_coeff_)
+	local v_coeff = -2
+	local old_time = 0
 	return function(goal)
-		diff = local_coords(global_coords(), goal)
+		local diff = local_coords(global_coords(), goal)
 		-- slide, rotate, vertical, angular
-		move_velocities = {0.0, 0.0, 0.0, 0.0}
+		local move_velocities = {0.0, 0.0, 0.0, 0.0}
 
 		-- vertical control
-		thrust = gain + p_coeff["t_z"]*diff["t_z"]*0.001 --+ d_coeff["t_z"]*(diff["t_z"] - prev_diff["t_z"]) + v_coeff*velocity
+		local thrust = gain + p_coeff["t_z"]*diff["t_z"]*0.001 --+ d_coeff["t_z"]*(diff["t_z"] - prev_diff["t_z"]) + v_coeff*velocity
 		--thrust = 0.5
-		yCorr, xCorr = horizontal_control(diff, prev_diff)
-		rotCorr = rotation_control(diff["r_z"]*0.001, prev_diff["r_z"]*0.001, p_coeff["r_z"], d_coeff["r_z"])
+		local yCorr, xCorr = horizontal_control(diff, prev_diff)
+		local rotCorr = rotation_control(diff["r_z"]*0.001, prev_diff["r_z"]*0.001, p_coeff["r_z"], d_coeff["r_z"])
 		print("[$]thrust "..thrust .. " "..(diff["t_z"] - prev_diff["t_z"]))
 		print("xCorr "..xCorr .. " "..diff["t_x"])
 		print("yCorr "..yCorr .. " "..diff["t_y"])
@@ -183,41 +183,41 @@ function complete_pid(prev_diff_, gain_, p_coeff_, i_coeff_, d_coeff_)
 end
 
 function simple_pid(start_point_, prev_diff_, gain_, p_coeff_, d_coeff_)
-	prev_diff = prev_diff_
-	gain = gain_
-	p_coeff = p_coeff_
-	d_coeff = d_coeff_
-	start_point = start_point_
-	old_time = 0
+	local prev_diff = prev_diff_
+	local gain = gain_
+	local p_coeff = p_coeff_
+	local d_coeff = d_coeff_
+	local start_point = start_point_
+	local old_time = 0
 	return function(goal)
-		diff = local_coords(global_coords(), goal)
+		local diff = local_coords(global_coords(), goal)
 
 		-- we don't use integral stuff
-		thrust = p_coeff["t_z"]*diff["t_z"] + d_coeff["t_z"]*(diff["t_z"] - prev_diff["t_z"])/(os.clock()-old_time)
+		local thrust = p_coeff["t_z"]*diff["t_z"] + d_coeff["t_z"]*(diff["t_z"] - prev_diff["t_z"])/(os.clock()-old_time)
 		print("dt: "..(os.clock()-old_time))
-		old_time = os.clock()
+		local old_time = os.clock()
 
-		slide = p_coeff["t_y"]*diff["t_y"] - d_coeff["t_y"]*(diff["t_y"] - prev_diff["t_y"])
-		straight = p_coeff["t_x"]*diff["t_x"] - d_coeff["t_x"]*(diff["t_x"] - prev_diff["t_x"])
+		local slide = p_coeff["t_y"]*diff["t_y"] - d_coeff["t_y"]*(diff["t_y"] - prev_diff["t_y"])
+		local straight = p_coeff["t_x"]*diff["t_x"] - d_coeff["t_x"]*(diff["t_x"] - prev_diff["t_x"])
 		if diff["r_z"] > 180 then
 			diff["r_z"] = -360 + diff["r_z"]
 		end
-		rotate = p_coeff["r_z"]*diff["r_z"] - d_coeff["r_z"]*(math.rad(diff["r_z"]) - math.rad(prev_diff["r_z"]))
+		local rotate = p_coeff["r_z"]*diff["r_z"] - d_coeff["r_z"]*(math.rad(diff["r_z"]) - math.rad(prev_diff["r_z"]))
 		if rotate < 0.02 and rotate > -0.02 then
 			rotate = 0.0
 		end
 		--Take account of rotation
-		reference = local_coords(start_point, global_coords())
-		sin_z = math.sin(math.rad(reference["r_z"]))
-		cos_z = math.cos(math.rad(reference["r_z"]))
+		local reference = local_coords(start_point, global_coords())
+		local sin_z = math.sin(math.rad(reference["r_z"]))
+		local cos_z = math.cos(math.rad(reference["r_z"]))
 		print("sin : "..sin_z.." cos : "..cos_z)
 
 		-- you need invert if the y axis is on the left of axis of x in the positive direction
 		slide = -slide
 
 		-- Get a sinusoidal value to fix forward and left/right - doesn't work
-		-- s1 = (straight - math.abs(sin_z)*straight) + (slide - math.abs(cos_z)*slide)
-		-- s2 = (slide - math.abs(sin_z)*slide) + (straight - math.abs(cos_z)*straight)
+		-- local s1 = (straight - math.abs(sin_z)*straight) + (slide - math.abs(cos_z)*slide)
+		-- local s2 = (slide - math.abs(sin_z)*slide) + (straight - math.abs(cos_z)*straight)
 		-- if cos_z < 0 and sin_z < 0 then
 		-- 	s1 = -s1
 		-- 	s2 = -s2
@@ -234,16 +234,16 @@ function simple_pid(start_point_, prev_diff_, gain_, p_coeff_, d_coeff_)
 		-- diagonal_angle is the angle between the diagonal (0,-1)->(1,0) and x axis
 		-- sector_len is the length of the segment between the origin and the diagonal
 		-- which has an angle theta from the x axis
-		-- theta = math.rad(reference["r_z"])
-		-- diagonal_angle = math.pi/4
-		-- cos_theta = math.cos(theta)
-		-- sin_theta = math.sin(theta)
+		-- local theta = math.rad(reference["r_z"])
+		-- local diagonal_angle = math.pi/4
+		-- local cos_theta = math.cos(theta)
+		-- local sin_theta = math.sin(theta)
 		-- if (sin_theta > 0 and cos_theta > 0)
 		-- 	or (sin_theta < 0 and cos_theta < 0) then
 		-- 	diagonal_angle = -diagonal_angle
 		-- end
-		-- sector_len = 1*math.sin(diagonal_angle)/math.sin(diagonal_angle+theta)
-		-- linear_corr = cos_theta*sector_len
+		-- local sector_len = 1*math.sin(diagonal_angle)/math.sin(diagonal_angle+theta)
+		-- local linear_corr = cos_theta*sector_len
 
 		-- s1 = linear_corr*straight + (1 - linear_corr)*slide
 		-- s2 = linear_corr*slide + (1 - linear_corr)*straight
@@ -293,7 +293,7 @@ function local_distance(start_point, coords)
 		if string.find(key,"^t_") then
 			t[key] = math.abs(value - start_point[key])
 		elseif string.find(key,"^r_") then
-			angle = math.abs(value - start_point[key])
+			local angle = math.abs(value - start_point[key])
 			if angle > 180 then
 				angle = 360 - angle
 			end
@@ -305,7 +305,7 @@ end
 
 -- Compute the coordinates in a local origin. Angles are comprised between 0 and 360, clockwise from the camera
 function local_coords(start_point, coords)
-	loc = {}
+	local loc = {}
 	for key, value in pairs(coords) do
 		loc[key] = value-start_point[key]
 		if string.find(key,"^r_") and loc[key] < 0 then
