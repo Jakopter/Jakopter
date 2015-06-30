@@ -11,7 +11,8 @@
 #define TAG_DEMO 0
 /*Tag for the checksum packet in full mode*/
 #define TAG_CKS 0
-#define DEMO_LEN 4*INT_LEN+6*DECIMAL_DIG+10
+#define FLOAT_LEN 10
+#define DEMO_LEN 4*INT_LEN+6*FLOAT_LEN+10
 
 struct navdata_option {
 	uint16_t  tag;
