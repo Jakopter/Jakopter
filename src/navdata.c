@@ -8,6 +8,7 @@
 static union navdata_t data;
 /* The string which contains the timestamp of the last request.*/
 static char timestamp[TSTAMP_LEN];
+static void navdata_timestamp();
 
 jakopter_com_channel_t* nav_channel;
 
@@ -60,7 +61,7 @@ static int recv_cmd()
 	}
 
 	pthread_mutex_unlock(&mutex_navdata);
-
+	navdata_timestamp();
 	return ret;
 }
 
@@ -87,18 +88,18 @@ static int navdata_init()
 	timeout.tv_usec = 0;
 
 	if (sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
-		perror("[~][navdata] Can't send ping\n");
+		perror("[~][navdata] Can't send ping");
 		return -1;
 	}
 
 	if (select(sock_navdata+1, &fds, NULL, NULL, &timeout) <= 0) {
-		perror("[~][navdata] Ping ack not received\n");
+		perror("[~][navdata] Ping ack not received");
 		return -1;
 	}
 
 
 	if (recv_cmd() < 0) {
-		perror("[~][navdata] First navdata packet not received\n");
+		perror("[~][navdata] First navdata packet not received");
 		return -1;
 	}
 
@@ -151,7 +152,7 @@ void* navdata_routine(void* args)
 		usleep(NAVDATA_INTERVAL*1000);
 
 		if (sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
-			perror("[~][navdata] Failed to send ping\n");
+			perror("[~][navdata] Failed to send ping");
 			pthread_exit(NULL);
 		}
 
@@ -240,7 +241,6 @@ int jakopter_is_flying()
 	pthread_mutex_lock(&mutex_navdata);
 	flyState = data.raw.ardrone_state & 0x0001;
 	pthread_mutex_unlock(&mutex_navdata);
-	navdata_timestamp();
 	return flyState;
 }
 
@@ -256,8 +256,6 @@ int jakopter_battery()
 	pthread_mutex_lock(&mutex_navdata);
 	battery = data.demo.vbat_flying_percentage;
 	pthread_mutex_unlock(&mutex_navdata);
-
-	navdata_timestamp();
 
 	return battery;
 }
@@ -275,8 +273,6 @@ int jakopter_height()
 	height = data.demo.altitude;
 	pthread_mutex_unlock(&mutex_navdata);
 
-	navdata_timestamp();
-
 	return height;
 }
 
@@ -286,7 +282,6 @@ int navdata_no_sq()
 	pthread_mutex_lock(&mutex_navdata);
 	ret = data.raw.sequence;
 	pthread_mutex_unlock(&mutex_navdata);
-	navdata_timestamp();
 	return ret;
 }
 
@@ -315,7 +310,7 @@ const char* jakopter_log_navdata()
 		strncat(ret, timestamp, TSTAMP_LEN);
 		pthread_mutex_unlock(&mutex_timestamp);
 		pthread_mutex_lock(&mutex_navdata);
-		snprintf(buf, DEMO_LEN, "%d %d %d %d %f %f %f %f %f %f ",
+		snprintf(buf, DEMO_LEN, "n %d %d %d %d %.4f %.4f %.4f %.4f %.4f %.4f ",
 			data.demo.ardrone_state,
 			data.demo.ctrl_state,
 			data.demo.vbat_flying_percentage,
