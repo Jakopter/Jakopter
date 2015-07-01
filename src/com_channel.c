@@ -1,8 +1,10 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 #include <pthread.h>
 #include <time.h>
-#include <string.h>
-#include <stdio.h>
 
 #include "com_channel.h"
 

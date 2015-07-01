@@ -8,7 +8,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 ## User definitions ##
 #option(USE_VISP "Use visp display instead of sdl" OFF)
-set(USE_VISP OFF)
+set(USE_VISP ON)
 
 ## Packages ##
 find_package(Threads REQUIRED)
@@ -21,6 +21,7 @@ find_package(Leap)
 find_package(Curses)
 find_package(Visp)
 find_package(Vicon)
+find_package(CURL)
 
 ## Debug: print all declared variables
 # get_cmake_property(_variableNames VARIABLES)
@@ -80,6 +81,11 @@ set(
 	src/video.c
 	src/video_queue.c
 	src/video_decode.c
+)
+
+set(
+	NETWORK_SRC_FILES
+	src/network.c
 )
 
 set(
@@ -187,7 +193,23 @@ else()
 	message(WARNING "Compiling WITHOUT keyboard command interface")
 endif()
 
-if(LUA_FOUND AND LUA_VERSION_MAJOR EQUAL 5 AND (LUA_VERSION_MINOR EQUAL 1 OR LUA_VERSION_MINOR EQUAL 2 OR LUA_VERSION_MINOR EQUAL 3))
+if(CURL_FOUND)
+	message(STATUS "Compiling with network interface")
+	include_directories(${CURL_INCLUDE_DIRS})
+	set(
+		SRC_FILES
+		${SRC_FILES}
+		${NETWORK_SRC_FILES}
+	)
+
+	set(WITH_NETWORK ON)
+else()
+	message(WARNING "Compiling WITHOUT network interface")
+	set(WITH_NETWORK OFF)
+endif()
+
+if(LUA_FOUND AND LUA_VERSION_MAJOR EQUAL 5 AND
+	(LUA_VERSION_MINOR EQUAL 1 OR LUA_VERSION_MINOR EQUAL 2 OR LUA_VERSION_MINOR EQUAL 3))
 	message(STATUS "Compiling with Lua")
 	include_directories(${LUA_INCLUDE_DIR})
 	set(
@@ -250,6 +272,10 @@ endif()
 
 if(WITH_VIDEO AND VISP_FOUND AND USE_VISP)
 	target_link_libraries(jakopter ${VISP_LIBRARY})
+endif()
+
+if(WITH_NETWORK AND CURL_FOUND)
+	target_link_libraries(jakopter ${CURL_LIBRARIES})
 endif()
 
 if(LEAP_FOUND)

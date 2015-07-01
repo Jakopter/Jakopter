@@ -1,13 +1,11 @@
+#ifndef JAKOPTER_COM_CHANNEL_H
+#define JAKOPTER_COM_CHANNEL_H
 /**
 * Jakopter communication channel :
 * simple atomic structure to allow easy inter-thread communication
 * through a fixed-size memory buffer.
 * Only one operation is allowed at a time on the channel.
 */
-#ifndef JAKOPTER_COM_CHANNEL_H
-#define JAKOPTER_COM_CHANNEL_H
-#include <stddef.h>
-#include <stdint.h>
 /**
 * \brief The structure representing the communication channel.
 *		It should only be manipulated through the functions
