@@ -1,11 +1,17 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
 #include <errno.h>
-#include <sys/un.h>
-#include <float.h>
 #include <fcntl.h>
+#include <float.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/un.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "coords.h"
-
-
 
 /* The string which contains the last coords received.*/
 static char log_coords[TSTAMP_LEN+COORDS_BUF_SIZE];
@@ -42,7 +48,7 @@ static int read_coords(float* x, float* y, float* z)
 	memset(log_coords, 0, TSTAMP_LEN+COORDS_BUF_SIZE);
 	struct timespec ts = {0,0};
 	clock_gettime(CLOCK_REALTIME, &ts);
-	snprintf(log_coords, TSTAMP_LEN+1, "%lu.%lu:", ts.tv_sec, ts.tv_nsec);
+	snprintf(log_coords, TSTAMP_LEN+3, "%lu.%lu:c ", ts.tv_sec, ts.tv_nsec);
 	strncat(log_coords, buf, COORDS_BUF_SIZE);
 	pthread_mutex_unlock(&mutex_log);
 	/* Parsing */
