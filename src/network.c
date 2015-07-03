@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <pthread.h>
+#include <unistd.h>
 #include <time.h>
+#include <pthread.h>
 #include <curl/curl.h>
 #include <curl/easy.h>
 
@@ -74,7 +75,6 @@ void* send_routine(void* args)
 			// jakopter_com_read_float(network_out_channel, offset+52),
 			// jakopter_com_read_float(network_out_channel, offset+56)
 			);
-		printf("Buf %s\n", buf);
 		curl_easy_setopt(send_handle, CURLOPT_POSTFIELDS, buf);
 		curl_easy_setopt(send_handle, CURLOPT_VERBOSE, 0L);
 		curl_easy_setopt(send_handle, CURLOPT_URL, (char*)args);
@@ -109,7 +109,7 @@ void* receive_routine(void* args)
 {
 	CURL* recv_handle = curl_easy_init();
 	CURLcode ret;
-	struct timespec itv = {1, TIMEOUT_NETWORK};
+	struct timespec itv = {1, TIMEOUT_NETWORK/10};
 	//CURLINFO info;
 	if (!recv_handle) {
 		perror("[~][network] Can't create curl handle for receive");
@@ -175,6 +175,7 @@ int jakopter_init_network(const char* server_in, const char* server_out)
 		return -1;
 	}
 
+	usleep(1000);
 	printf("[network] threads created\n");
 
 	return 0;
@@ -187,7 +188,6 @@ int jakopter_stop_network()
 
 		int ret_out = pthread_join(send_thread, NULL);
 		int ret_in = pthread_join(receive_thread, NULL);
-
 		jakopter_com_remove_channel(CHANNEL_NETWORK_INPUT);
 		jakopter_com_remove_channel(CHANNEL_NETWORK_OUTPUT);
 

@@ -1,15 +1,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <errno.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <float.h>
+#include <errno.h>
 #include <pthread.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/un.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 
 #include "coords.h"
 
@@ -157,7 +157,7 @@ int jakopter_init_coords()
 		perror("[~][coords] Can't create thread");
 		return -1;
 	}
-
+	usleep(1000);
 	printf("[coords] thread created\n");
 	return 0;
 }
