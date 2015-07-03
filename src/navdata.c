@@ -310,7 +310,7 @@ const char* jakopter_log_navdata()
 		strncat(ret, timestamp, TSTAMP_LEN);
 		pthread_mutex_unlock(&mutex_timestamp);
 		pthread_mutex_lock(&mutex_navdata);
-		snprintf(buf, DEMO_LEN, "n %d %d %d %d %.4f %.4f %.4f %.4f %.4f %.4f ",
+		snprintf(buf, DEMO_LEN, "n %x %x %d %d %.4f %.4f %.4f %.4f %.4f %.4f ",
 			data.demo.ardrone_state,
 			data.demo.ctrl_state,
 			data.demo.vbat_flying_percentage,
