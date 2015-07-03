@@ -16,5 +16,4 @@
 
 int jakopter_init_network(const char* server_in, const char* server_out);
 int jakopter_stop_network();
-
 #endif

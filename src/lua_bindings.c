@@ -36,19 +36,19 @@ int jakopter_connect_lua(lua_State* L)
 	else
 		drone_ip = NULL;
 
-	lua_pushnumber(L, jakopter_connect(drone_ip));
+	lua_pushinteger(L, jakopter_connect(drone_ip));
 	return 1; //Number of returned values
 }
 
 int jakopter_takeoff_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_takeoff());
+	lua_pushinteger(L, jakopter_takeoff());
 	return 1;
 }
 
 int jakopter_land_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_land());
+	lua_pushinteger(L, jakopter_land());
 	return 1;
 }
 
@@ -56,7 +56,7 @@ int jakopter_rotate_left_lua(lua_State* L)
 {
 	float angular_speed = luaL_checknumber(L, 1);
 
-	lua_pushnumber(L, jakopter_rotate_left(angular_speed));
+	lua_pushinteger(L, jakopter_rotate_left(angular_speed));
 	return 1;
 }
 
@@ -64,7 +64,7 @@ int jakopter_rotate_right_lua(lua_State* L)
 {
 	float angular_speed = luaL_checknumber(L, 1);
 
-	lua_pushnumber(L, jakopter_rotate_right(angular_speed));
+	lua_pushinteger(L, jakopter_rotate_right(angular_speed));
 	return 1;
 }
 
@@ -72,7 +72,7 @@ int jakopter_slide_left_lua(lua_State* L)
 {
 	float speed = luaL_checknumber(L, 1);
 
-	lua_pushnumber(L, jakopter_slide_left(speed));
+	lua_pushinteger(L, jakopter_slide_left(speed));
 	return 1;
 }
 
@@ -80,7 +80,7 @@ int jakopter_slide_right_lua(lua_State* L)
 {
 	float speed = luaL_checknumber(L, 1);
 
-	lua_pushnumber(L, jakopter_slide_right(speed));
+	lua_pushinteger(L, jakopter_slide_right(speed));
 	return 1;
 }
 
@@ -88,7 +88,7 @@ int jakopter_forward_lua(lua_State* L)
 {
 	float speed = luaL_checknumber(L, 1);
 
-	lua_pushnumber(L, jakopter_forward(speed));
+	lua_pushinteger(L, jakopter_forward(speed));
 	return 1;
 }
 
@@ -96,7 +96,7 @@ int jakopter_backward_lua(lua_State* L)
 {
 	float speed = luaL_checknumber(L, 1);
 
-	lua_pushnumber(L, jakopter_backward(speed));
+	lua_pushinteger(L, jakopter_backward(speed));
 	return 1;
 }
 
@@ -104,7 +104,7 @@ int jakopter_up_lua(lua_State* L)
 {
 	float speed = luaL_checknumber(L, 1);
 
-	lua_pushnumber(L, jakopter_up(speed));
+	lua_pushinteger(L, jakopter_up(speed));
 	return 1;
 }
 
@@ -112,31 +112,31 @@ int jakopter_down_lua(lua_State* L)
 {
 	float speed = luaL_checknumber(L, 1);
 
-	lua_pushnumber(L, jakopter_down(speed));
+	lua_pushinteger(L, jakopter_down(speed));
 	return 1;
 }
 
 int jakopter_disconnect_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_disconnect());
+	lua_pushinteger(L, jakopter_disconnect());
 	return 1;
 }
 
 int jakopter_reinit_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_reinit());
+	lua_pushinteger(L, jakopter_reinit());
 	return 1;
 }
 
 int jakopter_ftrim_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_flat_trim());
+	lua_pushinteger(L, jakopter_flat_trim());
 	return 1;
 }
 
 int jakopter_calib_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_calib());
+	lua_pushinteger(L, jakopter_calib());
 	return 1;
 }
 
@@ -147,19 +147,19 @@ int jakopter_move_lua(lua_State* L)
 	float vertical = luaL_checknumber(L, 3);
 	float angular  = luaL_checknumber(L, 4);
 
-	lua_pushnumber(L, jakopter_move(left, forward, vertical, angular));
+	lua_pushinteger(L, jakopter_move(left, forward, vertical, angular));
 	return 1;
 }
 
 int jakopter_stay_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_stay());
+	lua_pushinteger(L, jakopter_stay());
 	return 1;
 }
 
 int jakopter_emergency_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_emergency());
+	lua_pushinteger(L, jakopter_emergency());
 	return 1;
 }
 
@@ -171,7 +171,7 @@ int jakopter_log_command_lua(lua_State* L)
 
 int jakopter_is_flying_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_is_flying());
+	lua_pushinteger(L, jakopter_is_flying());
 	return 1;
 }
 
@@ -218,7 +218,7 @@ int jakopter_com_read_int_lua(lua_State* L)
 	if (cc == NULL)
 		return luaL_error(L, "[~][lua] com_channel of id %d doesn't exist", id);
 
-	lua_pushnumber(L, jakopter_com_read_int(cc, offset));
+	lua_pushinteger(L, jakopter_com_read_int(cc, offset));
 	return 1;
 }
 int jakopter_com_read_float_lua(lua_State* L)
@@ -312,20 +312,20 @@ int jakopter_com_get_timestamp_lua(lua_State* L)
 #ifdef WITH_VIDEO
 int jakopter_init_video_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_init_video(NULL));
+	lua_pushinteger(L, jakopter_init_video(NULL));
 	return 1;
 }
 
 int jakopter_stop_video_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_stop_video());
+	lua_pushinteger(L, jakopter_stop_video());
 	return 1;
 }
 int jakopter_switch_camera_lua(lua_State* L)
 {
 	lua_Integer id = luaL_checkinteger(L, 1);
 
-	lua_pushnumber(L, jakopter_switch_camera(id));
+	lua_pushinteger(L, jakopter_switch_camera(id));
 	return 1;
 }
 /** Drawing API */
@@ -339,7 +339,7 @@ int jakopter_draw_icon_lua(lua_State* L)
 	if (path == NULL || strncmp(path, "", 1) == 0)
 		return luaL_error(L, "[~][lua] the path can't be an empty string");
 
-	lua_pushnumber(L, jakopter_draw_icon(path, x, y, width, height));
+	lua_pushinteger(L, jakopter_draw_icon(path, x, y, width, height));
 	return 1;
 }
 
@@ -351,7 +351,7 @@ int jakopter_draw_text_lua(lua_State* L)
 	if (string == NULL || strncmp(string, "", 1) == 0)
 		return luaL_error(L, "[~][lua] the string can't be empty");
 
-	lua_pushnumber(L, jakopter_draw_text(string, x, y));
+	lua_pushinteger(L, jakopter_draw_text(string, x, y));
 	return 1;
 }
 
@@ -387,12 +387,12 @@ int jakopter_draw_move_lua(lua_State* L)
 #ifdef WITH_COORDS
 int jakopter_init_coords_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_init_coords());
+	lua_pushinteger(L, jakopter_init_coords());
 	return 1;
 }
 int jakopter_stop_coords_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_stop_coords());
+	lua_pushinteger(L, jakopter_stop_coords());
 	return 1;
 }
 int jakopter_log_coords_lua(lua_State* L)
@@ -408,12 +408,12 @@ int jakopter_init_network_lua(lua_State* L)
 	const char *server_input = luaL_checkstring(L, 1);
 	const char *server_output = luaL_checkstring(L, 2);
 
-	lua_pushnumber(L, jakopter_init_network(server_input, server_output));
+	lua_pushinteger(L, jakopter_init_network(server_input, server_output));
 	return 1;
 }
 int jakopter_stop_network_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_stop_network());
+	lua_pushinteger(L, jakopter_stop_network());
 	return 1;
 }
 #endif

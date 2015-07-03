@@ -18,7 +18,8 @@ pthread_t send_thread;
 pthread_t receive_thread;
 /*Guard that stops any function if connection isn't initialized.*/
 bool stopped_network = true;
-
+//boolean to know if the thread started
+bool recv_ready = false;
 struct CurlData {
 	char *memory;
 	size_t size;
@@ -102,7 +103,6 @@ static size_t write_com_channel(void* data, size_t size, size_t nmemb, void* use
 	jakopter_com_write_int(network_in_channel, 0, (int)realsize);
 	jakopter_com_write_buf(network_in_channel, 4, data, realsize);
 	memset(data, 0, realsize);
-
 	return realsize;
 }
 void* receive_routine(void* args)
@@ -115,7 +115,6 @@ void* receive_routine(void* args)
 		perror("[~][network] Can't create curl handle for receive");
 		return NULL;
 	}
-
 	struct CurlData serv_data;
 	while (!stopped_network) {
 		curl_easy_setopt(recv_handle, CURLOPT_WRITEFUNCTION, write_com_channel);
@@ -132,6 +131,8 @@ void* receive_routine(void* args)
 
 		nanosleep(&itv, NULL);
 		itv.tv_nsec = TIMEOUT_NETWORK;
+
+		recv_ready = true;
 	}
 	curl_easy_cleanup(recv_handle);
 
@@ -175,10 +176,15 @@ int jakopter_init_network(const char* server_in, const char* server_out)
 		return -1;
 	}
 
-	usleep(1000);
+	int i = 0;
+	while (!recv_ready && i < 20) {
+		usleep(50);
+		i++;
+	}
+
 	printf("[network] threads created\n");
 
-	return 0;
+	return i < 20;
 }
 
 int jakopter_stop_network()
@@ -188,6 +194,7 @@ int jakopter_stop_network()
 
 		int ret_out = pthread_join(send_thread, NULL);
 		int ret_in = pthread_join(receive_thread, NULL);
+		recv_ready = false;
 		jakopter_com_remove_channel(CHANNEL_NETWORK_INPUT);
 		jakopter_com_remove_channel(CHANNEL_NETWORK_OUTPUT);
 
