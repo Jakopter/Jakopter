@@ -35,8 +35,9 @@ struct jakopter_frame_processing {
 		int width,
 		int height,
 		int size);
-	/*initialize and clean the processing module used by the callback, if needed.
-	Can be NULL.*/
+	/** \brief initialize and clean the processing module used by the callback, if needed.
+	  * Can be NULL.
+	  */
 	int (*init)(void);
 	void (*clean)(void);
 };

@@ -8,7 +8,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 ## User definitions ##
 #option(USE_VISP "Use visp display instead of sdl" OFF)
-set(USE_VISP ON)
+set(USE_VISP OFF)
 
 ## Packages ##
 find_package(Threads REQUIRED)

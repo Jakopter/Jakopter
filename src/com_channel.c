@@ -110,7 +110,7 @@ void jakopter_com_write_float(jakopter_com_channel_t* cc, size_t offset, float v
 	memcpy(place, &value, sizeof(float));
 	//we just modified the buffer, so update the timestamp
 	cc->last_write_time = clock();
-
+	printf("Write %f\n", value);
 	pthread_mutex_unlock(&cc->mutex);
 }
 
@@ -247,7 +247,7 @@ void* jakopter_com_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t si
 	}
 
 	pthread_mutex_lock(&cc->mutex);
-	//retreive the data
+	//retrieve the data
 	int8_t* place = ((int8_t*)cc->buffer) + offset;
 	memcpy(dest, place, size);
 	pthread_mutex_unlock(&cc->mutex);

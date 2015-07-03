@@ -146,7 +146,7 @@ int jakopter_init_coords()
 	}
 
 	coords_channel = jakopter_com_add_channel(CHANNEL_COORDS, 4*sizeof(float));
-	jakopter_com_write_float(coords_channel, 0, 0.0);
+	jakopter_com_write_int(coords_channel, 0, 0.0);
 	jakopter_com_write_float(coords_channel, 4, 0.0);
 	jakopter_com_write_float(coords_channel, 8, 0.0);
 	jakopter_com_write_float(coords_channel, 12, 0.0);

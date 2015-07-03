@@ -1,19 +1,21 @@
 //for yield function
 #include <sched.h>
+#include <lauxlib.h>
+#include <lua.h>
 
 #include "drone.h"
 #include "navdata.h"
+#include "com_channel.h"
+#include "com_master.h"
 #ifdef WITH_VIDEO
 #include "video.h"
 #endif
 #ifdef WITH_COORDS
 #include "coords.h"
 #endif
-#include "com_channel.h"
-#include "com_master.h"
-#include "lauxlib.h"
-#include "lua.h"
-
+#ifdef WITH_NETWORK
+#include "network.h"
+#endif
 /*
 * Lua helper functions
 */
@@ -166,6 +168,42 @@ int jakopter_log_command_lua(lua_State* L)
 	lua_pushstring(L, jakopter_log_command());
 	return 1;
 }
+
+int jakopter_is_flying_lua(lua_State* L)
+{
+	lua_pushnumber(L, jakopter_is_flying());
+	return 1;
+}
+
+int jakopter_height_lua(lua_State* L)
+{
+	lua_pushnumber(L, jakopter_height());
+	return 1;
+}
+
+int jakopter_battery_lua(lua_State* L)
+{
+	lua_pushnumber(L, jakopter_battery());
+	return 1;
+}
+
+int jakopter_log_navdata_lua(lua_State* L)
+{
+	lua_pushstring(L, jakopter_log_navdata());
+	return 1;
+}
+
+int usleep_lua(lua_State* L)
+{
+	lua_Integer duration = luaL_checkinteger(L, 1);
+	usleep(duration);
+	return 0;
+}
+int yield_lua(lua_State* L)
+{
+	sched_yield();
+	return 0;
+}
 /**
 * \brief Read from a com channel.
 * \param id of the com channel to read from.
@@ -173,7 +211,6 @@ int jakopter_log_command_lua(lua_State* L)
 */
 int jakopter_com_read_int_lua(lua_State* L)
 {
-	//jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer id     = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 
@@ -186,7 +223,6 @@ int jakopter_com_read_int_lua(lua_State* L)
 }
 int jakopter_com_read_float_lua(lua_State* L)
 {
-	//jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer id     = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 
@@ -197,6 +233,24 @@ int jakopter_com_read_float_lua(lua_State* L)
 	lua_pushnumber(L, jakopter_com_read_float(cc, offset));
 	return 1;
 }
+int jakopter_com_read_string_lua(lua_State* L)
+{
+	lua_Integer id     = luaL_checkinteger(L, 1);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+
+	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
+	if (cc == NULL)
+		return luaL_error(L, "[~][lua] com_channel of id %d doesn't exist", id);
+	size_t size = jakopter_com_read_int(cc, offset);
+	char* string = malloc(size);
+	jakopter_com_read_buf(cc, offset+4, size, string);
+	if (size == 0)
+		lua_pushstring(L, NULL);
+	else
+		lua_pushstring(L, string);
+	free(string);
+	return 1;
+}
 /**
 * \brief Write to a com channel.
 * \param id of the com channel to write into.
@@ -205,7 +259,6 @@ int jakopter_com_read_float_lua(lua_State* L)
 */
 int jakopter_com_write_int_lua(lua_State* L)
 {
-	//jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer id     = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
 	lua_Integer value  = luaL_checkinteger(L, 3);
@@ -219,16 +272,29 @@ int jakopter_com_write_int_lua(lua_State* L)
 }
 int jakopter_com_write_float_lua(lua_State* L)
 {
-	//jakopter_com_channel_t** cc = check_com_channel(L);
 	lua_Integer id     = luaL_checkinteger(L, 1);
 	lua_Integer offset = luaL_checkinteger(L, 2);
-	lua_Integer value  = luaL_checknumber(L, 3);
+	float value  = luaL_checknumber(L, 3);
 
 	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
 	if (cc == NULL)
 		return luaL_error(L, "[~][lua] com_channel of id %d doesn't exist", id);
 
 	jakopter_com_write_float(cc, offset, value);
+	return 0;
+}
+int jakopter_com_write_string_lua(lua_State* L)
+{
+	lua_Integer id     = luaL_checkinteger(L, 1);
+	lua_Integer offset = luaL_checkinteger(L, 2);
+	const char *string = luaL_checkstring(L, 3);
+
+	jakopter_com_channel_t* cc = jakopter_com_get_channel(id);
+	if (cc == NULL)
+		return luaL_error(L, "[~][lua] com_channel of id %d doesn't exist", id);
+
+	jakopter_com_write_int(cc, offset, strlen(string)+1);
+	jakopter_com_write_buf(cc, offset+4, (void*)string, strlen(string)+1);
 	return 0;
 }
 int jakopter_com_get_timestamp_lua(lua_State* L)
@@ -291,7 +357,7 @@ int jakopter_draw_text_lua(lua_State* L)
 
 int jakopter_draw_remove_lua(lua_State* L)
 {
-	lua_Integer id = luaL_checknumber(L, 1);
+	lua_Integer id = luaL_checkinteger(L, 1);
 
 	jakopter_draw_remove(id);
 	return 0;
@@ -336,41 +402,22 @@ int jakopter_log_coords_lua(lua_State* L)
 }
 #endif
 
-int jakopter_is_flying_lua(lua_State* L)
+#ifdef WITH_NETWORK
+int jakopter_init_network_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_is_flying());
+	const char *server_input = luaL_checkstring(L, 1);
+	const char *server_output = luaL_checkstring(L, 2);
+
+	lua_pushnumber(L, jakopter_init_network(server_input, server_output));
 	return 1;
 }
-
-int jakopter_height_lua(lua_State* L)
+int jakopter_stop_network_lua(lua_State* L)
 {
-	lua_pushnumber(L, jakopter_height());
+	lua_pushnumber(L, jakopter_stop_network());
 	return 1;
 }
+#endif
 
-int jakopter_battery_lua(lua_State* L)
-{
-	lua_pushnumber(L, jakopter_battery());
-	return 1;
-}
-
-int jakopter_log_navdata_lua(lua_State* L)
-{
-	lua_pushstring(L, jakopter_log_navdata());
-	return 1;
-}
-
-int usleep_lua(lua_State* L)
-{
-	lua_Integer duration = luaL_checkinteger(L, 1);
-	usleep(duration);
-	return 0;
-}
-int yield_lua(lua_State* L)
-{
-	sched_yield();
-	return 0;
-}
 /**
 * Cleanup function called when the library is unloaded.
 * Makes sure all threads started by the library are terminated.
@@ -384,6 +431,9 @@ int jakopter_cleanup_lua(lua_State* L)
 #ifdef WITH_COORDS
 	jakopter_stop_coords();
 #endif
+#ifdef WITH_NETWORK
+	jakopter_stop_network();
+#endif
 	jakopter_disconnect();
 	return 0;
 }
@@ -392,8 +442,10 @@ int jakopter_cleanup_lua(lua_State* L)
 or luaL_Reg*/
 static const luaL_Reg jakopterlib[] = {
 	{"connect", jakopter_connect_lua},
+	{"disconnect", jakopter_disconnect_lua},
 	{"takeoff", jakopter_takeoff_lua},
 	{"land", jakopter_land_lua},
+	{"emergency", jakopter_emergency_lua},
 	{"left", jakopter_rotate_left_lua},
 	{"right", jakopter_rotate_right_lua},
 	{"slide_left", jakopter_slide_left_lua},
@@ -402,40 +454,44 @@ static const luaL_Reg jakopterlib[] = {
 	{"backward", jakopter_backward_lua},
 	{"up", jakopter_up_lua},
 	{"down", jakopter_down_lua},
-	{"emergency", jakopter_emergency_lua},
+	{"stay", jakopter_stay_lua},
+	{"move", jakopter_move_lua},
 	{"reinit", jakopter_reinit_lua},
 	{"ftrim", jakopter_ftrim_lua},
 	{"calib", jakopter_calib_lua},
-	{"move", jakopter_move_lua},
-	{"stay", jakopter_stay_lua},
 	{"log_command", jakopter_log_command_lua},
-	{"disconnect", jakopter_disconnect_lua},
-#ifdef WITH_VIDEO
-	{"connect_video", jakopter_init_video_lua},
-	{"stop_video", jakopter_stop_video_lua},
-	{"draw_icon", jakopter_draw_icon_lua},
-	{"draw_text", jakopter_draw_text_lua},
-	{"draw_remove", jakopter_draw_remove_lua},
-	{"draw_resize", jakopter_draw_resize_lua},
-	{"draw_move", jakopter_draw_move_lua},
-	{"switch_cam", jakopter_switch_camera_lua},
-#endif
-#ifdef WITH_COORDS
-	{"connect_coords", jakopter_init_coords_lua},
-	{"stop_coords", jakopter_stop_coords_lua},
-	{"log_coords", jakopter_log_coords_lua},
-#endif
 	{"is_flying", jakopter_is_flying_lua},
 	{"battery", jakopter_battery_lua},
 	{"height", jakopter_height_lua},
 	{"log_navdata", jakopter_log_navdata_lua},
 	{"cc_read_int", jakopter_com_read_int_lua},
 	{"cc_read_float", jakopter_com_read_float_lua},
+	{"cc_read_string",jakopter_com_read_string_lua},
 	{"cc_write_int", jakopter_com_write_int_lua},
 	{"cc_write_float", jakopter_com_write_float_lua},
+	{"cc_write_string",jakopter_com_write_string_lua},
 	{"cc_get_timestamp", jakopter_com_get_timestamp_lua},
 	{"usleep", usleep_lua},
 	{"yield", yield_lua},
+#ifdef WITH_VIDEO
+	{"connect_video", jakopter_init_video_lua},
+	{"stop_video", jakopter_stop_video_lua},
+	{"switch_cam", jakopter_switch_camera_lua},
+	{"draw_icon", jakopter_draw_icon_lua},
+	{"draw_text", jakopter_draw_text_lua},
+	{"draw_remove", jakopter_draw_remove_lua},
+	{"draw_resize", jakopter_draw_resize_lua},
+	{"draw_move", jakopter_draw_move_lua},
+#endif
+#ifdef WITH_NETWORK
+	{"connect_network", jakopter_init_network_lua},
+	{"stop_network", jakopter_stop_network_lua},
+#endif
+#ifdef WITH_COORDS
+	{"connect_coords", jakopter_init_coords_lua},
+	{"stop_coords", jakopter_stop_coords_lua},
+	{"log_coords", jakopter_log_coords_lua},
+#endif
 	{NULL, NULL}
 };
 

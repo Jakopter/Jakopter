@@ -1,4 +1,6 @@
+#include <stdint.h>
 #include <SDL2/SDL.h>
+#include <pthread.h>
 #include "SDL_ttf.h"
 #include "SDL_image.h"
 
@@ -377,10 +379,10 @@ int video_display_process(uint8_t* frame, int width, int height, int size) {
 		if (current->graphic != NULL && current->graphic->tex != NULL){
 			int ret = SDL_RenderCopy(renderer, current->graphic->tex, NULL, &current->graphic->pos);
 			if (ret < 0)
-				fprintf(stderr, "[~][display] RenderCopy failed: %s\n", SDL_GetError());
+				fprintf(stderr, "[~][display] RenderCopy() failed: %s\n", SDL_GetError());
 		}
-		else
-			fprintf(stderr, "[*][display] Texture of %d not loaded\n", current->id);
+		// else
+		// 	fprintf(stderr, "[*][display] Texture of %d not loaded\n", current->id);
 
 		current = current->next;
 	}

@@ -166,7 +166,7 @@ void* cmd_routine(void* args)
 		pthread_mutex_unlock(&mutex_stopped);
 
 		if (send_cmd() < 0)
-			perror("[~][cmd] Can't send command to the drone. \n");
+			perror("[~][cmd] Can't send command to the drone");
 		nanosleep(&itv, NULL);
 		itv.tv_nsec = TIMEOUT_CMD;
 
@@ -183,7 +183,7 @@ int jakopter_connect(const char* drone_ip)
 	pthread_mutex_lock(&mutex_stopped);
 	if (!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
-		perror("[~][cmd] Connection already done \n");
+		perror("[~][cmd] Connection already done");
 		return -1;
 	}
 	pthread_mutex_unlock(&mutex_stopped);
@@ -196,7 +196,7 @@ int jakopter_connect(const char* drone_ip)
 		addr_drone.sin_addr.s_addr = inet_addr(drone_ip);
 
 	if (addr_drone.sin_addr.s_addr == INADDR_NONE) {
-		perror("[~][cmd] The drone adress is invalid \n");
+		perror("[~][cmd] The drone adress is invalid");
 		return -1;
 	}
 	addr_drone.sin_port        = htons(PORT_CMD);

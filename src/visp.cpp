@@ -60,7 +60,7 @@ void visp_destroy()
 	jakopter_com_remove_channel(CHANNEL_DISPLAY);
 	jakopter_com_remove_channel(CHANNEL_CALLBACK);
 }
-/*
+
 int blob_process(uint8_t* frame, int width, int height, int size) {
 
 	try {
@@ -102,7 +102,7 @@ int blob_process(uint8_t* frame, int width, int height, int size) {
 	}
 	return 0;
 }
-*/
+
 int qrcode_process(uint8_t* frame, int width, int height, int size) {
 	try {
 		if (!initialized) {
@@ -122,7 +122,7 @@ int qrcode_process(uint8_t* frame, int width, int height, int size) {
 
 			//compute qr_code
 			bool status = qr_detector.detect(*qr_img);
-			int obj = qr_detector.getNbObjects();
+			unsigned int obj = (unsigned int)qr_detector.getNbObjects();
 
 			if (status) {
 				for(size_t i = 0; i < obj; i++) {
@@ -131,7 +131,7 @@ int qrcode_process(uint8_t* frame, int width, int height, int size) {
 					vpDisplay::displayRectangle(*qr_img, bbox, vpColor::green);
 					vpDisplay::displayText(*qr_img, (int)(bbox.getTop()-10), (int)bbox.getLeft(),
 						"Message: \"" + qr_detector.getMessage(i) + "\"",
-					vpColor::red);
+						vpColor::red);
 					for(size_t j = 0; j < p.size(); j++) {
 						vpDisplay::displayCross(*qr_img, p[j], 14, vpColor::red, 3);
 						std::ostringstream number;
@@ -148,7 +148,6 @@ int qrcode_process(uint8_t* frame, int width, int height, int size) {
 				}
 			}
 
-
 			int bat = jakopter_com_read_int(com_in, 0);
 			std::ostringstream bat_str;
 			bat_str << bat;
@@ -162,9 +161,8 @@ int qrcode_process(uint8_t* frame, int width, int height, int size) {
 	return 0;
 }
 
-int visp_process(uint8_t* frame, int width, int height, int size)
+int face_process(uint8_t* frame, int width, int height, int size)
 {
-	//return qrcode_process(frame, width, height, size);
 	//alt_tree, lbpcascade
 	std::string face_cascade_script = "/usr/share/opencv/lbpcascades/lbpcascade_frontalface.xml";
 
@@ -216,4 +214,9 @@ int visp_process(uint8_t* frame, int width, int height, int size)
 		std::cout << "Catch an exception: " << e << std::endl;
 	}
 	return 0;
+}
+
+int visp_process(uint8_t* frame, int width, int height, int size)
+{
+	return face_process(frame, width, height, size);
 }
