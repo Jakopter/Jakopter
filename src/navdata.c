@@ -240,10 +240,9 @@ int jakopter_is_flying()
 	int flyState = -1;
 	pthread_mutex_lock(&mutex_navdata);
 	//We get the first 16 bits for the major state
-	flyState = data.raw.ardrone_state << 16;
+	flyState = data.raw.ardrone_state & 0x0001;
 	pthread_mutex_unlock(&mutex_navdata);
-	return flyState == FLY || flyState == HOVER ||
-			flyState == MOVE ||flyState	== LOOP;
+	return flyState;
 }
 
 int jakopter_battery()
