@@ -177,14 +177,14 @@ int jakopter_init_network(const char* server_in, const char* server_out)
 	}
 
 	int i = 0;
-	while (!recv_ready && i < 20) {
-		usleep(50);
+	while (!recv_ready && i < 200) {
+		usleep(500);
 		i++;
 	}
 
 	printf("[network] threads created\n");
 
-	return i < 20;
+	return -(i >= 200);
 }
 
 int jakopter_stop_network()

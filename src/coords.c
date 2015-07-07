@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <float.h>
 #include <errno.h>
 #include <pthread.h>
 #include <arpa/inet.h>
@@ -21,7 +20,8 @@ int sock_coords;
 jakopter_com_channel_t* coords_channel;
 pthread_t coords_thread;
 /*Guard that stops any function if connection isn't initialized.*/
-bool stopped_coords = true;
+static bool recv_ready = false;
+static bool stopped_coords = true;
 static pthread_mutex_t mutex_stopped_coords = PTHREAD_MUTEX_INITIALIZER;
 /* Race condition between requesting timestamp and record of timestamp*/
 static pthread_mutex_t mutex_log = PTHREAD_MUTEX_INITIALIZER;
@@ -97,11 +97,11 @@ void* coords_routine(void* args)
 		int ret = read_coords(&x, &y, &z);
 		if (ret) {
 			// write only when you have a new value
-			jakopter_com_write_int(coords_channel, 0, 1);
 			jakopter_com_write_float(coords_channel, 4, x);
 			jakopter_com_write_float(coords_channel, 8, y);
 			jakopter_com_write_float(coords_channel, 12, z);
 		}
+		recv_ready = true;
 		// wait before doing it again
 		usleep(COORDS_INTERVAL*1000);
 		pthread_mutex_lock(&mutex_stopped_coords);
@@ -131,22 +131,13 @@ int jakopter_init_coords()
 		return -1;
 	}
 
-	// int flags = fcntl(sock_coords, F_GETFL, 0);
-	// if (flags < 0)
-	// 	flags = 0;
-
-	// if (fcntl(sock_coords, F_SETFL, flags | O_NONBLOCK) < 0) {
-	// 	perror("[~][coords] Can't set the socket to O_NONBLOCK");
-	// 	return -1;
-	// }
-
 	if (bind (sock_coords, (struct sockaddr*)&addr_server_coords, sizeof(struct sockaddr_un)) < 0) {
 		perror("[~][coords] Can't bind the socket");
 		return -1;
 	}
 
 	coords_channel = jakopter_com_add_channel(CHANNEL_COORDS, 4*sizeof(float));
-	jakopter_com_write_int(coords_channel, 0, 0.0);
+
 	jakopter_com_write_float(coords_channel, 4, 0.0);
 	jakopter_com_write_float(coords_channel, 8, 0.0);
 	jakopter_com_write_float(coords_channel, 12, 0.0);
@@ -157,9 +148,16 @@ int jakopter_init_coords()
 		perror("[~][coords] Can't create thread");
 		return -1;
 	}
-	usleep(1000);
+
 	printf("[coords] thread created\n");
-	return 0;
+
+	int i = 0;
+	while (!recv_ready && i < 2000) {
+		usleep(500);
+		i++;
+	}
+
+	return -(i >= 2000);
 }
 int jakopter_stop_coords()
 {

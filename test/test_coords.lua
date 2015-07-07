@@ -328,11 +328,6 @@ end
 
 --d.connect_video()
 
--- Wait the vicon to be ready
-repeat
-	d.usleep(20*1000)
-until d.cc_read_int(5,0) == 1
-
 --d.takeoff()
 
 axis = {
