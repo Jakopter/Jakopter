@@ -12,7 +12,73 @@
 /*Tag for the checksum packet in full mode*/
 #define TAG_CKS 0
 #define FLOAT_LEN 10
+// 12 spaces
 #define DEMO_LEN 4*INT_LEN+6*FLOAT_LEN+12
+
+typedef enum {
+	DEFAULT,
+	INIT,
+	LANDED,
+	FLY,
+	HOVER,
+	CTRL_USELESS_1,
+	CTRL_USELESS_2,
+	TAKEOFF,
+	MOVE,
+	LAND,
+	LOOP
+} ctrl_states;
+
+
+typedef enum {
+	FLY_OK,
+	FLY_LOST_ALT,
+	FLY_LOST_ALT_GO_DOWN,
+	FLY_ALT_OUT_ZONE,
+	COMBINED_YAW,
+	BRAKE,
+	NO_VISION
+} fly_states;
+
+typedef enum {
+	HOVER_OK,
+	HOVER_YAW,
+	HOVER_YAW_LOST_ALT,
+	HOVER_YAW_LOST_ALT_GO_DOWN,
+	HOVER_ALT_OUT_ZONE,
+	HOVER_YAW_ALT_OUT_ZONE,
+	HOVER_LOST_ALT,
+	HOVER_LOST_ALT_GO_DOWN,
+	LOST_COM,
+	LOST_COM_LOST_ALT,
+	LOST_COM_LOST_ALT_TOO_LONG,
+	LOST_COM_ALT_OK,
+	MAGNETO_CALIB,
+	DEMO
+} hover_states;
+
+typedef enum {
+	TAKEOFF_GROUND,
+	TAKEOFF_AUTO
+} takeoff_states;
+
+typedef enum {
+	GOTO_OK = 0,
+	GOTO_LOST_ALT,
+	GOTO_YAW
+} move_states;
+
+typedef enum {
+	CLOSED_LOOP,
+	OPEN_LOOP,
+	OPEN_LOOP_FAST
+} land_states;
+
+typedef enum {
+	IMPULSION,
+	OPEN_LOOP_CTRL,
+	PLANIF_CTRL
+} loop_states;
 
 struct navdata_option {
 	uint16_t  tag;
@@ -47,11 +113,11 @@ struct navdata_demo
 	float32_t  phi;                    /* UAV's roll  in milli-degrees */
 	float32_t  psi;                    /* UAV's yaw   in milli-degrees */
 
-	int32_t    altitude;               /* UAV's altitude in centimeters */
+	int32_t    altitude;               /* UAV's altitude in millimeters */
 
-	float32_t  vx;                     /* UAV's estimated linear velocity in  */
-	float32_t  vy;                     /* UAV's estimated linear velocity in  */
-	float32_t  vz;                     /* UAV's estimated linear velocity in  */
+	float32_t  vx;                     /* UAV's estimated linear velocity in milli-degree/?s */
+	float32_t  vy;                     /* UAV's estimated linear velocity in milli-degree/?s */
+	float32_t  vz;                     /* UAV's estimated linear velocity in milli-degree/?s */
 
 	uint32_t   num_frames; // Useless
 

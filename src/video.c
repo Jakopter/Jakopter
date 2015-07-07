@@ -163,7 +163,7 @@ int jakopter_init_video(const char* drone_ip)
 	addr_drone_video.sin_port        = htons(PORT_VIDEO);
 
 	if (addr_drone_video.sin_addr.s_addr == INADDR_NONE) {
-		perror("[~] The drone adress is invalid \n");
+		perror("[~] The drone adress is invalid");
 		return -1;
 	}
 

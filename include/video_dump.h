@@ -1,6 +1,5 @@
-#ifndef JAKOPTER_VIDEO_PROCESS_H
-#define JAKOPTER_VIDEO_PROCESS_H
-
+#ifndef JAKOPTER_VIDEO_DUMP_H
+#define JAKOPTER_VIDEO_DUMP_H
 #include <stdint.h>
 /**
 * Header for video processing example(s).
