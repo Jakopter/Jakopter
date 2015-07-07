@@ -32,8 +32,8 @@ find_package(CURL)
 
 ## Compiler Infos ##
 
-#set (CMAKE_C_COMPILER "/usr/bin/clang")
-#set (CMAKE_CXX_COMPILER "/usr/bin/clang++")
+# set (CMAKE_C_COMPILER "/usr/bin/clang")
+# set (CMAKE_CXX_COMPILER "/usr/bin/clang++")
 
 include_directories("include/")
 
@@ -124,20 +124,6 @@ set(
 
 ## Include Packages header and source files ##
 
-if(AVCODEC_FOUND)
-	message(STATUS "Compiling with libavcodec")
-	include_directories(${AVCODEC_INCLUDE_DIRS})
-	set(
-		SRC_FILES
-		${SRC_FILES}
-		${VIDEO_SRC_FILES}
-	)
-
-	add_definitions(${AVCODEC_DEFINITIONS})
-else()
-	message(WARNING "Compiling WITHOUT libavcodec")
-	set(WITH_VIDEO OFF)
-endif()
 
 if(AVCODEC_FOUND AND SDL2_FOUND AND SDL2TTF_FOUND AND SDL2IMAGE_FOUND AND NOT USE_VISP)
 	message(STATUS "Compiling with SDL2")
@@ -154,7 +140,6 @@ else()
 	set(WITH_VIDEO OFF)
 endif()
 
-
 if(AVCODEC_FOUND AND VISP_FOUND AND USE_VISP)
 	message(STATUS "Compiling with libvisp")
 	include_directories(${VISP_INCLUDE_DIR})
@@ -167,6 +152,20 @@ if(AVCODEC_FOUND AND VISP_FOUND AND USE_VISP)
 elseif(USE_VISP)
 	message(WARNING "Compiling WITHOUT visp")
 	set(WITH_VIDEO OFF)
+endif()
+
+if(AVCODEC_FOUND AND WITH_VIDEO)
+	message(STATUS "Compiling with libavcodec")
+	include_directories(${AVCODEC_INCLUDE_DIRS})
+	set(
+		SRC_FILES
+		${SRC_FILES}
+		${VIDEO_SRC_FILES}
+	)
+
+	add_definitions(${AVCODEC_DEFINITIONS})
+else()
+	message(WARNING "Compiling WITHOUT libavcodec")
 endif()
 
 if(LEAP_FOUND)

@@ -17,26 +17,26 @@ struct timeval video_timeout = {VIDEO_TIMEOUT, 0};
 
 /** Video processing API implementation */
 static const struct jakopter_frame_processing frame_process = {
-	// .callback = video_display_process,
-	// .init     = video_display_init,
-	// .clean    = video_display_destroy
-	.callback = visp_process,
-	.init     = visp_init,
-	.clean    = visp_destroy
+	.callback = video_display_process,
+	.init     = video_display_init,
+	.clean    = video_display_destroy
+	// .callback = visp_process,
+	// .init     = visp_init,
+	// .clean    = visp_destroy
 };
 
 /** Drawing API implementation */
 static const struct jakopter_drawing draw_implementation = {
-	// .draw_icon   = display_draw_icon,
-	// .draw_text   = display_draw_text,
-	// .remove      = display_graphic_remove,
-	// .resize      = display_graphic_resize,
-	// .move        = display_graphic_move
-	.draw_icon   = NULL,
-	.draw_text   = NULL,
-	.remove      = NULL,
-	.resize      = NULL,
-	.move        = NULL
+	.draw_icon   = display_draw_icon,
+	.draw_text   = display_draw_text,
+	.remove      = display_graphic_remove,
+	.resize      = display_graphic_resize,
+	.move        = display_graphic_move
+	// .draw_icon   = NULL,
+	// .draw_text   = NULL,
+	// .remove      = NULL,
+	// .resize      = NULL,
+	// .move        = NULL
 };
 
 /*Set to 1 when we want to tell the video thread to stop.*/
