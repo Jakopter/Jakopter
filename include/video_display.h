@@ -1,9 +1,6 @@
 #ifndef JAKOPTER_VIDEO_DISPLAY_H
 #define JAKOPTER_VIDEO_DISPLAY_H
 
-#include <stdint.h>
-#include <pthread.h>
-
 #define FONT_PATH "../../resources/FreeSans.ttf"
 /* size of the input com channel for this module*/
 #define DISPLAY_COM_IN_SIZE 32

@@ -1,4 +1,8 @@
+#include <stdio.h>
+#include <stdbool.h>
 #include <fcntl.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #include "user_input.h"
 

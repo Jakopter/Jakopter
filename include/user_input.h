@@ -1,7 +1,6 @@
-#ifndef USERINPUT_H
-#define USERINPUT_H
+#ifndef JAKOPTER_USERINPUT_H
+#define JAKOPTER_USERINPUT_H
 
-#include "common.h"
 #include "com_channel.h"
 #include "com_master.h"
 

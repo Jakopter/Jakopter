@@ -21,6 +21,7 @@ find_package(Leap)
 find_package(Curses)
 find_package(Visp)
 find_package(Vicon)
+find_package(CURL)
 
 ## Debug: print all declared variables
 # get_cmake_property(_variableNames VARIABLES)
@@ -31,8 +32,8 @@ find_package(Vicon)
 
 ## Compiler Infos ##
 
-#set (CMAKE_C_COMPILER "/usr/bin/clang")
-#set (CMAKE_CXX_COMPILER "/usr/bin/clang++")
+# set (CMAKE_C_COMPILER "/usr/bin/clang")
+# set (CMAKE_CXX_COMPILER "/usr/bin/clang++")
 
 include_directories("include/")
 
@@ -83,6 +84,11 @@ set(
 )
 
 set(
+	NETWORK_SRC_FILES
+	src/network.c
+)
+
+set(
 	SDL2_SRC_FILES
 	src/video_display.c
 )
@@ -118,20 +124,6 @@ set(
 
 ## Include Packages header and source files ##
 
-if(AVCODEC_FOUND)
-	message(STATUS "Compiling with libavcodec")
-	include_directories(${AVCODEC_INCLUDE_DIRS})
-	set(
-		SRC_FILES
-		${SRC_FILES}
-		${VIDEO_SRC_FILES}
-	)
-
-	add_definitions(${AVCODEC_DEFINITIONS})
-else()
-	message(WARNING "Compiling WITHOUT libavcodec")
-	set(WITH_VIDEO OFF)
-endif()
 
 if(AVCODEC_FOUND AND SDL2_FOUND AND SDL2TTF_FOUND AND SDL2IMAGE_FOUND AND NOT USE_VISP)
 	message(STATUS "Compiling with SDL2")
@@ -148,7 +140,6 @@ else()
 	set(WITH_VIDEO OFF)
 endif()
 
-
 if(AVCODEC_FOUND AND VISP_FOUND AND USE_VISP)
 	message(STATUS "Compiling with libvisp")
 	include_directories(${VISP_INCLUDE_DIR})
@@ -161,6 +152,20 @@ if(AVCODEC_FOUND AND VISP_FOUND AND USE_VISP)
 elseif(USE_VISP)
 	message(WARNING "Compiling WITHOUT visp")
 	set(WITH_VIDEO OFF)
+endif()
+
+if(AVCODEC_FOUND AND WITH_VIDEO)
+	message(STATUS "Compiling with libavcodec")
+	include_directories(${AVCODEC_INCLUDE_DIRS})
+	set(
+		SRC_FILES
+		${SRC_FILES}
+		${VIDEO_SRC_FILES}
+	)
+
+	add_definitions(${AVCODEC_DEFINITIONS})
+else()
+	message(WARNING "Compiling WITHOUT libavcodec")
 endif()
 
 if(LEAP_FOUND)
@@ -187,7 +192,23 @@ else()
 	message(WARNING "Compiling WITHOUT keyboard command interface")
 endif()
 
-if(LUA_FOUND AND LUA_VERSION_MAJOR EQUAL 5 AND (LUA_VERSION_MINOR EQUAL 1 OR LUA_VERSION_MINOR EQUAL 2 OR LUA_VERSION_MINOR EQUAL 3))
+if(CURL_FOUND)
+	message(STATUS "Compiling with network interface")
+	include_directories(${CURL_INCLUDE_DIRS})
+	set(
+		SRC_FILES
+		${SRC_FILES}
+		${NETWORK_SRC_FILES}
+	)
+
+	set(WITH_NETWORK ON)
+else()
+	message(WARNING "Compiling WITHOUT network interface")
+	set(WITH_NETWORK OFF)
+endif()
+
+if(LUA_FOUND AND LUA_VERSION_MAJOR EQUAL 5 AND
+	(LUA_VERSION_MINOR EQUAL 1 OR LUA_VERSION_MINOR EQUAL 2 OR LUA_VERSION_MINOR EQUAL 3))
 	message(STATUS "Compiling with Lua")
 	include_directories(${LUA_INCLUDE_DIR})
 	set(
@@ -250,6 +271,10 @@ endif()
 
 if(WITH_VIDEO AND VISP_FOUND AND USE_VISP)
 	target_link_libraries(jakopter ${VISP_LIBRARY})
+endif()
+
+if(WITH_NETWORK AND CURL_FOUND)
+	target_link_libraries(jakopter ${CURL_LIBRARIES})
 endif()
 
 if(LEAP_FOUND)

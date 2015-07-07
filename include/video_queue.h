@@ -1,8 +1,6 @@
 #ifndef JAKOPTER_VIDEO_QUEUE_H
 #define JAKOPTER_VIDEO_QUEUE_H
 
-#include <stddef.h>
-#include <stdint.h>
 #include "video.h"
 
 /**
