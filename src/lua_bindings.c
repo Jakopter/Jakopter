@@ -508,6 +508,7 @@ static int create_cleanup_udata(lua_State* L)
 	//metatable with cleanup method for the lib
 	luaL_newmetatable(L, "jakopter.cleanup");
 	//set our cleanup method as the __gc callback
+
 	lua_pushstring(L, "__gc");
 	lua_pushcfunction(L, jakopter_cleanup_lua);
 	lua_settable(L, -3);
@@ -522,7 +523,7 @@ static int create_cleanup_udata(lua_State* L)
 	return 0;
 }
 
-int luaopen_libjakopter(lua_State* L)
+JAKO_EXPORT int luaopen_libjakopter(lua_State* L)
 {
 	/*the metatable is used for type-checking our custom structs in lua.
 	here, define a table for com channels pointers.*/

@@ -18,21 +18,17 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include "utils.h"
 
 #cmakedefine WITH_VIDEO
 #cmakedefine WITH_COORDS
 #cmakedefine WITH_NETWORK
+#cmakedefine USE_VISP
 
 #define float32_t float
 #define float64_t double
 
 #define WIFI_ARDRONE_IP	"192.168.1.1"
-/* Max number of digit into an integer. */
-#define INT_LEN     11
-#define TSTAMP_LEN  2*INT_LEN+2
-
-#define LUA_API_VERSION 1.1
-#define C_API_VERSION 1.0
 
 struct sockaddr_in addr_drone, addr_client;
 int sock_cmd;

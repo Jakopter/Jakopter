@@ -17,7 +17,7 @@ typedef struct jakopter_com_channel_t jakopter_com_channel_t;
 * \brief Initialize a com_channel structure, with the given buffer size.
 * \param size Size of the communication buffer in bytes.
 * \returns jakopter_com_channel_t structure, ready to be used.
-*		The strucutre should be freed with jakopter_destroy_com_channel
+*		The structure should be freed with jakopter_destroy_com_channel
 *		once you're done using it.
 *		Returns NULL on failure.
 */

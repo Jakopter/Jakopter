@@ -4,6 +4,8 @@
 
 #include "common.h"
 
+/* 1 ms per refresh */
+#define VIDEO_INTERVAL 1000000
 #define VIDEO_TIMEOUT 4
 #define BASE_VIDEO_BUF_SIZE 1024
 #define PORT_VIDEO		5555
@@ -113,6 +115,7 @@ int jakopter_stop_video();
   * \return 0 if stopped was 0, 1 if it wasn't.
   */
 int video_set_stopped();
-
+/** \brief helper for mutex-protected value*/
+int video_is_stopped();
 #endif
 

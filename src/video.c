@@ -4,7 +4,6 @@
 #include "video_display.h"
 #include "visp.h"
 
-
 /*addresses for video communication*/
 struct sockaddr_in addr_drone_video, addr_client_video;
 int sock_video;
@@ -14,29 +13,36 @@ pthread_t video_thread, processing_thread;
 /*FD set used for the video socket*/
 fd_set vid_fd_set;
 struct timeval video_timeout = {VIDEO_TIMEOUT, 0};
+struct timespec video_interval = {0, VIDEO_INTERVAL};
 
 /** Video processing API implementation */
 static const struct jakopter_frame_processing frame_process = {
+#ifdef USE_VISP
+	.callback = visp_process,
+	.init     = visp_init,
+	.clean    = visp_destroy
+#else
 	.callback = video_display_process,
 	.init     = video_display_init,
 	.clean    = video_display_destroy
-	// .callback = visp_process,
-	// .init     = visp_init,
-	// .clean    = visp_destroy
+#endif
 };
 
 /** Drawing API implementation */
 static const struct jakopter_drawing draw_implementation = {
+#ifdef USE_VISP
+	.draw_icon   = NULL,
+	.draw_text   = NULL,
+	.remove      = NULL,
+	.resize      = NULL,
+	.move        = NULL
+#else
 	.draw_icon   = display_draw_icon,
 	.draw_text   = display_draw_text,
 	.remove      = display_graphic_remove,
 	.resize      = display_graphic_resize,
 	.move        = display_graphic_move
-	// .draw_icon   = NULL,
-	// .draw_text   = NULL,
-	// .remove      = NULL,
-	// .resize      = NULL,
-	// .move        = NULL
+#endif
 };
 
 /*Set to 1 when we want to tell the video thread to stop.*/
@@ -64,48 +70,52 @@ void* video_routine(void* args)
 	/*structure that will hold our latest decoded video frame*/
 	jakopter_video_frame_t decoded_frame;
 
-	pthread_mutex_lock(&mutex_stopped);
-	while (!stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
+	while (!video_is_stopped()) {
 		//Wait for the drone to send data on the video socket
 		if (select(sock_video+1, &vid_fd_set, NULL, NULL, &video_timeout) < 0) {
 			perror("[~][video] Cannot select()");
 			video_set_stopped();
+			break;
 		}
-		else if (FD_ISSET(sock_video, &vid_fd_set)) {
-			/*receive the video data from the drone. Only BASE_SIZE, since
-			TCP_SIZE may be larger on purpose.*/
-			pack_size = recv(sock_video, tcp_buf, BASE_VIDEO_BUF_SIZE, 0);
-			if (pack_size == 0) {
-				printf("[*][video] Stream ended by server. Ending the video thread.\n");
-				video_set_stopped();
-			}
-			else if (pack_size < 0)
-				perror("[~][video] Cannot recv()");
-			else {
-				//we actually got some data, send it for decoding !
-				got_frame = video_decode_packet(tcp_buf, pack_size, &decoded_frame);
-				if (got_frame < 0) {
-					fprintf(stderr, "[~][video] Cannot decoding video\n");
-					video_set_stopped();
-				}
-				//if we have a complete decoded frame, push it onto the queue for decoding
-				else if (got_frame == 1)
-					video_queue_push_frame(&decoded_frame);
-			}
-		}
-		else {
+
+		if (!FD_ISSET(sock_video, &vid_fd_set)) {
 			printf("[*][video] Data reception has timed out. Ending the video thread now.\n");
 			video_set_stopped();
+			break;
 		}
+
+		/*receive the video data from the drone. Only BASE_SIZE, since
+		TCP_SIZE may be larger on purpose.*/
+		pack_size = recv(sock_video, tcp_buf, BASE_VIDEO_BUF_SIZE, 0);
+		if (pack_size == 0) {
+			printf("[*][video] Stream ended by server. Ending the video thread.\n");
+			video_set_stopped();
+			break;
+		}
+
+		if (pack_size < 0) {
+			perror("[~][video] Cannot recv()");
+		}
+		else {
+			//we actually got some data, send it for decoding !
+			got_frame = video_decode_packet(tcp_buf, pack_size, &decoded_frame);
+			if (got_frame < 0) {
+				fprintf(stderr, "[~][video] Cannot decoding video\n");
+				video_set_stopped();
+				break;
+			}
+			//if we have a complete decoded frame, push it onto the queue for decoding
+			else if (got_frame == 1)
+				video_queue_push_frame(&decoded_frame);
+		}
+
 		//reset the timeout and the FDSET entry
 		video_timeout.tv_sec = VIDEO_TIMEOUT;
 		FD_ZERO(&vid_fd_set);
 		FD_SET(sock_video, &vid_fd_set);
-
-		pthread_mutex_lock(&mutex_stopped);
+		nanosleep(&video_interval, NULL);
+		video_interval.tv_nsec = VIDEO_INTERVAL;
 	}
-	pthread_mutex_unlock(&mutex_stopped);
 	/*push an empty frame on the queue so the processing
 	thread knows it has to stop*/
 	video_queue_push_frame(&VIDEO_QUEUE_END);
@@ -120,9 +130,7 @@ void* processing_routine(void* args)
 	//decoded video frame that will be pulled from the queue
 	jakopter_video_frame_t frame;
 	//wait for frames to be decoded, and then process them.
-	pthread_mutex_lock(&mutex_stopped);
-	while (!stopped) {
-		pthread_mutex_unlock(&mutex_stopped);
+	while (!video_is_stopped()) {
 		if (video_queue_pull_frame(&frame) < 0) {
 			fprintf(stderr, "[~][Video Processing] Cannot retrieving frame\n");
 			video_set_stopped();
@@ -134,16 +142,14 @@ void* processing_routine(void* args)
 				video_set_stopped();
 			}
 		}
-		pthread_mutex_lock(&mutex_stopped);
 	}
-	pthread_mutex_unlock(&mutex_stopped);
 	//free the resources of the processing module
 	if (frame_process.clean != NULL)
 		frame_process.clean();
 	pthread_exit(NULL);
 }
 
-int jakopter_init_video(const char* drone_ip)
+JAKO_EXPORT int jakopter_init_video(const char* drone_ip)
 {
 	//do not try to initialize the thread if it's already running !
 	pthread_mutex_lock(&mutex_stopped);
@@ -155,12 +161,12 @@ int jakopter_init_video(const char* drone_ip)
 	//make sure the thread is terminated
 	video_join_thread();
 
-	addr_drone_video.sin_family      = AF_INET;
+	addr_drone_video.sin_family = AF_INET;
 	if (drone_ip == NULL)
 		addr_drone_video.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
 	else
 		addr_drone_video.sin_addr.s_addr = inet_addr(drone_ip);
-	addr_drone_video.sin_port        = htons(PORT_VIDEO);
+	addr_drone_video.sin_port = htons(PORT_VIDEO);
 
 	if (addr_drone_video.sin_addr.s_addr == INADDR_NONE) {
 		perror("[~] The drone adress is invalid");
@@ -226,34 +232,46 @@ int jakopter_init_video(const char* drone_ip)
 	return 0;
 }
 
-int jakopter_draw_icon(const char *p, int x, int y, int w, int h)
+JAKO_EXPORT int jakopter_stop_video()
+{
+	video_set_stopped();
+	int exit_status = video_join_thread();
+	if (exit_status == 1)
+		fprintf(stderr, "[*][video] Video thread is already shut down.\n");
+	else if (exit_status < 0)
+		return -1;
+
+	return 0;
+}
+
+JAKO_EXPORT int jakopter_draw_icon(const char *p, int x, int y, int w, int h)
 {
 	if(draw_implementation.draw_icon == NULL)
 		return -1;
 	return draw_implementation.draw_icon(p, x, y, w, h);
 }
 
-int jakopter_draw_text(const char *s, int x, int y)
+JAKO_EXPORT int jakopter_draw_text(const char *s, int x, int y)
 {
 	if(draw_implementation.draw_text == NULL)
 		return -1;
 	return draw_implementation.draw_text(s, x, y);
 }
 
-void jakopter_draw_remove(int id)
+JAKO_EXPORT void jakopter_draw_remove(int id)
 {
 	if(draw_implementation.remove == NULL)
 		return;
 	draw_implementation.remove(id);
 }
 
-void jakopter_draw_resize(int id, int width, int height)
+JAKO_EXPORT void jakopter_draw_resize(int id, int width, int height)
 {
 	if (draw_implementation.resize != NULL)
 		draw_implementation.resize(id, width, height);
 }
 
-void jakopter_draw_move(int id, int x, int y)
+JAKO_EXPORT void jakopter_draw_move(int id, int x, int y)
 {
 	if (draw_implementation.move != NULL)
 		draw_implementation.move(id, x, y);
@@ -267,30 +285,22 @@ void video_clean()
 	video_queue_free();
 }
 
-int video_set_stopped()
+int video_is_stopped()
 {
 	pthread_mutex_lock(&mutex_stopped);
-	if (!stopped) {
-		stopped = 1;
-		pthread_mutex_unlock(&mutex_stopped);
-		return 0;
-	}
-	else {
-		pthread_mutex_unlock(&mutex_stopped);
-		return 1;
-	}
+	int ret = stopped;
+	pthread_mutex_unlock(&mutex_stopped);
+	return ret;
 }
 
-int jakopter_stop_video()
+int video_set_stopped()
 {
-	video_set_stopped();
-	int exit_status = video_join_thread();
-	if (exit_status == 1)
-		fprintf(stderr, "[*][video] Video thread is already shut down.\n");
-	else if (exit_status < 0)
-		return -1;
-
-	return 0;
+	if (!video_is_stopped()) {
+		stopped = 1;
+		return 0;
+	}
+	else
+		return 1;
 }
 
 /**

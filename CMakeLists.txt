@@ -4,11 +4,12 @@ cmake_minimum_required(VERSION 2.8)
 project(jakopter)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-
+set(JAKOPTER_DOC_DIR "${CMAKE_BINARY_DIR}/doc")
 
 ## User definitions ##
-#option(USE_VISP "Use visp display instead of sdl" OFF)
-set(USE_VISP OFF)
+option(USE_VISP "Use visp display instead of sdl" OFF)
+option(USE_CLANG "Use clang compiler instead of gcc" OFF)
+option(USE_DOXYGEN "Generate code documentation" OFF)
 
 ## Packages ##
 find_package(Threads REQUIRED)
@@ -22,6 +23,7 @@ find_package(Curses)
 find_package(Visp)
 find_package(Vicon)
 find_package(CURL)
+find_package(Doxygen)
 
 ## Debug: print all declared variables
 # get_cmake_property(_variableNames VARIABLES)
@@ -32,9 +34,10 @@ find_package(CURL)
 
 ## Compiler Infos ##
 
-# set (CMAKE_C_COMPILER "/usr/bin/clang")
-# set (CMAKE_CXX_COMPILER "/usr/bin/clang++")
-
+if(USE_CLANG)
+	set(CMAKE_C_COMPILER "/usr/bin/clang")
+	set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+endif()
 include_directories("include/")
 
 set(CMAKE_BUILD_TYPE DEBUG)
@@ -47,11 +50,11 @@ include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_CXX11)
 check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 else()
-        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+	message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
 
@@ -229,6 +232,8 @@ add_library(
 	jakopter SHARED
 	${SRC_FILES}
 )
+set_target_properties(jakopter PROPERTIES C_VISIBILITY_PRESET hidden)
+set_target_properties(jakopter PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 if(LEAP_FOUND)
 	add_executable(
@@ -245,6 +250,7 @@ if(WITH_COORDS AND VICON_FOUND)
 endif()
 
 ## Linking libraries ##
+
 
 if(CURSES_FOUND)
 	add_executable(
@@ -283,4 +289,16 @@ endif()
 
 if(WITH_COORDS AND VICON_FOUND)
 	target_link_libraries(vicon ${CMAKE_THREAD_LIBS_INIT} ${VICON_LIBRARIES})
+endif()
+
+if(USE_DOXYGEN AND DOXYGEN_FOUND)
+	message(STATUS "Generate doc with Doxygen")
+	configure_file(${CMAKE_SOURCE_DIR}/doc/config-doxygen.in
+		${JAKOPTER_DOC_DIR}/config-doxygen
+		@ONLY)
+	configure_file(${CMAKE_SOURCE_DIR}/doc/mainpage.doc.in
+		${JAKOPTER_DOC_DIR}/mainpage.doc
+		@ONLY)
+else()
+	message(WARNING "Doc NOT generated")
 endif()

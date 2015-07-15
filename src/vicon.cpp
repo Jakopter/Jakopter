@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
-#include <cfloat>
 extern "C" {
 #include <stdio.h>
 #include <pthread.h>
@@ -14,8 +13,10 @@ extern "C" {
 
 #define COORDS_FILENAME "/tmp/jakopter_coords.txt"
 /* size of float digits plus 3 spaces and \0*/
-#define TEXT_BUF_SIZE DECIMAL_DIG*3+4
+#define FLOAT_LEN 10
+#define TEXT_BUF_SIZE FLOAT_LEN*10+11
 #define VICON_DRONE_NAME "ardrone2_"
+#define PI 3.1415926535898
 
 namespace Vicon = ViconDataStreamSDK::CPP;
 namespace Direction = Vicon::Direction;
@@ -66,12 +67,19 @@ void* vicon_routine(void* args)
 				float x = sdk->GetSegmentGlobalTranslation(name, segment).Translation[0];
 				float y = sdk->GetSegmentGlobalTranslation(name, segment).Translation[1];
 				float z = sdk->GetSegmentGlobalTranslation(name, segment).Translation[2];
-
+				float rx = sdk->GetSegmentGlobalRotationEulerXYZ(name, segment).Rotation[0];
+				float ry = sdk->GetSegmentGlobalRotationEulerXYZ(name, segment).Rotation[1];
+				float rz = sdk->GetSegmentGlobalRotationEulerXYZ(name, segment).Rotation[2];
+				float qw = sdk->GetSegmentGlobalRotationQuaternion(name, segment).Rotation[0];
+				float qx = sdk->GetSegmentGlobalRotationQuaternion(name, segment).Rotation[1];
+				float qy = sdk->GetSegmentGlobalRotationQuaternion(name, segment).Rotation[2];
+				float qz = sdk->GetSegmentGlobalRotationQuaternion(name, segment).Rotation[3];
 
 				char buf [TEXT_BUF_SIZE];
-				snprintf(buf, TEXT_BUF_SIZE, "%f %f %f ", x, y, z);
+				snprintf(buf, TEXT_BUF_SIZE, "%f %f %f %f %f %f %f %f %f %f ",
+					x, y, z, rx, ry, rz, qw, qx, qy, qz);
 
-				std::cout << x << " " << y << " " << z << std::endl;
+				std::cout << x << " " << y << " " << z << " " << 360*rx/(2*PI) << " " << 360*ry/(2*PI) << " " << 360*rz/(2*PI) << std::endl;
 				sendto(sock_vicon, buf, TEXT_BUF_SIZE, 0, (struct sockaddr*)&addr_client_coords, sizeof(addr_client_coords));
 			}
 		}
