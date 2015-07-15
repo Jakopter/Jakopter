@@ -239,7 +239,7 @@ JAKO_EXPORT int jakopter_is_flying()
 {
 	int flyState = -1;
 	pthread_mutex_lock(&mutex_navdata);
-	flyState = data.raw.ardrone_state & 0x00000001;
+	flyState = data.raw.ardrone_state & 0x0001;
 	pthread_mutex_unlock(&mutex_navdata);
 	return flyState;
 }
