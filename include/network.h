@@ -2,6 +2,7 @@
 #define JAKOPTER_NETWORK_H
 #include "com_channel.h"
 #include "com_master.h"
+#include "utils.h"
 
 #define CHANNEL_INPUT_SIZE 16384
 #define CHANNEL_OUTPUT_SIZE 1024

@@ -178,7 +178,7 @@ void* cmd_routine(void* args)
 	pthread_exit(NULL);
 }
 
-int jakopter_connect(const char* drone_ip)
+JAKO_EXPORT int jakopter_connect(const char* drone_ip)
 {
 	pthread_mutex_lock(&mutex_stopped);
 	if (!stopped) {
@@ -249,7 +249,7 @@ int jakopter_connect(const char* drone_ip)
 	return 0;
 }
 
-int jakopter_disconnect()
+JAKO_EXPORT int jakopter_disconnect()
 {
 	pthread_mutex_lock(&mutex_stopped);
 	if (navdata_disconnect() == 0 && user_input_disconnect() == 0 && !stopped) {
@@ -266,7 +266,7 @@ int jakopter_disconnect()
 	}
 }
 
-int jakopter_flat_trim()
+JAKO_EXPORT int jakopter_flat_trim()
 {
 	if (jakopter_is_flying()) {
 		fprintf(stderr, "[*][cmd] Drone is flying, setting of frame of reference canceled.\n");
@@ -283,13 +283,13 @@ int jakopter_flat_trim()
 	return 0;
 }
 
-int jakopter_calib()
+JAKO_EXPORT int jakopter_calib()
 {
 	if (!jakopter_is_flying()) {
 		fprintf(stderr, "[*][cmd] Drone isn't flying, calibration canceled.\n");
 		return -1;
 	}
-
+	// 0 is the magnetometer, the only we can calibrate with ARdrone 2.0
 	char * args[] = {"0"};
 
 	if (set_cmd(HEAD_CALIB, args, 1) < 0)
@@ -303,7 +303,7 @@ int jakopter_calib()
 	return 0;
 }
 
-int jakopter_switch_camera(unsigned int id)
+JAKO_EXPORT int jakopter_switch_camera(unsigned int id)
 {
 	if (id >= VID_CHANNELS) {
 		fprintf(stderr, "[*][cmd] Invalid id for the camera.\n");
@@ -328,7 +328,7 @@ int jakopter_switch_camera(unsigned int id)
 	return 0;
 }
 
-int jakopter_reinit()
+JAKO_EXPORT int jakopter_reinit()
 {
 	if (set_cmd(HEAD_COM_WATCHDOG, NULL, 0) < 0)
 		return -1;
@@ -341,7 +341,7 @@ int jakopter_reinit()
 	return 0;
 }
 
-int jakopter_takeoff()
+JAKO_EXPORT int jakopter_takeoff()
 {
 	if (jakopter_flat_trim() < 0) {
 		fprintf(stderr, "[~][cmd] Can't establish frame of reference.\n");
@@ -378,7 +378,7 @@ int jakopter_takeoff()
 	return 0;
 }
 
-int jakopter_land()
+JAKO_EXPORT int jakopter_land()
 {
 	char * args[] = {land_arg};
 	set_cmd(HEAD_REF, args, 1);
@@ -412,7 +412,7 @@ int jakopter_land()
 	return 0;
 }
 
-int jakopter_emergency()
+JAKO_EXPORT int jakopter_emergency()
 {
 	char * args[] = {emergency_arg};
 	if (set_cmd(HEAD_REF, args, 1) < 0)
@@ -426,7 +426,7 @@ int jakopter_emergency()
 	return 0;
 }
 
-int jakopter_stay()
+JAKO_EXPORT int jakopter_stay()
 {
 	char * args[5] = {"0","0","0","0","0"};
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
@@ -437,7 +437,7 @@ int jakopter_stay()
 	return 0;
 }
 
-int jakopter_rotate_left(float speed)
+JAKO_EXPORT int jakopter_rotate_left(float speed)
 {
 	int ret = jakopter_move(0, 0, 0, -speed);
 
@@ -447,7 +447,7 @@ int jakopter_rotate_left(float speed)
 	return ret;
 }
 
-int jakopter_rotate_right(float speed)
+JAKO_EXPORT int jakopter_rotate_right(float speed)
 {
 	int ret = jakopter_move(0, 0, 0, speed);
 
@@ -457,7 +457,7 @@ int jakopter_rotate_right(float speed)
 	return ret;
 }
 
-int jakopter_slide_left(float speed)
+JAKO_EXPORT int jakopter_slide_left(float speed)
 {
 	int ret = jakopter_move(-speed, 0, 0, 0);
 
@@ -467,7 +467,7 @@ int jakopter_slide_left(float speed)
 	return ret;
 }
 
-int jakopter_slide_right(float speed)
+JAKO_EXPORT int jakopter_slide_right(float speed)
 {
 	int ret = jakopter_move(speed, 0, 0, 0);
 
@@ -477,7 +477,7 @@ int jakopter_slide_right(float speed)
 	return ret;
 }
 
-int jakopter_forward(float speed)
+JAKO_EXPORT int jakopter_forward(float speed)
 {
 	int ret = jakopter_move(0, speed, 0, 0);
 
@@ -487,7 +487,7 @@ int jakopter_forward(float speed)
 	return ret;
 }
 
-int jakopter_backward(float speed)
+JAKO_EXPORT int jakopter_backward(float speed)
 {
 	int ret = jakopter_move(0, -speed, 0, 0);
 
@@ -497,7 +497,7 @@ int jakopter_backward(float speed)
 	return ret;
 }
 
-int jakopter_up(float speed)
+JAKO_EXPORT int jakopter_up(float speed)
 {
 	int ret = jakopter_move(0, 0, speed, 0);
 
@@ -507,7 +507,7 @@ int jakopter_up(float speed)
 	return ret;
 }
 
-int jakopter_down(float speed)
+JAKO_EXPORT int jakopter_down(float speed)
 {
 	int ret = jakopter_move(0, 0, -speed, 0);
 
@@ -517,7 +517,7 @@ int jakopter_down(float speed)
 	return ret;
 }
 
-int jakopter_move(float l_to_r, float b_to_f, float vertical_speed, float angular_speed)
+JAKO_EXPORT int jakopter_move(float l_to_r, float b_to_f, float vertical_speed, float angular_speed)
 {
 	//inverted in Parrot ARdrone Protocol
 	if (b_to_f != 0.0) {
@@ -550,7 +550,7 @@ int jakopter_move(float l_to_r, float b_to_f, float vertical_speed, float angula
 	return 0;
 }
 
-const char* jakopter_log_command()
+JAKO_EXPORT const char* jakopter_log_command()
 {
 	static char ret[LOG_LEN+1];
 	if (!stopped) {

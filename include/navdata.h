@@ -11,10 +11,12 @@
 #define TAG_DEMO 0
 /*Tag for the checksum packet in full mode*/
 #define TAG_CKS 0
-#define FLOAT_LEN 10
 // 12 spaces
 #define DEMO_LEN 4*INT_LEN+6*FLOAT_LEN+12
 
+/* Values in ctrl_state */
+
+/* Main value in the first 16 bits. */
 typedef enum {
 	DEFAULT,
 	INIT,
@@ -29,7 +31,7 @@ typedef enum {
 	LOOP
 } ctrl_states;
 
-
+/* Detail in the last 16 bits. */
 typedef enum {
 	FLY_OK,
 	FLY_LOST_ALT,
@@ -80,12 +82,13 @@ typedef enum {
 	PLANIF_CTRL
 } loop_states;
 
+/* Navdata structs */
+
 struct navdata_option {
 	uint16_t  tag;
 	uint16_t  size;
 	uint8_t   data[];
 };
-
 
 struct navdata {
 	uint32_t    header; //Always 88776655

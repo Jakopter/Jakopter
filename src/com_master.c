@@ -3,6 +3,7 @@
 #include <pthread.h>
 
 #include "com_master.h"
+#include "utils.h"
 
 //jakopter_com_channel_t* master = NULL;
 
@@ -44,7 +45,7 @@ int jakopter_com_master_is_init()
 	return isInitialized;
 }
 
-jakopter_com_channel_t* jakopter_com_add_channel(int id, size_t size)
+JAKO_EXPORT jakopter_com_channel_t* jakopter_com_add_channel(int id, size_t size)
 {
 	pthread_mutex_lock(&master_mutex);
 	//debug checks
@@ -68,7 +69,7 @@ jakopter_com_channel_t* jakopter_com_add_channel(int id, size_t size)
 	return new_chan;
 }
 
-jakopter_com_channel_t* jakopter_com_get_channel(int id)
+JAKO_EXPORT jakopter_com_channel_t* jakopter_com_get_channel(int id)
 {
 	/*if(!isInitialized)
 		return NULL;
@@ -86,7 +87,7 @@ jakopter_com_channel_t* jakopter_com_get_channel(int id)
 	return master[id];
 }
 
-int jakopter_com_remove_channel(int id)
+JAKO_EXPORT int jakopter_com_remove_channel(int id)
 {
 	pthread_mutex_lock(&master_mutex);
 	//get the channel's pointer and free it

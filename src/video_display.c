@@ -5,8 +5,6 @@
 #include "SDL_image.h"
 
 #include "video_display.h"
-#include "navdata.h"
-#include "com_master.h"
 
 /*maximum size in bytes of a text to be displayed*/
 #define TEXT_BUF_SIZE 100
@@ -312,10 +310,6 @@ static void video_clean_text()
 	TTF_Quit();
 }
 
-/**
-* "Got frame" callback.
-* Fills the texture with the given frame, and displays it on the window.
-*/
 int video_display_process(uint8_t* frame, int width, int height, int size) {
 
 	//if we get a NULL frame, stop displaying.

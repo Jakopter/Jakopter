@@ -235,18 +235,16 @@ int navdata_disconnect()
 	return ret;
 }
 
-int jakopter_is_flying()
+JAKO_EXPORT int jakopter_is_flying()
 {
 	int flyState = -1;
 	pthread_mutex_lock(&mutex_navdata);
-	//We get the first 16 bits for the major state
-	flyState = data.raw.ardrone_state << 16;
+	flyState = data.raw.ardrone_state & 0x00000001;
 	pthread_mutex_unlock(&mutex_navdata);
-	return flyState == FLY || flyState == HOVER ||
-			flyState == MOVE ||flyState	== LOOP;
+	return flyState;
 }
 
-int jakopter_battery()
+JAKO_EXPORT int jakopter_battery()
 {
 	int battery = -1;
 
@@ -262,7 +260,7 @@ int jakopter_battery()
 	return battery;
 }
 
-int jakopter_height()
+JAKO_EXPORT int jakopter_height()
 {
 	int height = -1;
 
@@ -302,7 +300,7 @@ void debug_navdata_demo()
 	pthread_mutex_unlock(&mutex_navdata);
 }
 
-const char* jakopter_log_navdata()
+JAKO_EXPORT const char* jakopter_log_navdata()
 {
 	static char ret[LOG_LEN];
 	if (!stopped_navdata) {

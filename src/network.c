@@ -208,7 +208,7 @@ int jakopter_stop_network()
 		return -ret;
 	}
 	else {
-		fprintf(stderr, "[~][network] Network already stopped\n");
+		fprintf(stderr, "[*][network] Network already stopped\n");
 		return -1;
 	}
 	//thread join

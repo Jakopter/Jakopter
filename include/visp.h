@@ -6,6 +6,7 @@ extern "C"
 {
 #endif
 #include "com_master.h"
+#include "utils.h"
 #define SIZE_MESSAGE 256
 #define VISP_COM_IN_SIZE 32
 #define VISP_COM_OUT_SIZE 3*sizeof(float)+sizeof(int)+SIZE_MESSAGE

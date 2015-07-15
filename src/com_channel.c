@@ -7,6 +7,7 @@
 #include <time.h>
 
 #include "com_channel.h"
+#include "utils.h"
 
 
 struct jakopter_com_channel_t {
@@ -20,7 +21,7 @@ struct jakopter_com_channel_t {
 	size_t buf_size;
 	/*com buffer where user data will be stored.*/
 	void* buffer;
-};
+} JAKO_EXPORT;
 
 
 jakopter_com_channel_t* jakopter_com_create_channel(size_t size)
@@ -68,7 +69,7 @@ void jakopter_com_destroy_channel(jakopter_com_channel_t** cc)
 }
 
 
-void jakopter_com_write_int(jakopter_com_channel_t* cc, size_t offset, int value)
+JAKO_EXPORT void jakopter_com_write_int(jakopter_com_channel_t* cc, size_t offset, int value)
 {
 	//debug checks
 	if (cc == NULL) {
@@ -91,7 +92,7 @@ void jakopter_com_write_int(jakopter_com_channel_t* cc, size_t offset, int value
 	pthread_mutex_unlock(&cc->mutex);
 }
 
-void jakopter_com_write_float(jakopter_com_channel_t* cc, size_t offset, float value)
+JAKO_EXPORT void jakopter_com_write_float(jakopter_com_channel_t* cc, size_t offset, float value)
 {
 	//debug checks
 	if (cc == NULL) {
@@ -113,7 +114,7 @@ void jakopter_com_write_float(jakopter_com_channel_t* cc, size_t offset, float v
 	pthread_mutex_unlock(&cc->mutex);
 }
 
-void jakopter_com_write_char(jakopter_com_channel_t* cc, size_t offset, char value)
+JAKO_EXPORT void jakopter_com_write_char(jakopter_com_channel_t* cc, size_t offset, char value)
 {
 	//debug checks
 	if (cc == NULL) {
@@ -136,7 +137,7 @@ void jakopter_com_write_char(jakopter_com_channel_t* cc, size_t offset, char val
 	pthread_mutex_unlock(&cc->mutex);
 }
 
-void jakopter_com_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, size_t size)
+JAKO_EXPORT void jakopter_com_write_buf(jakopter_com_channel_t* cc, size_t offset, void* data, size_t size)
 {
 	//debug checks
 	if (cc == NULL) {
@@ -163,7 +164,7 @@ void jakopter_com_write_buf(jakopter_com_channel_t* cc, size_t offset, void* dat
 /*******************************************************************
 ********Functions for reading data from the channel*****************/
 
-int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset)
+JAKO_EXPORT int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset)
 {
 	//debug checks
 	if (cc == NULL) {
@@ -186,7 +187,7 @@ int jakopter_com_read_int(jakopter_com_channel_t* cc, size_t offset)
 	return result;
 }
 
-float jakopter_com_read_float(jakopter_com_channel_t* cc, size_t offset)
+JAKO_EXPORT float jakopter_com_read_float(jakopter_com_channel_t* cc, size_t offset)
 {
 	//debug checks
 	if (cc == NULL) {
@@ -209,7 +210,7 @@ float jakopter_com_read_float(jakopter_com_channel_t* cc, size_t offset)
 	return result;
 }
 
-char jakopter_com_read_char(jakopter_com_channel_t* cc, size_t offset)
+JAKO_EXPORT char jakopter_com_read_char(jakopter_com_channel_t* cc, size_t offset)
 {
 	//debug checks
 	if (cc == NULL) {
@@ -232,7 +233,7 @@ char jakopter_com_read_char(jakopter_com_channel_t* cc, size_t offset)
 	return result;
 }
 
-void* jakopter_com_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size, void* dest)
+JAKO_EXPORT void* jakopter_com_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t size, void* dest)
 {
 	//debug checks
 	if (cc == NULL) {
@@ -255,7 +256,7 @@ void* jakopter_com_read_buf(jakopter_com_channel_t* cc, size_t offset, size_t si
 }
 
 
-double jakopter_com_get_timestamp(jakopter_com_channel_t* cc)
+JAKO_EXPORT double jakopter_com_get_timestamp(jakopter_com_channel_t* cc)
 {
 	//debug checks
 	if (cc == NULL) {

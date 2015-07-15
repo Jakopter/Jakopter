@@ -3,6 +3,7 @@
 
 #include "com_channel.h"
 #include "com_master.h"
+#include "utils.h"
 
 #define USERINPUT_INTERVAL 	1/3 // interval in seconds
 
