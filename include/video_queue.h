@@ -9,7 +9,7 @@
 * It is intended for use within the video module only.
 */
 
-//push this frame on the queue to tell the processing thread to stop
+/*push this frame on the queue to tell the processing thread to stop*/
 extern const jakopter_video_frame_t VIDEO_QUEUE_END;
 
 /**

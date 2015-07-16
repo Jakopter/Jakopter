@@ -42,6 +42,10 @@ struct jakopter_frame_processing {
 	  */
 	int (*init)(void);
 	void (*clean)(void);
+	/** \brief Allow to choose between different callbacks at runtime
+	  * Can be NULL.
+	  */
+	void (*set_callback)(int id);
 };
 
 /** Drawing API*/
@@ -91,14 +95,13 @@ struct jakopter_drawing {
 };
 
 int jakopter_draw_icon(const char *p, int x, int y, int w, int h);
-
 int jakopter_draw_text(const char *s, int x, int y);
-
 void jakopter_draw_remove(int id);
-
 void jakopter_draw_resize(int id, int width, int height);
 void jakopter_draw_move(int id, int x, int y);
 
+
+void jakopter_set_callback(int id);
 /**
   * Start the thread which receive video packets on port 5555
 */

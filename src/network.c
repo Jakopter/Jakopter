@@ -9,19 +9,21 @@
 
 #include "network.h"
 
-//Input: data received in Jakopter in JSON
-//Output: data emitted outside by POST method
+/*Input: data received in Jakopter in JSON*/
 jakopter_com_channel_t* network_in_channel;
+/*Output: data emitted outside by POST method*/
 jakopter_com_channel_t* network_out_channel;
 
 pthread_t send_thread;
 pthread_t receive_thread;
 /*Guard that stops any function if connection isn't initialized.*/
 bool stopped_network = true;
-//boolean to know if the thread started
+/*guard to know if the thread started*/
 bool recv_ready = false;
 struct CurlData {
+	/* a buffer to handle received data */
 	char *memory;
+	/* size in bytes */
 	size_t size;
 };
 
@@ -56,8 +58,7 @@ void* send_routine(void* args)
 
 		size_t offset = 8 + ORDER_SIZE;
 		snprintf(buf, CHANNEL_OUTPUT_SIZE,
-			//"id=%d&order=%s&t_x=%f&t_y=%f&t_z=%f&r_x=%f&r_y=%f&r_z=%f&m=%f,%f,%f,%f,%f,%f,%f,%f,%f",
-			"id=%d&order=%s&t_x=%f&t_y=%f&t_z=%f&r_x=%f&r_y=%f&r_z=%f",
+			"id=%d&order=%s&t_x=%f&t_y=%f&t_z=%f&r_x=%f&r_y=%f&r_z=%f&q_w=%f&q_x=%f&q_y=%f&q_z=%f",
 			jakopter_com_read_int(network_out_channel, 0),
 			(char*)jakopter_com_read_buf(network_out_channel, 8, order_len, &order),
 			jakopter_com_read_float(network_out_channel, offset),
@@ -65,16 +66,11 @@ void* send_routine(void* args)
 			jakopter_com_read_float(network_out_channel, offset+8),
 			jakopter_com_read_float(network_out_channel, offset+12),
 			jakopter_com_read_float(network_out_channel, offset+16),
-			jakopter_com_read_float(network_out_channel, offset+20)
-			// jakopter_com_read_float(network_out_channel, offset+24),
-			// jakopter_com_read_float(network_out_channel, offset+28),
-			// jakopter_com_read_float(network_out_channel, offset+32),
-			// jakopter_com_read_float(network_out_channel, offset+36),
-			// jakopter_com_read_float(network_out_channel, offset+40),
-			// jakopter_com_read_float(network_out_channel, offset+44),
-			// jakopter_com_read_float(network_out_channel, offset+48),
-			// jakopter_com_read_float(network_out_channel, offset+52),
-			// jakopter_com_read_float(network_out_channel, offset+56)
+			jakopter_com_read_float(network_out_channel, offset+20),
+			jakopter_com_read_float(network_out_channel, offset+24),
+			jakopter_com_read_float(network_out_channel, offset+28),
+			jakopter_com_read_float(network_out_channel, offset+32),
+			jakopter_com_read_float(network_out_channel, offset+36)
 			);
 		curl_easy_setopt(send_handle, CURLOPT_POSTFIELDS, buf);
 		curl_easy_setopt(send_handle, CURLOPT_VERBOSE, 0L);
@@ -96,10 +92,9 @@ void* send_routine(void* args)
 	return NULL;
 }
 
-static size_t write_com_channel(void* data, size_t size, size_t nmemb, void* userptr)
+static size_t write_curl_to_com_channel(void* data, size_t size, size_t nmemb, void* userptr)
 {
 	size_t realsize = size * nmemb;
-	//printf("[*][network] Write %d of %lu : %s \n", (int)realsize, nmemb, (char*)data);
 	jakopter_com_write_int(network_in_channel, 0, (int)realsize);
 	jakopter_com_write_buf(network_in_channel, 4, data, realsize);
 	memset(data, 0, realsize);
@@ -110,14 +105,13 @@ void* receive_routine(void* args)
 	CURL* recv_handle = curl_easy_init();
 	CURLcode ret;
 	struct timespec itv = {1, TIMEOUT_NETWORK/10};
-	//CURLINFO info;
 	if (!recv_handle) {
 		perror("[~][network] Can't create curl handle for receive");
 		return NULL;
 	}
 	struct CurlData serv_data;
 	while (!stopped_network) {
-		curl_easy_setopt(recv_handle, CURLOPT_WRITEFUNCTION, write_com_channel);
+		curl_easy_setopt(recv_handle, CURLOPT_WRITEFUNCTION, write_curl_to_com_channel);
 		curl_easy_setopt(recv_handle, CURLOPT_WRITEDATA, (void *)&serv_data);
 		curl_easy_setopt(recv_handle, CURLOPT_VERBOSE, 0L);
 		curl_easy_setopt(recv_handle, CURLOPT_URL, (char*)args);
@@ -148,12 +142,12 @@ int jakopter_init_network(const char* server_in, const char* server_out)
 	memset(send_addr, 0, 256);
 
 	if (server_out && server_out[0] != '\0')
-		strncpy(send_addr, server_out, strlen(server_out));
+		strncpy(send_addr, server_out, strlen(send_addr));
 	else
 		strncpy(send_addr, DEFAULT_CLIENT_OUT, strlen(DEFAULT_CLIENT_OUT));
 
 	if (server_in && server_in[0] != '\0')
-		strncpy(recv_addr, server_in, strlen(server_in));
+		strncpy(recv_addr, server_in, strlen(send_addr));
 	else
 		strncpy(recv_addr, DEFAULT_CLIENT_IN, strlen(DEFAULT_CLIENT_IN));
 

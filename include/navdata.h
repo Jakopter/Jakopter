@@ -11,12 +11,14 @@
 #define TAG_DEMO 0
 /*Tag for the checksum packet in full mode*/
 #define TAG_CKS 0
-// 12 spaces
-#define DEMO_LEN 4*INT_LEN+6*FLOAT_LEN+12
+#define NAVDATA_NREADS_INT 4
+#define NAVDATA_NREADS_FLOAT 6
+// 2 spaces
+#define DEMO_LEN NAVDATA_NREADS_INT*(INT_LEN+1)+(NAVDATA_NREADS_FLOAT*FLOAT_LEN+1)+2
 
 /* Values in ctrl_state */
 
-/* Main value in the first 16 bits. */
+/** Main value in the first 16 bits. */
 typedef enum {
 	DEFAULT,
 	INIT,
@@ -31,7 +33,7 @@ typedef enum {
 	LOOP
 } ctrl_states;
 
-/* Detail in the last 16 bits. */
+/** Specific value in the last 16 bits. */
 typedef enum {
 	FLY_OK,
 	FLY_LOST_ALT,
@@ -85,53 +87,73 @@ typedef enum {
 /* Navdata structs */
 
 struct navdata_option {
+	/** type of the packet: DEMO, etc.*/
 	uint16_t  tag;
 	uint16_t  size;
 	uint8_t   data[];
 };
 
 struct navdata {
-	uint32_t    header; //Always 88776655
-	uint32_t    ardrone_state; //Bit mask
-	uint32_t    sequence; //Sequence number
+	/** Always 88776655 */
+	uint32_t    header;
+	/** Bit mask defined in SDK config.h */
+	uint32_t    ardrone_state;
+	/** Sequence number of the packet */
+	uint32_t    sequence;
+	/** True: vision computed by ardrone onboard chip*/
 	bool		vision_defined;
 
-	struct navdata_option  options[1]; //static pointer
+	/** static pointer to generic options */
+	struct navdata_option  options[1];
 };
 
 struct navdata_demo
 {
+	/** Always 88776655 */
 	uint32_t   header;
+	/** Bit mask defined in SDK config.h */
 	uint32_t   ardrone_state;
+	/** Sequence number of the packet */
 	uint32_t   sequence;
+	/** True: vision computed by ardrone onboard chip */
 	bool	   vision_defined;
 
+	/** Type of the packet: must be TAG_DEMO.*/
 	uint16_t   tag;
+	/** Size of the packet in bytes */
 	uint16_t   size;
-
-	uint32_t   ctrl_state;             /* Flying state (landed, flying, hovering, etc.). */
-	uint32_t   vbat_flying_percentage; /* Battery voltage filtered (mV) */
-
-	float32_t  theta;                  /* UAV's pitch in milli-degrees */
-	float32_t  phi;                    /* UAV's roll  in milli-degrees */
-	float32_t  psi;                    /* UAV's yaw   in milli-degrees */
-
-	int32_t    altitude;               /* UAV's altitude in millimeters */
-
-	float32_t  vx;                     /* UAV's estimated linear velocity in milli-degree/?s */
-	float32_t  vy;                     /* UAV's estimated linear velocity in milli-degree/?s */
-	float32_t  vz;                     /* UAV's estimated linear velocity in milli-degree/?s */
-
-	uint32_t   num_frames; // Useless
-
-	float32_t  detection_camera_rot[9]; // Useless
-	float32_t  detection_camera_trans[3]; // Useless
-	uint32_t   detection_tag_index; // Useless
-
-	uint32_t   detection_camera_type;  /* Type of tag searched in detection */
-
-	float32_t  drone_camera_rot[9]; // Useless
-	float32_t  drone_camera_trans[3]; // Useless
+	/** Flying state (landed, flying, hovering, etc.). */
+	uint32_t   ctrl_state;
+	/** Battery voltage filtered (mV) */
+	uint32_t   vbat_flying_percentage;
+	/** UAV's pitch in milli-degrees */
+	float32_t  theta;
+	/** UAV's roll in milli-degrees */
+	float32_t  phi;
+	/** UAV's yaw in milli-degrees */
+	float32_t  psi;
+	/** UAV's altitude in millimeters */
+	int32_t    altitude;
+	/** UAV's estimated linear velocity in millimeters/?s */
+	float32_t  vx;
+	/** UAV's estimated linear velocity in millimeters/?s */
+	float32_t  vy;
+	/** UAV's estimated linear velocity in millimeters/?s */
+	float32_t  vz;
+	/** Deprecated on ARdrone2.0*/
+	uint32_t   num_frames;
+	/** Deprecated on ARdrone2.0*/
+	float32_t  detection_camera_rot[9];
+	/** Deprecated on ARdrone2.0*/
+	float32_t  detection_camera_trans[3];
+	/** Deprecated on ARdrone2.0*/
+	uint32_t   detection_tag_index;
+	/** Type of tag searched in detection */
+	uint32_t   detection_camera_type;
+	/** Deprecated on ARdrone2.0*/
+	float32_t  drone_camera_rot[9];
+	/** Deprecated on ARdrone2.0*/
+	float32_t  drone_camera_trans[3];
 };
 
 union navdata_t {

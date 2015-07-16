@@ -328,6 +328,13 @@ int jakopter_switch_camera_lua(lua_State* L)
 	lua_pushinteger(L, jakopter_switch_camera(id));
 	return 1;
 }
+int jakopter_set_callback_lua(lua_State* L)
+{
+	lua_Integer id = luaL_checkinteger(L, 1);
+
+	jakopter_set_callback(id);
+	return 1;
+}
 /** Drawing API */
 int jakopter_draw_icon_lua(lua_State* L)
 {
@@ -478,6 +485,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"connect_video", jakopter_init_video_lua},
 	{"stop_video", jakopter_stop_video_lua},
 	{"switch_cam", jakopter_switch_camera_lua},
+	{"set_callback", jakopter_set_callback_lua},
 	{"draw_icon", jakopter_draw_icon_lua},
 	{"draw_text", jakopter_draw_text_lua},
 	{"draw_remove", jakopter_draw_remove_lua},

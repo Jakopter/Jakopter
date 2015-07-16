@@ -1,5 +1,7 @@
 #ifndef JAKOPTER_COM_CHANNEL_H
 #define JAKOPTER_COM_CHANNEL_H
+
+#include "utils.h"
 /**
 * Jakopter communication channel :
 * simple atomic structure to allow easy inter-thread communication

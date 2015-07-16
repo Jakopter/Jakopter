@@ -7,7 +7,6 @@
 #include <time.h>
 
 #include "com_channel.h"
-#include "utils.h"
 
 
 struct jakopter_com_channel_t {
@@ -21,7 +20,7 @@ struct jakopter_com_channel_t {
 	size_t buf_size;
 	/*com buffer where user data will be stored.*/
 	void* buffer;
-} JAKO_EXPORT;
+};
 
 
 jakopter_com_channel_t* jakopter_com_create_channel(size_t size)

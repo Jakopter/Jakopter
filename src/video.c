@@ -20,11 +20,13 @@ static const struct jakopter_frame_processing frame_process = {
 #ifdef USE_VISP
 	.callback = visp_process,
 	.init     = visp_init,
-	.clean    = visp_destroy
+	.clean    = visp_destroy,
+	.set_callback = visp_set_process
 #else
 	.callback = video_display_process,
 	.init     = video_display_init,
-	.clean    = video_display_destroy
+	.clean    = video_display_destroy,
+	.set_callback = NULL
 #endif
 };
 
@@ -243,6 +245,13 @@ JAKO_EXPORT int jakopter_stop_video()
 
 	return 0;
 }
+
+JAKO_EXPORT void jakopter_set_callback(int id)
+{
+	if (frame_process.set_callback != NULL)
+		frame_process.set_callback(id);
+}
+
 
 JAKO_EXPORT int jakopter_draw_icon(const char *p, int x, int y, int w, int h)
 {

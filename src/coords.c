@@ -26,7 +26,7 @@ static pthread_mutex_t mutex_stopped_coords = PTHREAD_MUTEX_INITIALIZER;
 /* Race condition between requesting timestamp and record of timestamp*/
 static pthread_mutex_t mutex_log = PTHREAD_MUTEX_INITIALIZER;
 
-static int read_coords(float num[NREADS])
+static int read_coords(float num[COORDS_NREADS])
 {
 	int read_cnt = 0;
 	char buf [COORDS_BUF_SIZE];
@@ -68,7 +68,7 @@ static int read_coords(float num[NREADS])
 			break;
 		}
 		i++;
-	} while (i < NREADS);
+	} while (i < COORDS_NREADS);
 
 	return read_cnt > 0;
 }
@@ -76,14 +76,14 @@ static int read_coords(float num[NREADS])
 
 void* coords_routine(void* args)
 {
-	float num[NREADS];
+	float num[COORDS_NREADS];
 	pthread_mutex_lock(&mutex_stopped_coords);
 	while (!stopped_coords) {
 		pthread_mutex_unlock(&mutex_stopped_coords);
 
 		// write only when you have a new value
 		if (read_coords(num)) {
-			for (int i = 0; i < NREADS; i++)
+			for (int i = 0; i < COORDS_NREADS; i++)
 				jakopter_com_write_float(coords_channel, sizeof(float)*i, num[i]);
 		}
 		recv_ready = true;
@@ -121,9 +121,9 @@ int jakopter_init_coords()
 		return -1;
 	}
 
-	coords_channel = jakopter_com_add_channel(CHANNEL_COORDS, NREADS*sizeof(float));
+	coords_channel = jakopter_com_add_channel(CHANNEL_COORDS, COORDS_NREADS*sizeof(float));
 
-	for (int i = 0; i < NREADS; i++)
+	for (int i = 0; i < COORDS_NREADS; i++)
 		jakopter_com_write_float(coords_channel, sizeof(float)*i, 0.0);
 
 
@@ -137,12 +137,12 @@ int jakopter_init_coords()
 	printf("[coords] thread created\n");
 
 	int i = 0;
-	while (!recv_ready && i < 2000) {
+	while (!recv_ready && i < COORDS_TIMEOUT) {
 		usleep(500);
 		i++;
 	}
 
-	return -(i >= 2000);
+	return -(i >= COORDS_TIMEOUT);
 }
 int jakopter_stop_coords()
 {
