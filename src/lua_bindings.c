@@ -1,3 +1,20 @@
+/* Jakopter
+ * Copyright © 2014 - 2015 Thibaud Hulin, Thibaut Rousseau, Hector Labanca, Jérémy Yziquel, Yvanne Chaussin
+ * Copyright © 2015 ALF@INRIA
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
 //for yield function
 #include <sched.h>
 #include <lauxlib.h>
@@ -204,11 +221,7 @@ int yield_lua(lua_State* L)
 	sched_yield();
 	return 0;
 }
-/**
-* \brief Read from a com channel.
-* \param id of the com channel to read from.
-* \param offset of the data to read in the channel.
-*/
+
 int jakopter_com_read_int_lua(lua_State* L)
 {
 	lua_Integer id     = luaL_checkinteger(L, 1);
@@ -251,12 +264,7 @@ int jakopter_com_read_string_lua(lua_State* L)
 	free(string);
 	return 1;
 }
-/**
-* \brief Write to a com channel.
-* \param id of the com channel to write into.
-* \param offset of the data to write in the channel.
-* \param value to be written at the given offset.
-*/
+
 int jakopter_com_write_int_lua(lua_State* L)
 {
 	lua_Integer id     = luaL_checkinteger(L, 1);
@@ -297,6 +305,7 @@ int jakopter_com_write_string_lua(lua_State* L)
 	jakopter_com_write_buf(cc, offset+4, (void*)string, strlen(string)+1);
 	return 0;
 }
+
 int jakopter_com_get_timestamp_lua(lua_State* L)
 {
 	lua_Integer id = luaL_checkinteger(L, 1);
@@ -326,6 +335,13 @@ int jakopter_switch_camera_lua(lua_State* L)
 	lua_Integer id = luaL_checkinteger(L, 1);
 
 	lua_pushinteger(L, jakopter_switch_camera(id));
+	return 1;
+}
+int jakopter_set_callback_lua(lua_State* L)
+{
+	lua_Integer id = luaL_checkinteger(L, 1);
+
+	jakopter_set_callback(id);
 	return 1;
 }
 /** Drawing API */
@@ -478,6 +494,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"connect_video", jakopter_init_video_lua},
 	{"stop_video", jakopter_stop_video_lua},
 	{"switch_cam", jakopter_switch_camera_lua},
+	{"set_callback", jakopter_set_callback_lua},
 	{"draw_icon", jakopter_draw_icon_lua},
 	{"draw_text", jakopter_draw_text_lua},
 	{"draw_remove", jakopter_draw_remove_lua},

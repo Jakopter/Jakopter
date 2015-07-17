@@ -1,3 +1,20 @@
+/* Jakopter
+ * Copyright © 2014 - 2015 Thibaud Hulin, Thibaut Rousseau, Hector Labanca
+ * Copyright © 2015 ALF@INRIA
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef JAKOPTER_VIDEO_DISPLAY_H
 #define JAKOPTER_VIDEO_DISPLAY_H
 
@@ -20,30 +37,47 @@ int video_display_process(uint8_t* frame, int width, int height, int size);
 int video_display_init();
 
 /**
-* \brief Free the memory associated with the module
+* \brief Free the memory associated with the module.
+* Clean the display context : close the window and clean SDL structures.
 */
 void video_display_destroy();
 
 
 /**
 * \brief Draw an icon on the video display. width and height are facultative, set it to 0.
-*/
+  * \param path the relative path to the icon
+  * \param x in pixels from left
+  * \param y in pixels from top
+  * \param width in pixels, optional
+  * \param height in pixels, optional
+  * \return the icon id
+  */
 int display_draw_icon(const char *path, int x, int y, int width, int height);
 /**
-* \brief Draw a string on the video display.
-*/
+  * \brief Draw a string on the video display.
+  * \param string the text to print
+  * \param x in pixels from left
+  * \param y in pixels from top
+  * \return the icon id
+  */
 int display_draw_text(const char *string, int x, int y);
 /**
 * \brief Free the memory associated with the graphic element.
 */
 void display_graphic_remove(int id);
 /**
-* \brief Resize a graphic element on the display window.
-*/
+  * \brief Resize a graphic element on the display window.
+  * \param id the id returned by display_draw_...
+  * \param width in pixels
+  * \param height in pixels
+  */
 void display_graphic_resize(int id, int width, int height);
 /**
-* \brief Move a graphic element on the display window.
-*/
+  * \brief Move a graphic element on the display window.
+  * \param id the id returned by display_draw_...
+  * \param x in pixels from left
+  * \param y in pixels from top
+  */
 void display_graphic_move(int id, int x, int y);
 
 /**

@@ -1,3 +1,20 @@
+/* Jakopter
+ * Copyright © 2014 - 2015 Hector Labanca, Thibaud Hulin, Thibaut Rousseau
+ * Copyright © 2015 ALF@INRIA
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include "video.h"
 #include "video_queue.h"
 #include "video_decode.h"
@@ -20,11 +37,13 @@ static const struct jakopter_frame_processing frame_process = {
 #ifdef USE_VISP
 	.callback = visp_process,
 	.init     = visp_init,
-	.clean    = visp_destroy
+	.clean    = visp_destroy,
+	.set_callback = visp_set_process
 #else
 	.callback = video_display_process,
 	.init     = video_display_init,
-	.clean    = video_display_destroy
+	.clean    = video_display_destroy,
+	.set_callback = NULL
 #endif
 };
 
@@ -243,6 +262,13 @@ JAKO_EXPORT int jakopter_stop_video()
 
 	return 0;
 }
+
+JAKO_EXPORT void jakopter_set_callback(int id)
+{
+	if (frame_process.set_callback != NULL)
+		frame_process.set_callback(id);
+}
+
 
 JAKO_EXPORT int jakopter_draw_icon(const char *p, int x, int y, int w, int h)
 {

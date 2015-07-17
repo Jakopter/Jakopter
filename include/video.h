@@ -1,3 +1,21 @@
+/* Jakopter
+ * Copyright © 2014 - 2015 Hector Labanca, Thibaud Hulin, Thibaut Rousseau
+ * Copyright © 2015 ALF@INRIA
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef JAKOPTER_VIDEO_H
 #define JAKOPTER_VIDEO_H
 
@@ -42,6 +60,10 @@ struct jakopter_frame_processing {
 	  */
 	int (*init)(void);
 	void (*clean)(void);
+	/** \brief Allow to choose between different callbacks at runtime
+	  * Can be NULL.
+	  */
+	void (*set_callback)(int id);
 };
 
 /** Drawing API*/
@@ -91,14 +113,13 @@ struct jakopter_drawing {
 };
 
 int jakopter_draw_icon(const char *p, int x, int y, int w, int h);
-
 int jakopter_draw_text(const char *s, int x, int y);
-
 void jakopter_draw_remove(int id);
-
 void jakopter_draw_resize(int id, int width, int height);
 void jakopter_draw_move(int id, int x, int y);
 
+
+void jakopter_set_callback(int id);
 /**
   * Start the thread which receive video packets on port 5555
 */
