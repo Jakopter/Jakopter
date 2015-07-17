@@ -1,3 +1,20 @@
+/* Jakopter
+ * Copyright © 2014 - 2015 Thibaud Hulin, Thibaut Rousseau, Hector Labanca, Jérémy Yziquel, Yvanne Chaussin
+ * Copyright © 2015 ALF@INRIA
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <time.h>
 
 #include "common.h"
@@ -7,33 +24,36 @@
 
 #define LOG_LEN TSTAMP_LEN+PACKET_SIZE
 
-/* The string sent to the drone.*/
+/** The string sent to the drone.*/
 static char command[PACKET_SIZE];
-/* The last command sent to the drone with a timestamp.*/
+/** The last command sent to the drone with a timestamp.*/
 static char command_logged[LOG_LEN];
-/* REF arguments.*/
+/** REF arguments.*/
 static char *takeoff_arg = "290718208",
 	*land_arg = "290717696",
 	*emergency_arg = "290717952";
 
-/* Current sequence number.*/
+/** Current sequence number.*/
 static int cmd_no_sq = 0;
-/* Command currently sent.*/
+/** Command currently sent.*/
 static char *command_type = NULL;
 static char command_args[ARGS_MAX][ARG_LEN];
 
-/* Waiting time spend by command function */
+/** Waiting time spend by command function */
 static struct timespec cmd_wait = {0, NAVDATA_ATTEMPT*TIMEOUT_CMD};
 
-/* Thread which send regularly commands to keep the connection.*/
+/** Thread which send regularly commands to keep the connection.*/
 pthread_t cmd_thread;
-/* Guard that stops any function if connection isn't initialized.*/
+/** Guard that stops any function if connection isn't initialized.*/
 volatile int stopped = 1;
-/* Race condition between setting a command, access for log and send routine.*/
+/** Race condition between setting a command, access for log and send routine.*/
 static pthread_mutex_t mutex_cmd = PTHREAD_MUTEX_INITIALIZER;
-/* Race condition between send routine and disconnection.*/
+/** Race condition between send routine and disconnection.*/
 static pthread_mutex_t mutex_stopped = PTHREAD_MUTEX_INITIALIZER;
 
+/** Drone socket */
+static struct sockaddr_in addr_drone, addr_client;
+static int sock_cmd;
 /**
  * \brief Change the current command sent.
  * \param cmd_type header like SOMETHING corresponding to AT*SOMETHING
@@ -228,7 +248,7 @@ JAKO_EXPORT int jakopter_connect(const char* drone_ip)
 	pthread_mutex_unlock(&mutex_stopped);
 
 	/* Modules */
-	int navdata_status = navdata_connect();
+	int navdata_status = navdata_connect(drone_ip);
 	if (navdata_status == -1) {
 		perror("[~][cmd] Navdata connection failed");
 		return -1;

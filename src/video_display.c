@@ -1,3 +1,20 @@
+/* Jakopter
+ * Copyright © 2014 - 2015 Hector Labanca, Thibaud Hulin, Thibaut Rousseau
+ * Copyright © 2015 ALF@INRIA
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <stdint.h>
 #include <SDL2/SDL.h>
 #include <pthread.h>
@@ -144,8 +161,8 @@ static void rotate_point(SDL_Point* point, const SDL_Point* center, float angle)
 /**
 * Initialize SDL, create the window and the renderer
 * to get ready to draw frames.
-* \param w width in pixels
-* \param h height in pixels
+* \param width in pixels
+* \param height in pixels
 * \return 0 on success, -1 on error.
 */
 static int video_display_init_size(int width, int height) {

@@ -1,3 +1,20 @@
+/* Jakopter
+ * Copyright © 2014 - 2015 Thibaud Hulin, Thibaut Rousseau
+ * Copyright © 2015 ALF@INRIA
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef NAVDATA_H
 #define NAVDATA_H
 
@@ -166,7 +183,7 @@ union navdata_t {
   * \param drone_ip used by simulator, if you are with a real drone, set it to NULL
   * \return 0 if success, -1 if error
   */
-int navdata_connect();
+int navdata_connect(const char* drone_ip);
 /**
   * \brief Stop navdata thread.
   * \return the pthread_join value or -1 if communication already stopped.
