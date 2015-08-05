@@ -101,6 +101,8 @@ find_path(LUA_INCLUDE_DIR lua.h
     ENV LUA_DIR
   PATH_SUFFIXES ${_lua_include_subdirs} include/lua include
   PATHS
+  /usr
+  /usr/local
   ~/Library/Frameworks
   /Library/Frameworks
   /sw # Fink
@@ -116,6 +118,8 @@ find_library(LUA_LIBRARY
     ENV LUA_DIR
   PATH_SUFFIXES lib
   PATHS
+  /usr
+  /usr/local
   ~/Library/Frameworks
   /Library/Frameworks
   /sw
