@@ -398,6 +398,17 @@ int jakopter_draw_move_lua(lua_State* L)
 	jakopter_draw_move(id, x, y);
 	return 0;
 }
+static int use_visp(lua_State* L)
+{
+
+#ifdef USE_VISP
+	int visp = 1;
+#else
+	int visp = 0;
+#endif
+	lua_pushboolean(L, visp);
+	return 1;
+}
 #endif
 
 #ifdef WITH_COORDS
@@ -500,6 +511,7 @@ static const luaL_Reg jakopterlib[] = {
 	{"draw_remove", jakopter_draw_remove_lua},
 	{"draw_resize", jakopter_draw_resize_lua},
 	{"draw_move", jakopter_draw_move_lua},
+	{"use_visp", use_visp},
 #endif
 #ifdef WITH_NETWORK
 	{"connect_network", jakopter_init_network_lua},
@@ -525,7 +537,6 @@ static int create_cleanup_udata(lua_State* L)
 	//metatable with cleanup method for the lib
 	luaL_newmetatable(L, "jakopter.cleanup");
 	//set our cleanup method as the __gc callback
-
 	lua_pushstring(L, "__gc");
 	lua_pushcfunction(L, jakopter_cleanup_lua);
 	lua_settable(L, -3);
@@ -540,6 +551,27 @@ static int create_cleanup_udata(lua_State* L)
 	return 0;
 }
 
+static int import_globals(lua_State* L)
+{
+	lua_pushinteger(L, CHANNEL_NAVDATA);
+	lua_setglobal(L, "chan_navdata");
+	lua_pushinteger(L, CHANNEL_DISPLAY);
+	lua_setglobal(L, "chan_display");
+	lua_pushinteger(L, CHANNEL_LEAPMOTION);
+	lua_setglobal(L, "chan_leap");
+	lua_pushinteger(L, CHANNEL_USERINPUT);
+	lua_setglobal(L, "chan_userinput");
+	lua_pushinteger(L, CHANNEL_COORDS);
+	lua_setglobal(L, "chan_coords");
+	lua_pushinteger(L, CHANNEL_CALLBACK);
+	lua_setglobal(L, "chan_callback");
+	lua_pushinteger(L, CHANNEL_NETWORK_INPUT);
+	lua_setglobal(L, "chan_net_input");
+	lua_pushinteger(L, CHANNEL_NETWORK_OUTPUT);
+	lua_setglobal(L, "chan_net_output");
+	return 0;
+}
+
 JAKO_EXPORT int luaopen_libjakopter(lua_State* L)
 {
 	/*the metatable is used for type-checking our custom structs in lua.
@@ -548,6 +580,7 @@ JAKO_EXPORT int luaopen_libjakopter(lua_State* L)
 	/*create the cleanup registry entry so that cleanup will be executed
 	when the lib is unloaded.*/
 	create_cleanup_udata(L);
+	import_globals(L);
 
 	/* lua 5.1 and 5.2 incompatibles... */
 #if LUA_VERSION_NUM <= 501

@@ -32,6 +32,7 @@ enum processes {
 	QRCODE,
 	BLOB
 };
+
 /** \brief Use a process on the current frame and display it in a window.
   * The default process is face detection.
   * \param frame the last frame received from the drone in YUV420p

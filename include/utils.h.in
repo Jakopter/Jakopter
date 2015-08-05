@@ -24,8 +24,11 @@
 #define JAKO_EXPORT
 #endif
 
-#define JAKO_LUA_API_VERSION 1.1
-#define JAKO_C_API_VERSION 1.1
+#cmakedefine JAKOPTER_VERSION_MAJOR @JAKOPTER_VERSION_MAJOR@
+#cmakedefine JAKOPTER_VERSION_MINOR @JAKOPTER_VERSION_MINOR@
+#cmakedefine JAKOPTER_VERSION_PATCH @JAKOPTER_VERSION_PATCH@
+
+#cmakedefine CMAKE_INSTALL_DATADIR "@CMAKE_INSTALL_DATADIR@"
 
 /* Max number of digit into an integer plus the sign and \0. */
 #define INT_LEN     13
