@@ -116,9 +116,6 @@ int jakopter_init_coords()
 {
 	if (!stopped_coords)
 		return -1;
-	pthread_mutex_lock(&mutex_stopped_coords);
-	stopped_coords = false;
-	pthread_mutex_unlock(&mutex_stopped_coords);
 
 	printf("[coords] connecting coords input\n");
 
@@ -135,6 +132,8 @@ int jakopter_init_coords()
 
 	if (bind (sock_coords, (struct sockaddr*)&addr_server_coords, sizeof(struct sockaddr_un)) < 0) {
 		perror("[~][coords] Can't bind the socket");
+		close(sock_coords);
+		unlink(COORDS_FILENAME);
 		return -1;
 	}
 
@@ -145,13 +144,19 @@ int jakopter_init_coords()
 
 
 	printf("[coords] channel created\n");
+	pthread_mutex_lock(&mutex_stopped_coords);
+	stopped_coords = false;
+	pthread_mutex_unlock(&mutex_stopped_coords);
 
 	if (pthread_create(&coords_thread, NULL, coords_routine, NULL) < 0) {
 		perror("[~][coords] Can't create thread");
+		close(sock_coords);
+		unlink(COORDS_FILENAME);
 		return -1;
 	}
 
 	printf("[coords] thread created\n");
+
 
 	int i = 0;
 	while (!recv_ready && i < COORDS_TIMEOUT) {

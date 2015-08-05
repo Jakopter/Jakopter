@@ -43,8 +43,8 @@ struct CurlData {
 	size_t size;
 };
 
-static char send_addr[256];
-static char recv_addr[256];
+static char send_addr[ADDR_SIZE];
+static char recv_addr[ADDR_SIZE];
 
 
 void* send_routine(void* args)
@@ -74,7 +74,7 @@ void* send_routine(void* args)
 
 		size_t offset = 8 + ORDER_SIZE;
 		snprintf(buf, CHANNEL_OUTPUT_SIZE,
-			"id=%d&order=%s&t_x=%f&t_y=%f&t_z=%f&r_x=%f&r_y=%f&r_z=%f&q_w=%f&q_x=%f&q_y=%f&q_z=%f",
+			"id=%d&order=%s&t_x=%f&t_y=%f&t_z=%f&r_x=%f&r_y=%f&r_z=%f&q_w=%f&q_x=%f&q_y=%f&q_z=%f&fly_state=%d",
 			jakopter_com_read_int(network_out_channel, 0),
 			(char*)jakopter_com_read_buf(network_out_channel, 8, order_len, &order),
 			jakopter_com_read_float(network_out_channel, offset),
@@ -86,7 +86,8 @@ void* send_routine(void* args)
 			jakopter_com_read_float(network_out_channel, offset+24),
 			jakopter_com_read_float(network_out_channel, offset+28),
 			jakopter_com_read_float(network_out_channel, offset+32),
-			jakopter_com_read_float(network_out_channel, offset+36)
+			jakopter_com_read_float(network_out_channel, offset+36),
+			jakopter_com_read_int(network_out_channel, offset+40)
 			);
 		curl_easy_setopt(send_handle, CURLOPT_POSTFIELDS, buf);
 		curl_easy_setopt(send_handle, CURLOPT_VERBOSE, 0L);
@@ -158,12 +159,12 @@ int jakopter_init_network(const char* server_in, const char* server_out)
 	memset(send_addr, 0, 256);
 
 	if (server_out && server_out[0] != '\0')
-		strncpy(send_addr, server_out, strlen(send_addr));
+		strncpy(send_addr, server_out, ADDR_SIZE);
 	else
 		strncpy(send_addr, DEFAULT_CLIENT_OUT, strlen(DEFAULT_CLIENT_OUT));
 
 	if (server_in && server_in[0] != '\0')
-		strncpy(recv_addr, server_in, strlen(send_addr));
+		strncpy(recv_addr, server_in, ADDR_SIZE);
 	else
 		strncpy(recv_addr, DEFAULT_CLIENT_IN, strlen(DEFAULT_CLIENT_IN));
 

@@ -24,12 +24,13 @@
 #define CHANNEL_OUTPUT_SIZE 1024
 
 #define ORDER_SIZE 256
+#define ADDR_SIZE 256
 
 #define DEFAULT_CLIENT_IN "http://127.0.0.1"
 #define DEFAULT_CLIENT_OUT "http://127.0.0.1/index.php"
 
-/* 100 ms in ns */
-#define TIMEOUT_NETWORK      10000000
+/* 10 ms in ns */
+#define TIMEOUT_NETWORK      4000000
 /** \brief Start the thread that listen on server_in and send data on server_out
   * \param server_in a HTTP address where Curl GET his data
   * \param server_out a HTTP address where Curl POST his data
