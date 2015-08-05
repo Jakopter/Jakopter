@@ -91,7 +91,7 @@ void* send_routine(void* args)
 			);
 		curl_easy_setopt(send_handle, CURLOPT_POSTFIELDS, buf);
 		curl_easy_setopt(send_handle, CURLOPT_VERBOSE, 0L);
-		curl_easy_setopt(send_handle, CURLOPT_URL, (char*)args);
+		curl_easy_setopt(send_handle, CURLOPT_URL, send_addr);
 		curl_easy_setopt(send_handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
 		ret = curl_easy_perform(send_handle);
@@ -131,7 +131,7 @@ void* receive_routine(void* args)
 		curl_easy_setopt(recv_handle, CURLOPT_WRITEFUNCTION, write_curl_to_com_channel);
 		curl_easy_setopt(recv_handle, CURLOPT_WRITEDATA, (void *)&serv_data);
 		curl_easy_setopt(recv_handle, CURLOPT_VERBOSE, 0L);
-		curl_easy_setopt(recv_handle, CURLOPT_URL, (char*)args);
+		curl_easy_setopt(recv_handle, CURLOPT_URL, recv_addr);
 		curl_easy_setopt(recv_handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 		ret = curl_easy_perform(recv_handle);
 
@@ -178,11 +178,11 @@ int jakopter_init_network(const char* server_in, const char* server_out)
 
 	printf("[network] channel created\n");
 
-	if (pthread_create(&send_thread, NULL, send_routine, (void*) send_addr) < 0) {
+	if (pthread_create(&send_thread, NULL, send_routine, NULL) < 0) {
 		perror("[~][network] Can't create thread send");
 		return -1;
 	}
-	if (pthread_create(&receive_thread, NULL, receive_routine, (void*) recv_addr) < 0) {
+	if (pthread_create(&receive_thread, NULL, receive_routine, NULL) < 0) {
 		perror("[~][network] Can't create thread send");
 		return -1;
 	}
