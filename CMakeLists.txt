@@ -244,6 +244,7 @@ endif()
 
 
 configure_file(${CMAKE_SOURCE_DIR}/include/common.h.in ${CMAKE_SOURCE_DIR}/include/common.h)
+configure_file(${CMAKE_SOURCE_DIR}/include/utils.h.in ${CMAKE_SOURCE_DIR}/include/utils.h)
 
 ## Executables ##
 
