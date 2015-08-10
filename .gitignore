@@ -14,3 +14,6 @@ build
 include/common.h
 include/utils.h
 warning.log
+doc/config-doxygen
+doc/mainpage.doc
+doc/html/*
