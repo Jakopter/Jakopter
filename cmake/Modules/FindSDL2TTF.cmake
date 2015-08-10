@@ -91,21 +91,21 @@ FIND_LIBRARY(SDL2TTF_LIBRARY_TEMP
 	PATHS ${SDL2TTF_SEARCH_PATHS}
 )
 
-IF(NOT SDL2TTF_BUILDING_LIBRARY)
+IF(NOT SDL2TTF_BUILDING_LIBRARY AND APPLE)
 	IF(NOT ${SDL2TTF_INCLUDE_DIR} MATCHES ".framework")
 		# Non-OS X framework versions expect you to also dynamically link to
 		# SDL2TTFmain. This is mainly for Windows and OS X. Other (Unix) platforms
 		# seem to provide SDL2TTFmain for compatibility even though they don't
 		# necessarily need it.
 		FIND_LIBRARY(SDL2TTFMAIN_LIBRARY
-			NAMES SDL2_ttf
+			NAMES SDL2_ttfmain
 			HINTS
 			$ENV{SDL2TTFDIR}
 			PATH_SUFFIXES lib64 lib
 			PATHS ${SDL2TTF_SEARCH_PATHS}
 		)
 	ENDIF(NOT ${SDL2TTF_INCLUDE_DIR} MATCHES ".framework")
-ENDIF(NOT SDL2TTF_BUILDING_LIBRARY)
+ENDIF(NOT SDL2TTF_BUILDING_LIBRARY AND APPLE)
 
 # SDL2TTF may require threads on your system.
 # The Apple build may not need an explicit flag because one of the

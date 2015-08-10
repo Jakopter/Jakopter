@@ -1,5 +1,6 @@
 Makefile
 *.so
+*.so.*
 *.o
 *.d
 frames.yuv
@@ -11,3 +12,5 @@ Makefile
 Leap
 build
 include/common.h
+include/utils.h
+warning.log

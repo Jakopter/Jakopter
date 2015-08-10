@@ -25,8 +25,8 @@ find_path(VICON_INCLUDE_DIRS
 	PATHS
 	~/Library/Frameworks
 	/Library/Frameworks
-	/usr/local
 	/usr
+	/usr/local
 	/sw # Fink
 	/opt/local # DarwinPorts/MacPorts
 	/opt/csw # Blastwave/OpenCSW
@@ -40,8 +40,8 @@ find_library(VICON_LIBRARIES
 	HINTS $ENV{VICONLIBDIR}
 	PATH_SUFFIXES lib lib64 lib32
 	PATHS
-	/usr/local
 	/usr
+	/usr/local
 	/sw
 	/opt/local
 	/opt/csw

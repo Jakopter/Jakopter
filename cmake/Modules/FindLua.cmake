@@ -111,12 +111,11 @@ find_path(LUA_INCLUDE_DIR lua.h
   /opt
 )
 unset(_lua_include_subdirs)
-
 find_library(LUA_LIBRARY
-  NAMES ${_lua_library_names} lua
+  NAMES lua ${_lua_library_names}
   HINTS
     ENV LUA_DIR
-  PATH_SUFFIXES lib
+  PATH_SUFFIXES lib lib64
   PATHS
   /usr
   /usr/local

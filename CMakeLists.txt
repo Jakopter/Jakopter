@@ -1,5 +1,5 @@
 # Jakopter
-# Copyright © 2014-2015 Thibaud Rousseau, Thibaud Hulin, Hector Labanca, Jérémy Yziquel
+# Copyright © 2014-2015 Thibaud Rousseau, Thibaud Hulin, Hector Labanca, Jérémy Yziquel, Alexandre Leonardi
 # Copyright © 2015 ALF@INRIA
 #
 # This library is free software; you can redistribute it and/or
@@ -20,10 +20,15 @@
 ## CMake Settings ##
 cmake_minimum_required(VERSION 2.8)
 
-project(jakopter)
+project(JAKOPTER C CXX)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-set(JAKOPTER_DOC_DIR "${CMAKE_BINARY_DIR}/doc")
+set(JAKOPTER_VERSION_MAJOR 0)
+set(JAKOPTER_VERSION_MINOR 2)
+set(JAKOPTER_VERSION_PATCH 0)
+set(JAKOPTER_VERSION_STRING ${JAKOPTER_VERSION_MAJOR}.${JAKOPTER_VERSION_MINOR}.${JAKOPTER_VERSION_PATCH})
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${JAKOPTER_SOURCE_DIR}/cmake/Modules/")
+
 
 ## User definitions ##
 option(USE_VISP "Use visp display instead of sdl" OFF)
@@ -32,17 +37,27 @@ option(USE_DOXYGEN "Generate code documentation" OFF)
 
 ## Packages ##
 find_package(Threads REQUIRED)
+find_package(Lua)
 find_package(SDL2)
 find_package(SDL2TTF)
 find_package(SDL2Image)
+find_package(Visp)
 find_package(FFmpeg)
-find_package(Lua)
 find_package(Leap)
 find_package(Curses)
-find_package(Visp)
+find_package(VRPN)
 find_package(Vicon)
 find_package(CURL)
 find_package(Doxygen)
+
+# Import the default install directories
+find_file(GNU_INSTALL_DIRS_FROM_CMAKE NAMES GNUInstallDirs.cmake PATHS ${CMAKE_ROOT}/Modules)
+mark_as_advanced(GNU_INSTALL_DIRS_FROM_CMAKE)
+if(GNU_INSTALL_DIRS_FROM_CMAKE)
+  include(${CMAKE_ROOT}/Modules/GNUInstallDirs.cmake)
+else()
+  include(${CMAKE_MODULE_PATH}/GNUInstallDirs.cmake)
+endif()
 
 ## Debug: print all declared variables
 # get_cmake_property(_variableNames VARIABLES)
@@ -57,9 +72,6 @@ if(USE_CLANG)
 	set(CMAKE_C_COMPILER "/usr/bin/clang")
 	set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 endif()
-include_directories("include/")
-
-set(CMAKE_BUILD_TYPE DEBUG)
 
 add_definitions("-Wall") # Not compatible with MSVC
 list(APPEND CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftest-coverage -fprofile-arcs")
@@ -76,15 +88,27 @@ else()
 	message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY build/${CMAKE_BUILD_TYPE})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY build/${CMAKE_BUILD_TYPE})
-
 # Use rpath on Mac OS X
 if(APPLE)
 	cmake_policy(SET CMP0042 NEW)
 endif()
 
+## CMake input-output ##
+
+set(CMAKE_BUILD_TYPE DEBUG)
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "build/${CMAKE_BUILD_TYPE}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "build/${CMAKE_BUILD_TYPE}")
+
+include_directories("include/")
+
+### Install paths ###
+
+option(CMAKE_INSTALL_PREFIX "Prefix where Jakopter is installed" ${JAKOPTER_SOURCE_DIR})
+set(LIBRARY_OUTPUT_PATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+set(BINARY_OUTPUT_PATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+set(INCLUDE_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/jakopter")
+set(JAKOPTER_DOC_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DOCDIR}/jakopter")
 
 ## Core Source files ##
 
@@ -135,6 +159,11 @@ set(
 )
 
 set(
+	VRPN_SRC_FILES
+	src/vrpn_client.cpp
+)
+
+set(
 	LUA_SRC_FILES
 	src/lua_bindings.c
 )
@@ -158,7 +187,7 @@ if(AVCODEC_FOUND AND SDL2_FOUND AND SDL2TTF_FOUND AND SDL2IMAGE_FOUND AND NOT US
 
 	set(WITH_VIDEO ON)
 else()
-	message(WARNING "Compiling WITHOUT SDL2")
+	message(WARNING "WITHOUT: SDL2")
 	set(WITH_VIDEO OFF)
 endif()
 
@@ -172,7 +201,7 @@ if(AVCODEC_FOUND AND VISP_FOUND AND USE_VISP)
 	)
 	set(WITH_VIDEO ON)
 elseif(USE_VISP)
-	message(WARNING "Compiling WITHOUT visp")
+	message(WARNING "WITHOUT: visp")
 	set(WITH_VIDEO OFF)
 endif()
 
@@ -187,14 +216,14 @@ if(AVCODEC_FOUND AND WITH_VIDEO)
 
 	add_definitions(${AVCODEC_DEFINITIONS})
 else()
-	message(WARNING "Compiling WITHOUT libavcodec")
+	message(WARNING "WITHOUT: libavcodec")
 endif()
 
 if(LEAP_FOUND)
 	message(STATUS "Compiling with leap motion support")
 	include_directories(${LEAP_INCLUDE_DIRS})
 else()
-	message(WARNING "Compiling WITHOUT leap motion support")
+	message(STATUS "WITHOUT: leap motion support")
 endif()
 
 if(VICON_FOUND)
@@ -203,15 +232,23 @@ if(VICON_FOUND)
 
 	set(WITH_COORDS ON)
 else()
-	message(WARNING "Compiling WITHOUT vicon motion capture support")
+	message(STATUS "WITHOUT: vicon motion capture support")
 	set(WITH_COORDS OFF)
 endif()
+
 
 if(CURSES_FOUND)
 	message(STATUS "Compiling keyboard command interface")
 	include_directories(${CURSES_INCLUDE_DIRS})
 else()
-	message(WARNING "Compiling WITHOUT keyboard command interface")
+	message(STATUS "WITHOUT: keyboard command interface")
+endif()
+
+if(VRPN_FOUND)
+	message(STATUS "Compiling with VRPN support")
+	include_directories(${VRPN_INCLUDE_DIRS})
+else()
+	message(STATUS "WITHOUT: VRPN")
 endif()
 
 if(CURL_FOUND)
@@ -225,7 +262,7 @@ if(CURL_FOUND)
 
 	set(WITH_NETWORK ON)
 else()
-	message(WARNING "Compiling WITHOUT network interface")
+	message(STATUS "WITHOUT: curl network interface")
 	set(WITH_NETWORK OFF)
 endif()
 
@@ -239,11 +276,12 @@ if(LUA_FOUND AND LUA_VERSION_MAJOR EQUAL 5 AND
 		${LUA_SRC_FILES}
 	)
 else()
-	message(WARNING "Compiling WITHOUT Lua")
+	message(WARNING "WITHOUT: Lua")
 endif()
 
 
-configure_file(${CMAKE_SOURCE_DIR}/include/common.h.in ${CMAKE_SOURCE_DIR}/include/common.h)
+configure_file(${JAKOPTER_SOURCE_DIR}/include/common.h.in ${JAKOPTER_SOURCE_DIR}/include/common.h)
+configure_file(${JAKOPTER_SOURCE_DIR}/include/utils.h.in ${JAKOPTER_SOURCE_DIR}/include/utils.h)
 
 ## Executables ##
 
@@ -253,6 +291,8 @@ add_library(
 )
 set_target_properties(jakopter PROPERTIES C_VISIBILITY_PRESET hidden)
 set_target_properties(jakopter PROPERTIES CXX_VISIBILITY_PRESET hidden)
+set_target_properties(jakopter PROPERTIES VERSION ${JAKOPTER_VERSION_STRING} SOVERSION ${JAKOPTER_VERSION_MAJOR})
+
 
 if(LEAP_FOUND)
 	add_executable(
@@ -263,22 +303,26 @@ endif()
 
 if(WITH_COORDS AND VICON_FOUND)
 	add_executable(
-		vicon
+		jakopter-vicon
 		${VICON_SRC_FILES}
 	)
 endif()
 
-## Linking libraries ##
-
-
 if(CURSES_FOUND)
 	add_executable(
-		keyb_control
+		jakopter-keyboard
 		${KEYB_SRC_FILES}
 	)
-	target_link_libraries(keyb_control ${CURSES_LIBRARIES})
 endif()
 
+if(VRPN_FOUND)
+	# link_directories(~/vrpn/install/lib/)
+	add_executable(
+		vrpn_client
+		${VRPN_SRC_FILES}
+	)
+endif()
+## Linking libraries ##
 
 target_link_libraries(jakopter ${CMAKE_THREAD_LIBS_INIT})
 
@@ -302,22 +346,50 @@ if(WITH_NETWORK AND CURL_FOUND)
 	target_link_libraries(jakopter ${CURL_LIBRARIES})
 endif()
 
+if(CURSES_FOUND)
+	target_link_libraries(jakopter-keyboard ${CURSES_LIBRARIES})
+endif()
+
 if(LEAP_FOUND)
 	target_link_libraries(leap ${LEAP_LIBRARIES})
 endif()
 
+if(VRPN_FOUND)
+	target_link_libraries(vrpn_client ${VRPN_LIBRARIES})
+endif()
+
 if(WITH_COORDS AND VICON_FOUND)
-	target_link_libraries(vicon ${CMAKE_THREAD_LIBS_INIT} ${VICON_LIBRARIES})
+	target_link_libraries(jakopter-vicon ${CMAKE_THREAD_LIBS_INIT} ${VICON_LIBRARIES})
 endif()
 
 if(USE_DOXYGEN AND DOXYGEN_FOUND)
-	message(STATUS "Generate doc with Doxygen")
-	configure_file(${CMAKE_SOURCE_DIR}/doc/config-doxygen.in
-		${JAKOPTER_DOC_DIR}/config-doxygen
+	message(STATUS "Configure doc for Doxygen (run then 'doxygen doc/config-doxygen')")
+	configure_file("${CMAKE_SOURCE_DIR}/doc/config-doxygen.in"
+		"${CMAKE_SOURCE_DIR}/doc/config-doxygen"
 		@ONLY)
-	configure_file(${CMAKE_SOURCE_DIR}/doc/mainpage.doc.in
-		${JAKOPTER_DOC_DIR}/mainpage.doc
+	configure_file("${CMAKE_SOURCE_DIR}/doc/mainpage.doc.in"
+		"${CMAKE_SOURCE_DIR}/doc/mainpage.doc"
 		@ONLY)
 else()
-	message(WARNING "Doc NOT generated")
+	message(WARNING "Doc NOT configured")
 endif()
+
+
+## Install ##
+
+install(TARGETS jakopter DESTINATION ${LIBRARY_OUTPUT_PATH})
+install(TARGETS jakopter DESTINATION ${LIBRARY_OUTPUT_PATH}/lua/${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR}/)
+install(TARGETS jakopter-vicon jakopter-keyboard DESTINATION ${BINARY_OUTPUT_PATH})
+install(DIRECTORY include/ DESTINATION ${INCLUDE_OUTPUT_PATH} FILES_MATCHING PATTERN "*.h")
+
+
+
+# sudo ln -s /usr/lib/libjakopter.so.0.2.0 /usr/lib/lua/5.3/libjakopter.so
+# EXECUTE_PROCESS(
+# 	COMMAND dirname -z ${LUA_LIBRARY}
+# 	OUTPUT_VARIABLE LUA_DIR
+# 	ERROR_QUIET
+# )
+# add_custom_command(TARGET jakopter POST_BUILD
+# 	COMMAND ln -s $<TARGET_FILE:jakopter> ${LUA_DIR}/lua/${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR}/$<TARGET_SONAME_FILE_NAME:jakopter>
+# )

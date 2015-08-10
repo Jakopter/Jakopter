@@ -28,7 +28,18 @@
 #  License text for the above reference.)
 
 # Look for the header file.
-find_path(CURL_INCLUDE_DIR NAMES curl/curl.h)
+find_path(CURL_INCLUDE_DIR
+  NAMES curl/curl.h
+  HINTS $ENV{CURLINCLUDEDIR}
+  PATH_SUFFIXES include
+  PATHS
+  /usr
+  /usr/local
+  /sw
+  /opt/local
+  /opt/csw
+  /opt
+  )
 mark_as_advanced(CURL_INCLUDE_DIR)
 
 # Look for the library (sorted from most current/relevant entry to least).
@@ -40,6 +51,15 @@ find_library(CURL_LIBRARY NAMES
     curllib_static
   # Windows older "Win32 - MSVC" prebuilts (libcurl.lib, e.g. libcurl-7.15.5-win32-msvc.zip):
     libcurl
+  HINTS $ENV{CURLINCLUDEDIR}
+  PATH_SUFFIXES lib lib64
+  PATHS
+  /usr
+  /usr/local
+  /sw
+  /opt/local
+  /opt/csw
+  /opt
 )
 mark_as_advanced(CURL_LIBRARY)
 
