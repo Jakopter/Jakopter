@@ -279,7 +279,6 @@ else()
 	message(WARNING "WITHOUT: Lua")
 endif()
 
-
 configure_file(${JAKOPTER_SOURCE_DIR}/include/common.h.in ${JAKOPTER_SOURCE_DIR}/include/common.h)
 configure_file(${JAKOPTER_SOURCE_DIR}/include/utils.h.in ${JAKOPTER_SOURCE_DIR}/include/utils.h)
 
