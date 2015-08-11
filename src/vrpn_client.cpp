@@ -158,29 +158,35 @@ int main(int argc, char* argv[])
 	char* tracker = argv[1];
 
 	//for each of the possible options of the program, we check if the user used them, and if appropriate, we modify the default values of the analog channels/buttons
-	pitch_channel = argv_containing("-pitch", argv, argc)
-				? std::stoi(*(new string(argv[index+1])))
-				: pitch_channel;
+	int index = argv_containing("-pitch", argv, argc);
+	pitch_channel = index
+			? std::stoi(*(new string(argv[index+1])))
+			: pitch_channel;
 
-	roll_channel = argv_containing("-roll", argv, argc)
-				? std::stoi(*(new string(argv[index+1])))
-				: roll_channel;
+	index = argv_containing("-roll", argv, argc)
+	roll_channel = index
+			? std::stoi(*(new string(argv[index+1])))
+			: roll_channel;
 
-	yaw_channel = argv_containing("-yaw", argv, argc)
-				? std::stoi(*(new string(argv[index+1])))
-				: yaw_channel;
+	index = argv_containing("-yaw", argv, argc)
+	yaw_channel = index
+			? std::stoi(*(new string(argv[index+1])))
+			: yaw_channel;
 
-	up_channel = argv_containing("-up", argv, argc)
-				? std::stoi(*(new string(argv[index+1])))
-				: up_channel;
+ 	index = argv_containing("-up", argv, argc)
+	up_channel = index
+			? std::stoi(*(new string(argv[index+1])))
+			: up_channel;
 
-	down_channel = argv_containing("-down", argv, argc)
-				? std::stoi(*(new string(argv[index+1])))
-				: down_channel;
+ 	index = argv_containing("-down", argv, argc)
+	down_channel = index
+			? std::stoi(*(new string(argv[index+1])))
+			: down_channel;
 
-	land_channel = argv_containing("-land", argv, argc)
-				? std::stoi(*(new string(argv[index+1])))
-				: land_channel;
+ 	index = argv_containing("-land", argv, argc)
+	land_channel = index
+			? std::stoi(*(new string(argv[index+1])))
+			: land_channel;
 
 	vrpn_Analog_Remote* vrpnAnalog = new vrpn_Analog_Remote(tracker);
 	vrpnAnalog->register_change_handler(0, handle_analog);
