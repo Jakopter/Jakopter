@@ -163,27 +163,27 @@ int main(int argc, char* argv[])
 			? std::stoi(*(new string(argv[index+1])))
 			: pitch_channel;
 
-	index = argv_containing("-roll", argv, argc)
+	index = argv_containing("-roll", argv, argc);
 	roll_channel = index
 			? std::stoi(*(new string(argv[index+1])))
 			: roll_channel;
 
-	index = argv_containing("-yaw", argv, argc)
+	index = argv_containing("-yaw", argv, argc);
 	yaw_channel = index
 			? std::stoi(*(new string(argv[index+1])))
 			: yaw_channel;
 
- 	index = argv_containing("-up", argv, argc)
+ 	index = argv_containing("-up", argv, argc);
 	up_channel = index
 			? std::stoi(*(new string(argv[index+1])))
 			: up_channel;
 
- 	index = argv_containing("-down", argv, argc)
+ 	index = argv_containing("-down", argv, argc);
 	down_channel = index
 			? std::stoi(*(new string(argv[index+1])))
 			: down_channel;
 
- 	index = argv_containing("-land", argv, argc)
+ 	index = argv_containing("-land", argv, argc);
 	land_channel = index
 			? std::stoi(*(new string(argv[index+1])))
 			: land_channel;
