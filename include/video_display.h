@@ -21,7 +21,7 @@
 #include "com_master.h"
 #include "utils.h"
 
-#define FONT_PATH "../../resources/FreeSans.ttf"
+
 /* size of the input com channel for this module*/
 #define DISPLAY_COM_IN_SIZE 32
 

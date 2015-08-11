@@ -1,7 +1,7 @@
 # Jakopter
 ![Jakopter logo](http://jakopter.irisa.fr/wp-content/uploads/2015/06/jakopter3.png)
 
-Jakopter is a library which allows to pilot Parrot ARdrone2.0 with a C program or Lua scripts, and with treatments on the drone video feedback.
+Jakopter is a library which allows to pilot Parrot ARdrone2.0 with a C program or Lua scripts, and with treatments on the drone video feedback. It had been developed into the ALF team at INRIA.
 
 Website : http://jakopter.irisa.fr/ (not available in english yet)
 

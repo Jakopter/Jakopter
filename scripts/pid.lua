@@ -127,7 +127,7 @@ function simple_pid(start_point_, prev_diff_, p_coeff_)
 
 
 		local diff = local_coords(global_coords(), point)
-		print("TRUE goal "      .. goal["t_y"] .. " " .. goal["t_x"] .. " " .. goal["t_z"] .. " ".. goal["r_z"])
+		print("The goal "      .. goal["t_y"] .. " " .. goal["t_x"] .. " " .. goal["t_z"] .. " ".. goal["r_z"])
 		local coords = global_coords()
 
 		local vertical = p_coeff["t_z"]*diff["t_z"]

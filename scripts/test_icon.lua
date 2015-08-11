@@ -2,8 +2,8 @@
 
 -- package.cpath = package.cpath .. ";?.dylib"
 l=require("libjakopter")
-path="../../resources/test.png"
-if d.use_visp() then
+path="../resources/test.png"
+if l.use_visp() then
 	print("ViSP doesn't handle yet incrusting")
 	os.exit()
 end
