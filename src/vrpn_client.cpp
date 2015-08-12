@@ -99,9 +99,9 @@ int argv_containing(string option, char** argv,	int argc)
 	int i = 0;
 	for (i = 1; i < argc; i++) {
 		if(option.compare(argv[i]) == 0)
-			break;
+			return i;
 	}
-	return i;
+	return 0;
 }
 
 /** \brief Displays help for the usage of vrpn_client, called when the option --help is used
