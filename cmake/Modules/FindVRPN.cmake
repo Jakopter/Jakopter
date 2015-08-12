@@ -35,13 +35,13 @@ endif(VRPN_INCLUDE_DIR AND VRPN_LIBRARY)
 # Set locations to search
 if(UNIX)
 	set(VRPN_INCLUDE_SEARCH_DIRS
-		#set VRPNDIR with ccmake . to use a personnal repository
+		#set VRPNDIR in your env to use a personnal repository
 		/usr/include
 		/usr/local/include
 		/opt/include INTERNAL
 	)
 	set(VRPN_LIBRARY_SEARCH_DIRS
-		#set VRPNLIBDIR with ccmake . to use a personnal repository
+		#set VRPNLIBDIR in your env to use a personnal repository
 		/usr/lib
 		/usr/lib/x86_64-linux-gnu
 		/usr/lib/vrpn
@@ -60,11 +60,11 @@ endif(UNIX)
 if(UNIX)
 	set(VRPN_LIBRARY_NAME libvrpn.a)
 	set(QUAT_LIBRARY_NAME libquat.a)
-	set(PTHREAD_LIBRARY_NAME libpthread.a)
+	set(PTHREAD_LIBRARY_NAME libpthread.so)
 else(UNIX)
 	set(VRPN_LIBRARY_NAME libvrpn.lib)
 	set(QUAT_LIBRARY_NAME libquat.lib)
-	set(PTHREAD_LIBRARY_NAME libpthread.lib)
+	set(PTHREAD_LIBRARY_NAME libpthread.dylib)
 endif(UNIX)
 
 if(NOT VRPN_FIND_QUIETLY)
