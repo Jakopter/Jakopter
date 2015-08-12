@@ -92,6 +92,8 @@ FIND_LIBRARY(SDL2_LIBRARY_TEMP
   $ENV{SDL2DIR}
   PATH_SUFFIXES lib64 lib
   PATHS
+  /usr
+  /usr/local
   /sw
   /opt/local
   /opt/csw
@@ -100,7 +102,7 @@ FIND_LIBRARY(SDL2_LIBRARY_TEMP
 
 #MESSAGE("SDL2_LIBRARY_TEMP is ${SDL2_LIBRARY_TEMP}")
 
-IF(NOT SDL2_BUILDING_LIBRARY)
+IF(NOT SDL2_BUILDING_LIBRARY AND APPLE)
   IF(NOT ${SDL2_INCLUDE_DIR} MATCHES ".framework")
     # Non-OS X framework versions expect you to also dynamically link to
     # SDL2main. This is mainly for Windows and OS X. Other (Unix) platforms
@@ -118,7 +120,7 @@ IF(NOT SDL2_BUILDING_LIBRARY)
       /opt
     )
   ENDIF(NOT ${SDL2_INCLUDE_DIR} MATCHES ".framework")
-ENDIF(NOT SDL2_BUILDING_LIBRARY)
+ENDIF(NOT SDL2_BUILDING_LIBRARY AND APPLE)
 
 # SDL2 may require threads on your system.
 # The Apple build may not need an explicit flag because one of the

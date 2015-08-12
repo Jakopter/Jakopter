@@ -30,6 +30,9 @@
 
 #cmakedefine CMAKE_INSTALL_DATADIR "@CMAKE_INSTALL_DATADIR@"
 
+//TODO: switch to the font installed on the system if available
+#define FONT_PATH "@CMAKE_SOURCE_DIR@/resources/FreeSans.ttf"
+
 /* Max number of digit into an integer plus the sign and \0. */
 #define INT_LEN     13
 /* 2 integers plus the dot and \0*/

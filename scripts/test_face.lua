@@ -1,6 +1,10 @@
---Use with ViSP, need to modify "set(USE_VISP ON)" in CMakeLists.txt and line 19 and 29 in video.c
+-- package.cpath = package.cpath .. ";?.dylib"
 d = require("libjakopter")
 
+if not d.use_visp() then
+	print("You need to compile with ViSP in order to use face detection")
+	os.exit()
+end
 if d.connect() < 0 then
 	print("Can't connect to the drone")
 	os.exit()

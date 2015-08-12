@@ -1,3 +1,4 @@
+-- package.cpath = package.cpath .. ";?.dylib"
 d = require("libjakopter")
 require("pid")
 
@@ -95,7 +96,7 @@ while true do
 	--Bounding box
 	coords = global_coords()
 	if coords.t_x > 1200 or coords.t_x < -1200
-		or coords.t_y < 1300 or coords.t_y > 4600 then
+		or coords.t_y < -2000 or coords.t_y > 4000 then
 		print("END: " .. coords.t_x .. " ".. coords.t_y)
 		break
 	end

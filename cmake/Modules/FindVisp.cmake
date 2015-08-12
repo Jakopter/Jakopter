@@ -25,8 +25,8 @@ find_path(VISP_INCLUDE_DIR
 	PATHS
 	~/Library/Frameworks
 	/Library/Frameworks
-	/usr/local/include/visp
 	/usr/include/visp
+	/usr/local/include/visp
 	/sw # Fink
 	/opt/local # DarwinPorts/MacPorts
 	/opt/csw # Blastwave/OpenCSW
@@ -38,8 +38,8 @@ find_library(VISP_LIBRARY
 	HINTS $ENV{VISPLIBDIR}
 	PATH_SUFFIXES lib lib64 lib32
 	PATHS
-	/usr/local
 	/usr
+	/usr/local
 	/sw
 	/opt/local
 	/opt/csw

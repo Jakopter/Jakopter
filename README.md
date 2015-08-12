@@ -1,7 +1,7 @@
 # Jakopter
 ![Jakopter logo](http://jakopter.irisa.fr/wp-content/uploads/2015/06/jakopter3.png)
 
-Jakopter is a library which allows to pilot Parrot ARdrone2.0 with a C program or Lua scripts, and with treatments on the drone video feedback.
+Jakopter is a library which allows to pilot Parrot ARdrone2.0 with a C program or Lua scripts, and with treatments on the drone video feedback. It had been developed into the ALF team at INRIA.
 
 Website : http://jakopter.irisa.fr/ (not available in english yet)
 
@@ -9,25 +9,38 @@ Website : http://jakopter.irisa.fr/ (not available in english yet)
 ### Mandatory
 CMake &ge; 2.8
 C compiler with C99 support (GCC or Clang)
+A Linux, OS X or at least UNIX operating system with pthreads
 
 ### Optional
-For Lua bindings : Lua 5.1 or 5.2
+For ViSP, Leap, Vicon: C++ compiler (GCC or clang)
+
+For Lua bindings : Lua 5.1 up to 5.3
 
 For video :
 * FFMPEG (or at least libavcodec) for decoding
 * SDL2 (for video display)
 * SDL2_ttf (for text overlay within video display)
 * SDL2_image (for image overlay within video display)
+or in alternative of SDL2 :
+* ViSP (for video display and processing)
 
-For Leap Motion control : Leap Motion SDK (and a C++ compiler)
+For Leap Motion control : Leap Motion SDK
 
-For direct keyboard control : Curses.
+For direct keyboard control : Curses
+
+For Vicon support: Vicon SDK
+
+For network interface: Curl
 
 
 ## Build Instructions
 The project uses CMake as a build system.
 
-On UNIX systems you can generate a Makefile with the command:
+On UNIX systems you can customize the generation with:
+
+    ccmake .
+
+and you can generate a Makefile with the command:
 
     cmake .
 

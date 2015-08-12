@@ -1,7 +1,12 @@
 --Boucle de contrôle du drone + affichage vidéo
 
+-- package.cpath = package.cpath .. ";?.dylib"
 l=require("libjakopter")
-path="../../resources/test.png"
+path="../resources/test.png"
+if l.use_visp() then
+	print("ViSP doesn't handle yet incrusting")
+	os.exit()
+end
 l.connect_video()
 l.connect()
 --Canal de com navdata (lecture des données)

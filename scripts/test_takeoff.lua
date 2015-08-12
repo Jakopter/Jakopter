@@ -1,3 +1,4 @@
+-- package.cpath = package.cpath .. ";?.dylib"
 j = require("libjakopter")
 j.connect()
 j.takeoff()

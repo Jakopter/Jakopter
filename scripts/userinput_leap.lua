@@ -1,5 +1,5 @@
 --Boucle de contrôle du drone + affichage vidéo + lecture entrée clavier
-
+-- package.cpath = package.cpath .. ";?.dylib"
 l=require("libjakopter")
 l.connect_video()
 l.connect()
@@ -11,9 +11,9 @@ ccv = 2
 cck = 4
 while true do
 	valk1 = l.cc_read_int(cck,0)
-	
+
 	if valk1 == 10 then
-		os.exit()	 
+		os.exit()
 	elseif valk1 == 117 then
 		if l.is_flying() == 0 then
 			l.takeoff()
