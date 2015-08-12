@@ -74,7 +74,9 @@ if(USE_CLANG)
 endif()
 
 add_definitions("-Wall") # Not compatible with MSVC
-list(APPEND CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftest-coverage -fprofile-arcs")
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftest-coverage -fprofile-arcs")
 
 ### C++11 ###
 include(CheckCXXCompilerFlag)
