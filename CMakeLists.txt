@@ -377,7 +377,9 @@ endif()
 ## Install ##
 
 install(TARGETS jakopter DESTINATION ${LIBRARY_OUTPUT_PATH})
-install(TARGETS jakopter DESTINATION ${LIBRARY_OUTPUT_PATH}/lua/${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR}/)
+if(LUA_FOUND)
+	install(TARGETS jakopter DESTINATION ${LIBRARY_OUTPUT_PATH}/lua/${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR}/)
+endif()
 if(WITH_COORDS AND VICON_FOUND)
 	install(TARGETS jakopter-vicon jakopter-keyboard DESTINATION ${BINARY_OUTPUT_PATH})
 endif()
