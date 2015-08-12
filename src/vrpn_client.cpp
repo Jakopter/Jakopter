@@ -143,8 +143,8 @@ int main(int argc, char* argv[])
 {
 	//if there is only 1 argument in argv, that means the name and adress of the devices weren't specidifed
 	if (argc == 1) {
-		cout << "[vrpn_client.cpp/main] ERROR : you have to specify the tracker's name and vrpn server's IP adress.\n
-				Use ./vrpn_client --help for help (makes sense right ?)" << endl;
+		cout << "[vrpn_client.cpp/main] ERROR : you have to specify the tracker's name and vrpn server's IP adress." << endl;
+		cout << "Use ./vrpn_client --help for help (makes sense right ?)" << endl;
 		return -1;
 	}
 
@@ -174,19 +174,19 @@ int main(int argc, char* argv[])
 			: yaw_channel;
 
  	index = argv_containing("-up", argv, argc);
-	up_channel = index
+	up_button = index
 			? std::stoi(*(new string(argv[index+1])))
-			: up_channel;
+			: up_button;
 
  	index = argv_containing("-down", argv, argc);
-	down_channel = index
+	down_button = index
 			? std::stoi(*(new string(argv[index+1])))
-			: down_channel;
+			: down_button;
 
  	index = argv_containing("-land", argv, argc);
-	land_channel = index
+	land_button = index
 			? std::stoi(*(new string(argv[index+1])))
-			: land_channel;
+			: land_button;
 
 	vrpn_Analog_Remote* vrpnAnalog = new vrpn_Analog_Remote(tracker);
 	vrpnAnalog->register_change_handler(0, handle_analog);
