@@ -1,7 +1,7 @@
 #include "utils.h"
 
 /* OS X does not have clock_gettime, use clock_get_time*/
-int posix_clock_gettime(clockid_t clk_id, struct timespec *ts)
+JAKO_EXPORT int posix_clock_gettime(clockid_t clk_id, struct timespec *ts)
 {
 #ifdef __MACH__
 	clock_serv_t cclock;
