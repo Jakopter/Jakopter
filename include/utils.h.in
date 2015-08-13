@@ -17,11 +17,6 @@
 #ifndef JAKOPTER_UTILS_H
 #define JAKOPTER_UTILS_H
 
-#ifdef __MACH__
-#include <mach/clock.h>
-#include <mach/mach.h>
-#endif
-
 /* C-style public-like keyword */
 #if defined(__GNUC__) && __GNUC__ >= 4
 #define JAKO_EXPORT __attribute__ ((visibility("default")))
@@ -45,22 +40,6 @@
 /* Max number of digit we use in a float (nb digits of an int + 6 decimal digits) and \0*/
 #define FLOAT_LEN INT_LEN+6
 
-/* OS X does not have clock_gettime, use clock_get_time*/
-#ifdef __MACH__
-#define CLOCK_REALTIME CALENDAR_CLOCK
-#define CLOCK_MONOTONIC SYSTEM_CLOCK
-typedef int clockid_t;
-int clock_gettime(clockid_t clk_id, struct timespec *ts)
-{
-	clock_serv_t cclock;
-	mach_timespec_t mts;
-	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-	int ret = clock_get_time(cclock, &mts);
-	mach_port_deallocate(mach_task_self(), cclock);
-	ts->tv_sec = mts.tv_sec;
-	ts->tv_nsec = mts.tv_nsec;
-	return ret;
-}
-#endif
+int posix_clock_gettime(clockid_t clk_id, struct timespec *ts);
 
 #endif

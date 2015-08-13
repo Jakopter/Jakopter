@@ -86,7 +86,7 @@ static void navdata_timestamp() {
 	pthread_mutex_lock(&mutex_timestamp);
 	memset(timestamp, 0, TSTAMP_LEN+1);
 	struct timespec ts = {0,0};
-	clock_gettime(CLOCK_REALTIME, &ts);
+	posix_clock_gettime(CLOCK_REALTIME, &ts);
 	snprintf(timestamp, TSTAMP_LEN+1, "%lu.%lu:", ts.tv_sec, ts.tv_nsec);
 	pthread_mutex_unlock(&mutex_timestamp);
 }
