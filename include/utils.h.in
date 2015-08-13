@@ -47,8 +47,8 @@
 
 /* OS X does not have clock_gettime, use clock_get_time*/
 #ifdef __MACH__
-#define CLOCK_REALTIME 0
-#define CLOCK_MONOTONIC 0
+#define CLOCK_REALTIME CALENDAR_CLOCK
+#define CLOCK_MONOTONIC SYSTEM_CLOCK
 typedef int clockid_t;
 int clock_gettime(clockid_t clk_id, struct timespec *ts)
 {
