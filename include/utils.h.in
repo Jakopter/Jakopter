@@ -29,19 +29,6 @@
 #define JAKO_EXPORT
 #endif
 
-#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
-int clock_gettime(clockid_t clk_id, struct timespec *ts){
-	clock_serv_t cclock;
-	mach_timespec_t mts;
-	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-	int ret = clock_get_time(cclock, &mts);
-	mach_port_deallocate(mach_task_self(), cclock);
-	ts.tv_sec = mts.tv_sec;
-	ts.tv_nsec = mts.tv_nsec;
-	return ret;
-}
-#endif
-
 #cmakedefine JAKOPTER_VERSION_MAJOR @JAKOPTER_VERSION_MAJOR@
 #cmakedefine JAKOPTER_VERSION_MINOR @JAKOPTER_VERSION_MINOR@
 #cmakedefine JAKOPTER_VERSION_PATCH @JAKOPTER_VERSION_PATCH@
@@ -57,5 +44,23 @@ int clock_gettime(clockid_t clk_id, struct timespec *ts){
 #define TSTAMP_LEN  2*INT_LEN+2
 /* Max number of digit we use in a float (nb digits of an int + 6 decimal digits) and \0*/
 #define FLOAT_LEN INT_LEN+6
+
+/* OS X does not have clock_gettime, use clock_get_time*/
+#ifdef __MACH__
+#define CLOCK_REALTIME 0
+#define CLOCK_MONOTONIC 0
+typedef int clockid_t;
+int clock_gettime(clockid_t clk_id, struct timespec *ts)
+{
+	clock_serv_t cclock;
+	mach_timespec_t mts;
+	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+	int ret = clock_get_time(cclock, &mts);
+	mach_port_deallocate(mach_task_self(), cclock);
+	ts->tv_sec = mts.tv_sec;
+	ts->tv_nsec = mts.tv_nsec;
+	return ret;
+}
+#endif
 
 #endif
