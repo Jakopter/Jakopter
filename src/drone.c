@@ -124,7 +124,7 @@ static int send_cmd()
 		//unsigned long ts = (unsigned)time(NULL);
 		struct timespec ts = {0,0};
 		char buf_log[TSTAMP_LEN];
-		posix_clock_gettime(CLOCK_REALTIME, &ts);
+		clock_gettime(CLOCK_REALTIME, &ts);
 		snprintf(buf_log, TSTAMP_LEN, "%lu.%lu:", ts.tv_sec, ts.tv_nsec);
 		strncat(command_logged, buf_log, TSTAMP_LEN);
 		strncat(command_logged, command, PACKET_SIZE);
