@@ -79,9 +79,9 @@ JAKO_EXPORT int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 
 	uint64_t start, end, delta, nano;
 
-	task_basic_info_data_t tinfo;
-	task_thread_times_info_data_t ttinfo;
-	mach_msg_type_number_t tflag;
+	// task_basic_info_data_t tinfo;
+	// task_thread_times_info_data_t ttinfo;
+	// mach_msg_type_number_t tflag;
 
 	int retval = -1;
 	switch (clk_id) {
@@ -126,19 +126,3 @@ JAKO_EXPORT int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 }
 
 #endif // __APPLE__
-/* OS X does not have clock_gettime, use clock_get_time*/
-/*JAKO_EXPORT int posix_clock_gettime(clockid_t clk_id, struct timespec *ts)
-{
-#ifdef __MACH__
-	clock_serv_t cclock;
-	mach_timespec_t mts;
-	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-	int ret = clock_get_time(cclock, &mts);
-	mach_port_deallocate(mach_task_self(), cclock);
-	ts->tv_sec = mts.tv_sec;
-	ts->tv_nsec = mts.tv_nsec;
-	return ret;
-#else
-	return clock_gettime(clk_id, ts);
-#endif
-}*/
