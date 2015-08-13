@@ -1,12 +1,5 @@
 #include "utils.h"
 
-#ifdef __MACH__
-#include <mach/clock.h>
-#include <mach/mach.h>
-#else
-#include <time.h>
-#endif
-
 /* OS X does not have clock_gettime, use clock_get_time*/
 int posix_clock_gettime(clockid_t clk_id, struct timespec *ts)
 {

@@ -40,6 +40,13 @@
 /* Max number of digit we use in a float (nb digits of an int + 6 decimal digits) and \0*/
 #define FLOAT_LEN INT_LEN+6
 
+/* OS X does not have clock_gettime, use clock_get_time*/
+#ifdef __MACH__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#else
+#include <time.h>
+#endif
 #ifdef __MACH__
 #define CLOCK_REALTIME CALENDAR_CLOCK
 #define CLOCK_MONOTONIC SYSTEM_CLOCK
