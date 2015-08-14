@@ -69,9 +69,11 @@
 #include <unistd.h>
 #include <sched.h>
 
-static mach_timebase_info_data_t __clock_gettime_inf;
+static volatile mach_timebase_info_data_t __clock_gettime_inf;
+static pthread_mutex_t mutex_clock = PTHREAD_MUTEX_INITIALIZER;
 
 JAKO_EXPORT int clock_gettime(clockid_t clk_id, struct timespec *tp) {
+	pthread_mutex_lock(&mutex_clock);
 	kern_return_t   ret;
 	clock_serv_t    clk;
 	clock_id_t clk_serv_id;
@@ -122,6 +124,7 @@ JAKO_EXPORT int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 			errno = EINVAL;
 			retval = -1;
 	}
+	pthread_mutex_unlock(&mutex_clock);
 	return retval;
 }
 
