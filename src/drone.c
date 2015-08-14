@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-#include <time.h>
+//#include <time.h>
 
 #include "common.h"
 #include "drone.h"
@@ -91,7 +91,7 @@ static int send_cmd()
 	int ret;
 
 	pthread_mutex_lock(&mutex_cmd);
-
+	printf("£ Before sending\n");
 	if (command_type != NULL) {
 		memset(command, 0, PACKET_SIZE);
 		command[0] = '\0';
@@ -181,7 +181,7 @@ void* cmd_routine(void* args)
 {
 	struct timespec itv = {0, TIMEOUT_CMD};
 	pthread_mutex_lock(&mutex_stopped);
-
+	printf("£ Before main loop\n");
 	while (!stopped) {
 		pthread_mutex_unlock(&mutex_stopped);
 
@@ -207,7 +207,7 @@ JAKO_EXPORT int jakopter_connect(const char* drone_ip)
 		return -1;
 	}
 	pthread_mutex_unlock(&mutex_stopped);
-
+	printf("£ Before init addrs\n");
 	/* Adresses settings */
 	addr_drone.sin_family      = AF_INET;
 	if (drone_ip == NULL)
@@ -224,17 +224,19 @@ JAKO_EXPORT int jakopter_connect(const char* drone_ip)
 	addr_client.sin_family      = AF_INET;
 	addr_client.sin_addr.s_addr = htonl(INADDR_ANY);
 	addr_client.sin_port        = htons(PORT_CMD);
-
+	printf("£ Socket\n");
 	sock_cmd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock_cmd < 0) {
 		fprintf(stderr, "[~][cmd] Can't establish socket \n");
 		return -1;
 	}
-
+	printf("£ Bind\n");
 	if (bind(sock_cmd, (struct sockaddr*)&addr_client, sizeof(addr_client)) < 0) {
 		fprintf(stderr, "[~][cmd] Can't bind socket to port %d\n", PORT_CMD);
 		return -1;
 	}
+
+	printf("£ Init log\n");
 
 	/* Reinitialize commands */
 	pthread_mutex_lock(&mutex_cmd);
@@ -247,19 +249,20 @@ JAKO_EXPORT int jakopter_connect(const char* drone_ip)
 	stopped = 0;
 	pthread_mutex_unlock(&mutex_stopped);
 
+	printf("£ Before navdata\n");
 	/* Modules */
 	int navdata_status = navdata_connect(drone_ip);
 	if (navdata_status == -1) {
 		perror("[~][cmd] Navdata connection failed");
 		return -1;
 	}
-
+	printf("£ Before user_input\n");
 	int input_status = user_input_connect();
 	if (input_status < 0) {
 		perror("[~][cmd] Input connection failed");
 		return -1;
 	}
-
+	printf("£ Before thread\n");
 	/* Main thread */
 	if (pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {
 		perror("[~][cmd] Can't create thread");
