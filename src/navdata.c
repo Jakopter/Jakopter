@@ -52,9 +52,10 @@ static int recv_cmd()
 {
 	pthread_mutex_lock(&mutex_navdata);
 	socklen_t len = sizeof(addr_drone_navdata);
+	printf("£ before recvfrom\n");
 	int ret = recvfrom(sock_navdata, &data, sizeof(data), 0, (struct sockaddr*)&addr_drone_navdata, &len);
 	size_t offset = 0;
-
+	printf("£ before comchan\n");
 	switch (data.demo.tag) {
 		case TAG_DEMO:
 			jakopter_com_write_int(nav_channel, offset, data.demo.vbat_flying_percentage);
@@ -78,6 +79,7 @@ static int recv_cmd()
 	}
 
 	pthread_mutex_unlock(&mutex_navdata);
+	printf("£ before timestamp\n");
 	navdata_timestamp();
 	return ret;
 }
@@ -86,7 +88,9 @@ static void navdata_timestamp() {
 	pthread_mutex_lock(&mutex_timestamp);
 	memset(timestamp, 0, TSTAMP_LEN+1);
 	struct timespec ts = {0,0};
+	printf("£ before gettime\n");
 	clock_gettime(CLOCK_REALTIME, &ts);
+	printf("£ after gettime\n");
 	snprintf(timestamp, TSTAMP_LEN+1, "%lu.%lu:", ts.tv_sec, ts.tv_nsec);
 	pthread_mutex_unlock(&mutex_timestamp);
 }
