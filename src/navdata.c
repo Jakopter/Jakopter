@@ -24,7 +24,7 @@
 /* The structure which contains navdata  */
 static union navdata_t data;
 /* The string which contains the timestamp of the last request.*/
-static char timestamp[TSTAMP_LEN];
+static char timestamp[TSTAMP_LEN+1];
 static void navdata_timestamp();
 
 jakopter_com_channel_t* nav_channel;
@@ -80,6 +80,7 @@ static int recv_cmd()
 
 	pthread_mutex_unlock(&mutex_navdata);
 	printf("£ before timestamp\n");
+	
 	navdata_timestamp();
 	return ret;
 }
@@ -88,7 +89,7 @@ static void navdata_timestamp() {
 	printf("£ Before mutex\n");
 	pthread_mutex_lock(&mutex_timestamp);
 	printf("£ Before memset\n");
-	memset(timestamp, 0, TSTAMP_LEN+1);
+	memset(timestamp, '\0', TSTAMP_LEN+1);
 	struct timespec ts = {0,0};
 	printf("£ before gettime\n");
 	clock_gettime(CLOCK_REALTIME, &ts);

@@ -31,7 +31,7 @@
 #include "coords.h"
 
 /* The string which contains the last coords received.*/
-static char log_coords[TSTAMP_LEN+COORDS_BUF_SIZE];
+static char log_coords[TSTAMP_LEN+3+COORDS_BUF_SIZE];
 struct sockaddr_un addr_server_coords;
 int sock_coords;
 
@@ -61,7 +61,7 @@ static int read_coords(float num[COORDS_NREADS])
 	}
 	/* Log */
 	pthread_mutex_lock(&mutex_log);
-	memset(log_coords, 0, TSTAMP_LEN+COORDS_BUF_SIZE);
+	memset(log_coords, '\0', TSTAMP_LEN+3+COORDS_BUF_SIZE);
 	struct timespec ts = {0,0};
 	clock_gettime(CLOCK_REALTIME, &ts);
 	snprintf(log_coords, TSTAMP_LEN+3, "%lu.%lu:c ", ts.tv_sec, ts.tv_nsec);

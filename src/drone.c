@@ -93,8 +93,7 @@ static int send_cmd()
 	pthread_mutex_lock(&mutex_cmd);
 	printf("£ Before sending\n");
 	if (command_type != NULL) {
-		memset(command, 0, PACKET_SIZE);
-		command[0] = '\0';
+		memset(command, '\0', PACKET_SIZE);
 
 		/* Header */
 		char buf[INT_LEN];
@@ -120,10 +119,9 @@ static int send_cmd()
 		ret = sendto(sock_cmd, command, PACKET_SIZE, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone));
 
 		/* Log */
-		memset(command_logged, 0, LOG_LEN);
-		//unsigned long ts = (unsigned)time(NULL);
+		memset(command_logged, '\0', LOG_LEN);
 		struct timespec ts = {0,0};
-		char buf_log[TSTAMP_LEN];
+		char buf_log[TSTAMP_LEN+1];
 		clock_gettime(CLOCK_REALTIME, &ts);
 		snprintf(buf_log, TSTAMP_LEN, "%lu.%lu:", ts.tv_sec, ts.tv_nsec);
 		strncat(command_logged, buf_log, TSTAMP_LEN);
