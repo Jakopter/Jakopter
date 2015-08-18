@@ -52,10 +52,10 @@ static int recv_cmd()
 {
 	pthread_mutex_lock(&mutex_navdata);
 	socklen_t len = sizeof(addr_drone_navdata);
-	printf("£ before recvfrom\n");
+
 	int ret = recvfrom(sock_navdata, &data, sizeof(data), 0, (struct sockaddr*)&addr_drone_navdata, &len);
 	size_t offset = 0;
-	printf("£ before comchan\n");
+
 	switch (data.demo.tag) {
 		case TAG_DEMO:
 			jakopter_com_write_int(nav_channel, offset, data.demo.vbat_flying_percentage);
@@ -79,21 +79,16 @@ static int recv_cmd()
 	}
 
 	pthread_mutex_unlock(&mutex_navdata);
-	printf("£ before timestamp\n");
-	
+
 	navdata_timestamp();
 	return ret;
 }
 
 static void navdata_timestamp() {
-	printf("£ Before mutex\n");
 	pthread_mutex_lock(&mutex_timestamp);
-	printf("£ Before memset\n");
 	memset(timestamp, '\0', TSTAMP_LEN+1);
 	struct timespec ts = {0,0};
-	printf("£ before gettime\n");
 	clock_gettime(CLOCK_REALTIME, &ts);
-	printf("£ after gettime\n");
 	snprintf(timestamp, TSTAMP_LEN+1, "%lu.%lu:", ts.tv_sec, ts.tv_nsec);
 	pthread_mutex_unlock(&mutex_timestamp);
 }
@@ -110,18 +105,18 @@ static int navdata_init()
 	struct timeval timeout;
 	timeout.tv_sec = 5;
 	timeout.tv_usec = 0;
-	printf("£ Before ping\n");
+
 	if (sendto(sock_navdata, "\x01", 1, 0, (struct sockaddr*)&addr_drone_navdata, sizeof(addr_drone_navdata)) < 0) {
 		perror("[~][navdata] Can't send ping");
 		return -1;
 	}
-	printf("£ Before select\n");
+
 	if (select(sock_navdata+1, &fds, NULL, NULL, &timeout) <= 0) {
 		perror("[~][navdata] Ping ack not received");
 		return -1;
 	}
 
-	printf("£ Before recv\n");
+
 	if (recv_cmd() < 0) {
 		perror("[~][navdata] First navdata packet not received");
 		return -1;
@@ -136,19 +131,19 @@ static int navdata_init()
 		//TODO: Use errcode instead
 		//return -1;
 	}
-	printf("£ Before bootstrap\n");
+
 	if (init_navdata_bootstrap() < 0){
 		fprintf(stderr, "[~][navdata] bootstrap init failed\n");
 		return -1;
 	}
-	printf("£ Before init recv\n");
+
 	if (recv_cmd() < 0)
 		perror("[~][navdata] Second navdata packet not received");
 
 	if (data.raw.ardrone_state & (1 << 6)) {
 		fprintf(stderr, "[*][navdata] control command ACK: %d\n", (data.raw.ardrone_state >> 6) & 1);
 	}
-	printf("£ Before ack\n");
+
 	if (config_ack() < 0){
 		fprintf(stderr, "[~][navdata] Init ack failed\n");
 		return -1;
@@ -167,7 +162,7 @@ static int navdata_init()
 void* navdata_routine(void* args)
 {
 	pthread_mutex_lock(&mutex_stopped);
-	printf("£ Before routine\n");
+
 	while (!stopped_navdata) {
 		pthread_mutex_unlock(&mutex_stopped);
 
@@ -192,7 +187,7 @@ int navdata_connect(const char* drone_ip)
 {
 	if (!stopped_navdata)
 		return -1;
-	printf("£ Before init addrs\n");
+
 	addr_drone_navdata.sin_family      = AF_INET;
 	if (drone_ip == NULL)
 		addr_drone_navdata.sin_addr.s_addr = inet_addr(WIFI_ARDRONE_IP);
@@ -203,21 +198,21 @@ int navdata_connect(const char* drone_ip)
 	addr_client_navdata.sin_family      = AF_INET;
 	addr_client_navdata.sin_addr.s_addr = htonl(INADDR_ANY);
 	addr_client_navdata.sin_port        = htons(PORT_NAVDATA);
-	printf("£ Before sock\n");
+
 	sock_navdata = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 	if (sock_navdata < 0) {
 		fprintf(stderr, "[~][navdata] Can't establish socket \n");
 		return -1;
 	}
-	printf("£ Before bind\n");
+
 	if (bind(sock_navdata, (struct sockaddr*)&addr_client_navdata, sizeof(addr_client_navdata)) < 0) {
 		fprintf(stderr, "[~][navdata] Can't bind socket to port %d\n", PORT_NAVDATA);
 		return -1;
 	}
-	printf("£ Before channel\n");
+
 	nav_channel = jakopter_com_add_channel(CHANNEL_NAVDATA, sizeof(data));
-	printf("£ Before nav init\n");
+
 	if (navdata_init() < 0) {
 		perror("[~][navdata] Init sequence failed");
 		return -1;
@@ -226,7 +221,7 @@ int navdata_connect(const char* drone_ip)
 	pthread_mutex_lock(&mutex_stopped);
 	stopped_navdata = false;
 	pthread_mutex_unlock(&mutex_stopped);
-	printf("£ Before nav thread\n");
+
 	if(pthread_create(&navdata_thread, NULL, navdata_routine, NULL) < 0) {
 		perror("[~][navdata] Can't create thread");
 		return -1;
