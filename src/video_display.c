@@ -275,6 +275,10 @@ int video_display_init()
 		return -1;
 	}
 	jakopter_com_write_float(com_out, 0, 0.0);
+	jakopter_com_write_int(com_in, 28, -1);
+	jakopter_com_write_int(com_in, 32, -1);
+	jakopter_com_write_int(com_in, 36, -1);
+	jakopter_com_write_int(com_in, 40, -1);
 	prev_update = 0;
 
 	return 0;
@@ -358,6 +362,7 @@ void video_display_set_process(int id)
 	switch(id) {
 	case BLUE_PERCENT:
 		current_process = count_blue_px;
+		break;
 	default:
 		current_process = NULL;
 	}
@@ -400,8 +405,10 @@ int video_display_process(uint8_t* frame, int width, int height, int size) {
 		prev_update = new_update;
 	}
 	pthread_mutex_lock(&mutex_process);
-	if(current_process != NULL)
+
+	if (current_process != NULL) {
 		current_process(frame, width, height, size);
+	}
 	pthread_mutex_unlock(&mutex_process);
 
 	unload_element();
@@ -929,19 +936,32 @@ int count_blue_px(uint8_t* frame, int width, int height, int size)
 	//size = width*height*3/2
 	int y_size = width*height;
 
+	int param = jakopter_com_read_int(com_in, 28);
+	int brightness = (param > -1 && param <= 256) ? param : 70;
+
+	param = jakopter_com_read_int(com_in, 32);
+	int darkness = (param > -1 && param <= 256) ? param : 256;
+
+	param = jakopter_com_read_int(com_in, 36);
+	int cr_u = (param > -1 && param <= 256) ? param : 127;
+
+	param = jakopter_com_read_int(com_in, 40);
+	int cr_v = (param > -1 && param <= 256) ? param : 127;
+
 	int h = 0;
 	int w = 0;
 	float count = 0.0;
 	while (h < height) {
 		while (w < width) {
-			//int y = *(frame + (h * width + w));
+			int y = *(frame + (h * width + w));
 			int u = *(frame + ((h / 2) * (width / 2) + (w / 2) + y_size));
 			int v = *(frame + ((h / 2) * (width / 2) + (w / 2) + y_size + (y_size / 4)));
-			if (u > 128 && v < 128)
+			if (y > brightness && y < darkness && u >= cr_u && v <= cr_v)
 				count += 1.0;
 
 			w++;
 		}
+		//printf("%.2f\n", count);
 		h++;
 	}
 	count = count / (float)width;

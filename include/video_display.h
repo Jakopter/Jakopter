@@ -23,7 +23,7 @@
 
 
 /* size of the input com channel for this module*/
-#define DISPLAY_COM_IN_SIZE 8*sizeof(int)
+#define DISPLAY_COM_IN_SIZE 14*sizeof(int)
 #define DISPLAY_COM_OUT_SIZE 1*sizeof(int)
 
 enum display_processes {
@@ -36,6 +36,8 @@ enum display_processes {
 * Fills the texture with the given frame, and displays it on the window.
 */
 int video_display_process(uint8_t* frame, int width, int height, int size);
+
+void video_display_set_process(int id);
 
 /**
 * \brief Create the com_channel needed to communicate with the display module.
