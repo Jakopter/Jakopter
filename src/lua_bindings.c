@@ -451,8 +451,8 @@ int jakopter_stop_network_lua(lua_State* L)
 */
 int jakopter_cleanup_lua(lua_State* L)
 {
-	if(jakopter_is_flying())
-		jakopter_land();
+//	if(jakopter_is_flying())
+//		jakopter_land();
 #ifdef WITH_VIDEO
 	jakopter_stop_video();
 #endif

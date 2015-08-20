@@ -122,6 +122,7 @@ set(
 	src/com_master.c
 	src/user_input.c
 	src/coords.c
+	src/utils.c
 )
 
 set(

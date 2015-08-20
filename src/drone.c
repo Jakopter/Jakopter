@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-#include <time.h>
+//#include <time.h>
 
 #include "common.h"
 #include "drone.h"
@@ -93,8 +93,7 @@ static int send_cmd()
 	pthread_mutex_lock(&mutex_cmd);
 
 	if (command_type != NULL) {
-		memset(command, 0, PACKET_SIZE);
-		command[0] = '\0';
+		memset(command, '\0', PACKET_SIZE);
 
 		/* Header */
 		char buf[INT_LEN];
@@ -120,10 +119,9 @@ static int send_cmd()
 		ret = sendto(sock_cmd, command, PACKET_SIZE, 0, (struct sockaddr*)&addr_drone, sizeof(addr_drone));
 
 		/* Log */
-		memset(command_logged, 0, LOG_LEN);
-		//unsigned long ts = (unsigned)time(NULL);
+		memset(command_logged, '\0', LOG_LEN);
 		struct timespec ts = {0,0};
-		char buf_log[TSTAMP_LEN];
+		char buf_log[TSTAMP_LEN+1];
 		clock_gettime(CLOCK_REALTIME, &ts);
 		snprintf(buf_log, TSTAMP_LEN, "%lu.%lu:", ts.tv_sec, ts.tv_nsec);
 		strncat(command_logged, buf_log, TSTAMP_LEN);
@@ -259,7 +257,6 @@ JAKO_EXPORT int jakopter_connect(const char* drone_ip)
 		perror("[~][cmd] Input connection failed");
 		return -1;
 	}
-
 	/* Main thread */
 	if (pthread_create(&cmd_thread, NULL, cmd_routine, NULL) < 0) {
 		perror("[~][cmd] Can't create thread");

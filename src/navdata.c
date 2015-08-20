@@ -24,7 +24,7 @@
 /* The structure which contains navdata  */
 static union navdata_t data;
 /* The string which contains the timestamp of the last request.*/
-static char timestamp[TSTAMP_LEN];
+static char timestamp[TSTAMP_LEN+1];
 static void navdata_timestamp();
 
 jakopter_com_channel_t* nav_channel;
@@ -52,6 +52,7 @@ static int recv_cmd()
 {
 	pthread_mutex_lock(&mutex_navdata);
 	socklen_t len = sizeof(addr_drone_navdata);
+
 	int ret = recvfrom(sock_navdata, &data, sizeof(data), 0, (struct sockaddr*)&addr_drone_navdata, &len);
 	size_t offset = 0;
 
@@ -78,13 +79,14 @@ static int recv_cmd()
 	}
 
 	pthread_mutex_unlock(&mutex_navdata);
+
 	navdata_timestamp();
 	return ret;
 }
 
 static void navdata_timestamp() {
 	pthread_mutex_lock(&mutex_timestamp);
-	memset(timestamp, 0, TSTAMP_LEN+1);
+	memset(timestamp, '\0', TSTAMP_LEN+1);
 	struct timespec ts = {0,0};
 	clock_gettime(CLOCK_REALTIME, &ts);
 	snprintf(timestamp, TSTAMP_LEN+1, "%lu.%lu:", ts.tv_sec, ts.tv_nsec);
