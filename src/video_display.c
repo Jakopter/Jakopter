@@ -965,7 +965,7 @@ int count_blue_px(uint8_t* frame, int width, int height, int size)
 		h++;
 	}
 	count = count / (float)width;
-	printf("%.2f\n", count);
+	//printf("%.2f\n", count);
 
 	jakopter_com_write_float(com_out, 0, count);
 
