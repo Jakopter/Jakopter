@@ -168,3 +168,12 @@ function simple_pid(start_point_, prev_diff_, p_coeff_)
 		return 0
 	end
 end
+
+function simple_pid(start_point_, prev_diff_, p_coeff_)
+	local prev_diff = prev_diff_
+	local p_coeff = p_coeff_
+	local start_point = start_point_
+	return function(goal)
+
+	end
+end
