@@ -20,26 +20,27 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/un.h>
 
 #include "user_input.h"
 
 jakopter_com_channel_t* user_input_channel;
 
-//static int fdpipe;
-
 pthread_t user_input_thread;
-//Guard that stops any function if connection isn't initialized.
+static bool recv_ready = false;
+/* Guard that stops any function if connection isn't initialized.*/
 bool stopped_user_input = true;
-static pthread_mutex_t mutex_user_input = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t mutex_stopped_user_input = PTHREAD_MUTEX_INITIALIZER;
+
+struct sockaddr_un addr_user_input;
+int sock_user_input;
 
 int read_cmd()
 {
 	int ret = -1;
 	char c;
 	FILE *keyboard_cmd = NULL;
-	pthread_mutex_lock(&mutex_user_input);
-	keyboard_cmd = fopen(CMDFILENAME,"r");
+	keyboard_cmd = fopen(USERINPUT_FILENAME,"r");
 	if (keyboard_cmd) {
 		fscanf(keyboard_cmd,"%c",&c);
 		ret = (int) c;
@@ -52,13 +53,7 @@ int read_cmd()
 	// 		ret = atoi(buf);
 	// }
 
-	pthread_mutex_unlock(&mutex_user_input);
 	return ret;
-}
-
-int user_input_init()
-{
-	return 0;
 }
 
 /*user_input_thread function*/
@@ -69,10 +64,8 @@ void* user_input_routine(void* args)
 	int last_key = 0;
 	int pparam2 = 0;
 
-	pthread_mutex_lock(&mutex_stopped_user_input); // protect the stop variable
+
 	while (!stopped_user_input) {
-		pthread_mutex_unlock(&mutex_stopped_user_input);
-		// .... do something here
 		keyboard_key = read_cmd();
 
 		if (keyboard_key < 0)
@@ -90,9 +83,7 @@ void* user_input_routine(void* args)
 
 		// wait before doing it again
 		usleep(USERINPUT_INTERVAL*1000);
-		pthread_mutex_lock(&mutex_stopped_user_input);
 	}
-	pthread_mutex_unlock(&mutex_stopped_user_input);
 	pthread_exit(NULL);
 }
 
@@ -101,40 +92,49 @@ int user_input_connect()
 	if (!stopped_user_input)
 		return -1;
 
-	printf("[user_input] connecting user input\n");
-	pthread_mutex_lock(&mutex_stopped_user_input);
 	stopped_user_input = false;
-	pthread_mutex_unlock(&mutex_stopped_user_input);
+	/*
+	memset(&addr_user_input, '\0', sizeof(struct sockaddr_un));
+	addr_user_input.sun_family = AF_UNIX;
+	strncpy(addr_user_input.sun_path, USERINPUT_FILENAME, sizeof(addr_user_input.sun_path)-1);
 
+	sock_user_input = socket(AF_UNIX, SOCK_DGRAM, 0);
+
+	if (sock_user_input < 0) {
+		perror("[~][user input] Can't create the socket");
+		return -1;
+	}
+
+	if (bind(sock_user_input, (struct sockaddr*)&addr_user_input, sizeof(struct sockaddr_un)) < 0) {
+		perror("[~][user input] Can't bind the socket");
+		close(sock_user_input);
+		unlink(USERINPUT_FILENAME);
+		return -1;
+	}
+*/
 	// right now it is just 2 int
 	user_input_channel = jakopter_com_add_channel(CHANNEL_USERINPUT, 2*sizeof(int));
 	jakopter_com_write_int(user_input_channel, 0, 0);
 	jakopter_com_write_int(user_input_channel, 4, 0);
-
-	// fdpipe = open(CMDFILENAME, O_RDONLY);
-
-	// if (fdpipe < 0) {
-	// 	perror("[~][user_input] Can't open named pipe");
-	// 	return -1;
-	// }
-
-	printf("[user_input] channel created\n");
 
 	if (pthread_create(&user_input_thread, NULL, user_input_routine, NULL) < 0) {
 		perror("[~][user_input] Can't create thread");
 		return -1;
 	}
 
-	printf("[user_input] thread created\n");
-	return 0;
+	int i = 0;
+/*	while (!recv_ready && i < USERINPUT_TIMEOUT) {
+		usleep(500);
+		i++;
+	}
+*/
+	return -(i >= USERINPUT_TIMEOUT);
 }
 
 int user_input_disconnect()
 {
-	pthread_mutex_lock(&mutex_stopped_user_input);
 	if (!stopped_user_input) {
 		stopped_user_input = true;
-		pthread_mutex_unlock(&mutex_stopped_user_input);
 		int ret = pthread_join(user_input_thread, NULL);
 
 		//close(fdpipe);
@@ -143,8 +143,6 @@ int user_input_disconnect()
 		return ret;
 	}
 	else {
-		pthread_mutex_unlock(&mutex_stopped_user_input);
-
 		fprintf(stderr, "[~][user_input] Communication already stopped\n");
 		return -1;
 	}

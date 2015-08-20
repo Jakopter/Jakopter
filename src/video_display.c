@@ -23,7 +23,7 @@
 
 #include "video_display.h"
 
-/*maximum size in bytes of a text to be displayed*/
+/* maximum size in bytes of a text to be displayed */
 #define TEXT_BUF_SIZE 100
 #define PI 3.14159265
 
@@ -72,8 +72,10 @@ static pthread_mutex_t mutex_graphics_list = PTHREAD_MUTEX_INITIALIZER;
 * channels for data input and output.
 * Input expects navdata in the following order :
 * battery%, altitude, angles (3), speed (3)
+* Output : float return of the video processing
 */
 static jakopter_com_channel_t *com_in;
+static jakopter_com_channel_t *com_out;
 /*
 * The SDL window where the video is displayed.
 */
@@ -130,6 +132,12 @@ static char* screenshot_baseName = "screen_";
 * Take a screenshot, store it in a file named according to the total screenshot count.
 */
 static void take_screenshot(uint8_t* frame, int size);
+
+/********* Processing on frame *********/
+static int count_blue_px(uint8_t* frame, int width, int height, int size);
+static pthread_mutex_t mutex_process = PTHREAD_MUTEX_INITIALIZER;
+/** Callback chooser */
+int (*current_process)(uint8_t*, int, int, int) = NULL;
 
 /******** Horizon indicator overlay options ********/
 /* Position on the screen */
@@ -261,6 +269,12 @@ int video_display_init()
 		fprintf(stderr, "[~][Display] Couldn't create com channel.\n");
 		return -1;
 	}
+	com_out = jakopter_com_add_channel(CHANNEL_CALLBACK, DISPLAY_COM_OUT_SIZE);
+	if (com_out == NULL) {
+		fprintf(stderr, "[~][Display] Couldn't create com channel out.\n");
+		return -1;
+	}
+	jakopter_com_write_float(com_out, 0, 0.0);
 	prev_update = 0;
 
 	return 0;
@@ -295,6 +309,7 @@ void video_display_destroy() {
 	video_clean_text();
 	IMG_Quit();
 	SDL_Quit();
+	jakopter_com_remove_channel(CHANNEL_CALLBACK);
 	jakopter_com_remove_channel(CHANNEL_DISPLAY);
 }
 
@@ -337,6 +352,18 @@ void video_graphic_destroy(struct graphics_list* del)
 	}
 }
 
+void video_display_set_process(int id)
+{
+	pthread_mutex_lock(&mutex_process);
+	switch(id) {
+	case BLUE_PERCENT:
+		current_process = count_blue_px;
+	default:
+		current_process = NULL;
+	}
+	pthread_mutex_unlock(&mutex_process);
+}
+
 int video_display_process(uint8_t* frame, int width, int height, int size) {
 
 	//if we get a NULL frame, stop displaying.
@@ -372,6 +399,10 @@ int video_display_process(uint8_t* frame, int width, int height, int size) {
 		}
 		prev_update = new_update;
 	}
+	pthread_mutex_lock(&mutex_process);
+	if(current_process != NULL)
+		current_process(frame, width, height, size);
+	pthread_mutex_unlock(&mutex_process);
 
 	unload_element();
 
@@ -893,3 +924,30 @@ void take_screenshot(uint8_t* frame, int size)
 	screenshot_nb++;
 }
 
+int count_blue_px(uint8_t* frame, int width, int height, int size)
+{
+	//size = width*height*3/2
+	int y_size = width*height;
+
+	int h = 0;
+	int w = 0;
+	float count = 0.0;
+	while (h < height) {
+		while (w < width) {
+			//int y = *(frame + (h * width + w));
+			int u = *(frame + ((h / 2) * (width / 2) + (w / 2) + y_size));
+			int v = *(frame + ((h / 2) * (width / 2) + (w / 2) + y_size + (y_size / 4)));
+			if (u > 128 && v < 128)
+				count += 1.0;
+
+			w++;
+		}
+		h++;
+	}
+	count = count / (float)width;
+	printf("%.2f\n", count);
+
+	jakopter_com_write_float(com_out, 0, count);
+
+	return 0;
+}

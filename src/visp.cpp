@@ -35,9 +35,24 @@ static vpDetectorQRCode qr_detector;
 #endif
 static vpDot2 blob;
 static vpImagePoint germ;
+#if defined(VISP_HAVE_X11)
 static vpDisplayX *display_X = NULL;
+#elif defined(VISP_HAVE_OPENCV)
 static vpDisplayOpenCV *display_cv = NULL;
+#endif
 static bool init_track = false;
+
+/******** Screenshot options ********/
+/* Set to 1 if the user wants to capture a screenshot; then set back to 0 automatically */
+static int want_screenshot = 0;
+/* Total number of screenshots taken, used for screenshot filenames */
+static int screenshot_nb = 0;
+/* Base screenshot name. Final name = base name + screenshot_nb */
+static std::string screenshot_baseName = "screen_visp_";
+/*
+* Take a screenshot, store it in a file named according to the total screenshot count.
+*/
+static void take_screenshot(uint8_t* frame, int size);
 
 /*
 * channels for data input and output.
@@ -81,10 +96,13 @@ int visp_init()
 void visp_destroy()
 {
 	if (initialized) {
+#if defined(VISP_HAVE_X11)
 		if (display_X)
 			delete display_X;
+#elif defined(VISP_HAVE_OPENCV)
 		if (display_cv)
 			delete display_cv;
+#endif
 		if (display_img)
 			delete display_img;
 		if (grey_img)
@@ -105,10 +123,13 @@ static void init_display(int width, int height)
 			return;
 
 		//replace vpImages and display if resolution changed
+#if defined(VISP_HAVE_X11)
 		if (display_X)
 			delete display_X;
+#elif defined(VISP_HAVE_OPENCV)
 		if (display_cv)
 			delete display_cv;
+#endif
 		delete display_img;
 		delete grey_img;
 	}
@@ -279,6 +300,7 @@ int visp_process(uint8_t* frame, int width, int height, int size)
 	}
 	catch (vpException e) {
 		std::cout << "Catch an exception: " << e << std::endl;
+		pthread_mutex_unlock(&mutex_process);
 	}
 
 	return ret;
@@ -299,4 +321,34 @@ void visp_set_process(int id)
 	}
 	process_changed = true;
 	pthread_mutex_unlock(&mutex_process);
+}
+
+/** \brief Save the current frame in a file called screen_%d.yuv with %d a number incremented
+  * each screenshot.
+  * \param frame current frame
+  * \param size in bytes
+  */
+void take_screenshot(uint8_t* frame, int size)
+{
+	//get the final filename length (+1 for the \0)
+	int name_length = snprintf(NULL, 0, "%s%d.yuv", screenshot_baseName.c_str(), screenshot_nb) + 1;
+	char* filename = (char*)malloc(sizeof(char)*name_length);
+	if (filename == NULL) {
+		fprintf(stderr, "Display : couldn't allocate memory for screenshot filename\n");
+		return;
+	}
+	snprintf(filename, name_length, "%s%d.yuv", screenshot_baseName.c_str(), screenshot_nb);
+	//dump the frame to a new file, don't do any conversion for now.
+	FILE* f = fopen(filename, "w");
+	if (f == NULL) {
+		fprintf(stderr, "Display : couldn't open file %s for writing\n", filename);
+		free(filename);
+		return;
+	}
+	fwrite(frame, sizeof(uint8_t), size/sizeof(uint8_t), f);
+
+	fclose(f);
+	printf("Display : screenshot taken, saved to %s\n", filename);
+	free(filename);
+	screenshot_nb++;
 }

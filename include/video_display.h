@@ -23,7 +23,13 @@
 
 
 /* size of the input com channel for this module*/
-#define DISPLAY_COM_IN_SIZE 32
+#define DISPLAY_COM_IN_SIZE 8*sizeof(int)
+#define DISPLAY_COM_OUT_SIZE 1*sizeof(int)
+
+enum display_processes {
+	NOTHING,
+	BLUE_PERCENT
+};
 
 /**
 * \brief "Got frame" callback.

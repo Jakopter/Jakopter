@@ -131,7 +131,7 @@ int jakopter_init_coords()
 		return -1;
 	}
 
-	if (bind (sock_coords, (struct sockaddr*)&addr_server_coords, sizeof(struct sockaddr_un)) < 0) {
+	if (bind(sock_coords, (struct sockaddr*)&addr_server_coords, sizeof(struct sockaddr_un)) < 0) {
 		perror("[~][coords] Can't bind the socket");
 		close(sock_coords);
 		unlink(COORDS_FILENAME);
