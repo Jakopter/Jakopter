@@ -43,7 +43,7 @@ function rotation_control(diff, prev_diff, p_coeff, d_coeff)
 	if(diff > 180) then
 		diff = (360-diff)
 	end
-	return p_coeff*math.rad(diff) --+ d_coeff*(math.rad(diff) - math.rad(prev_diff))
+	return p_coeff*diff --+ d_coeff*(diff - prev_diff)
 end
 
 function complete_pid(prev_diff_, gain_, p_coeff_, i_coeff_, d_coeff_)
@@ -56,7 +56,7 @@ function complete_pid(prev_diff_, gain_, p_coeff_, i_coeff_, d_coeff_)
 	local old_time = 0
 	return function(goal)
 		local diff = local_coords(global_coords(), goal)
-		-- slide, rotate, vertical, angular
+		-- roll, rotate, vertical, angular
 		local move_velocities = {0.0, 0.0, 0.0, 0.0}
 
 		-- vertical control
@@ -68,7 +68,7 @@ function complete_pid(prev_diff_, gain_, p_coeff_, i_coeff_, d_coeff_)
 		print("[$]thrust "..thrust .. " "..(diff["t_z"] - prev_diff["t_z"]))
 		print("xCorr "..xCorr .. " "..diff["t_x"])
 		print("yCorr "..yCorr .. " "..diff["t_y"])
-		print("rotCorr "..rotCorr .. " "..math.rad(diff["r_z"]))
+		print("rotCorr "..rotCorr .. " "..diff["r_z"])
 
 		-- vitesse pour chaque moteur
 		move_velocities[1] = thrust*(1 - yCorr + xCorr + rotCorr)
@@ -90,7 +90,7 @@ function complete_pid(prev_diff_, gain_, p_coeff_, i_coeff_, d_coeff_)
 		print("diff ".. diff["t_x"] .. " " .. diff["t_y"].. " " .. diff["t_z"] .. " " .. diff["r_z"])
 		if move_velocities[1] ~= 0.0 or move_velocities[2] ~= 0.0
 		or move_velocities[3] ~= 0.0 or move_velocities[4] ~= 0.0 then
-			--d.move(slide, straight, 0.0, rotate)
+			--d.move(roll, pitch, 0.0, rotate)
 			print("Move " .. move_velocities[2] .. " " .. move_velocities[1] .. " " .. move_velocities[3] .. " " .. move_velocities[4])
 		else
 			return 1
@@ -109,96 +109,57 @@ function simple_pid(start_point_, prev_diff_, p_coeff_)
 	local p_coeff = p_coeff_
 	local start_point = start_point_
 	return function(goal)
-		--Take account of rotation
+		--Take account of rotation on the goal
 		local reference = local_coords(start_point, global_coords())
-		local point = {
-			t_x = goal["t_x"],
-			t_y = goal["t_y"],
-			t_z = goal["t_z"],
-			r_x = goal["r_x"],
-			r_y = goal["r_y"],
-			r_z = goal["r_z"]
-		}
-		-- print("t_x "..point["t_x"])
-		-- print("t_y "..point["t_y"])
-		-- local old_t_x = point["t_x"]
-		-- point["t_x"] = point["t_x"]*math.cos(-math.rad(reference["r_z"]))-point["t_y"]*math.sin(math.rad(reference["r_z"]))+global_coords()["t_x"]
-		-- point["t_y"] = old_t_x*math.sin(-math.rad(reference["r_z"]))+point["t_y"]*math.cos(math.rad(reference["r_z"]))+global_coords()["t_y"]
 
-
-		local diff = local_coords(global_coords(), point)
+		local point = local_coords(global_coords(), goal)
+		local diff = local_coords(global_coords(), goal)
 		print("The goal "      .. goal["t_y"] .. " " .. goal["t_x"] .. " " .. goal["t_z"] .. " ".. goal["r_z"])
 		local coords = global_coords()
+		print("t_x "..diff["t_x"])
+		print("t_y "..diff["t_y"])
+		local old_t_x = diff["t_x"]
+		diff["t_x"] = diff["t_x"]*math.cos(reference["r_z"])
+					- diff["t_y"]*math.sin(reference["r_z"])
+		diff["t_y"] = - old_t_x*math.sin(reference["r_z"])
+					+ diff["t_y"]*math.cos(reference["r_z"])
 
 		local vertical = p_coeff["t_z"]*diff["t_z"]
+		vertical = 0.0
 		if vertical < 0.02 and vertical > -0.02 then
 			vertical = 0.0
 		end
+
+		if diff["r_z"] < -math.pi then
+			diff["r_z"] = diff["r_z"] + 2*math.pi
+		elseif diff["r_z"] > math.pi then
+			diff["r_z"] = diff["r_z"] - 2*math.pi
+		end
 		local rotate = p_coeff["r_z"]*diff["r_z"]
-		if rotate < 0.02 and rotate > -0.02 then
+		if rotate < 0.1 and rotate > -0.1 then
 			rotate = 0.0
 		end
 
+		local pitch = p_coeff["t_y"]*diff["t_y"]
+		local roll = p_coeff["t_x"]*diff["t_x"]
 
-		--Take account of rotation (see how to rotate a reference frame)
-		local straight = p_coeff["t_y"]*diff["t_y"]
-
-		local slide = p_coeff["t_x"]*diff["t_x"]
-
-		-- you need invert if the y axis is on the left of axis of x in the positive direction
-		--slide = -slide
-
-		-- Get a linear value between 0 and 1 to fix the forward/backward and left/right parameters
-		--
-		-- diagonal_angle is the angle between the diagonal (0,-1)->(1,0) and x axis
-		-- sector_len is the length of the segment between the origin and the diagonal
-		-- which has an angle theta from the x axis
-		-- Note that this isn't perfect: at x*pi/4 there is a threshold where the drone hesitate to choose left or right
-		-- local theta = math.rad(reference["r_z"])
-		-- local diagonal_angle = math.pi/4
-		-- local cos_theta = math.cos(theta)
-		-- local sin_theta = math.sin(theta)
-		-- if (sin_theta > 0 and cos_theta < 0)
-		-- 	or (sin_theta < 0 and cos_theta > 0) then
-		-- 	diagonal_angle = -diagonal_angle
-		-- end
-		-- local sector_len = 1*math.sin(diagonal_angle)/math.sin(diagonal_angle+theta)
-		-- local linear_corr = cos_theta*sector_len
-
-		-- local s1 = linear_corr*straight + (1 - linear_corr)*slide
-		-- local s2 = linear_corr*slide + (1 - linear_corr)*straight
-		-- if theta > math.pi/4 and theta < 3*math.pi/4 then
-		-- 	s2 = -s2
-		-- end
-		-- if theta > 3*math.pi/4 or theta < -3*math.pi/4 then
-		-- 	s1 = -s1
-		-- 	s2 = -s2
-		-- end
-		-- if theta < -math.pi/4 and theta > -3*math.pi/4 then
-		-- 	s1 = -s1
-		-- end
-		-- --print("str "..straight.." sl "..slide)
-		-- straight = s1
-		-- slide = s2
-		if slide < 0.03 and slide > -0.03 then
-			slide = 0.0
+		if roll < 0.03 and roll > -0.03 then
+			roll = 0.0
 		end
-		if straight < 0.03 and straight > -0.03 then
-			straight = 0.0
+		if pitch < 0.03 and pitch > -0.03 then
+			pitch = 0.0
 		end
 
 		print("coords "    ..coords["t_y"].. " " ..coords["t_x"].. " " ..coords["t_z"].. " ".. coords["r_z"])
 		print("point "     .. point["t_y"].. " " .. point["t_x"].. " " .. point["t_z"].. " ".. point["r_z"])
 		print("diff "      .. diff["t_y"] .. " " .. diff["t_x"] .. " " .. diff["t_z"] .. " ".. diff["r_z"])
-		print("[PID] Move ".. straight    .. " " .. slide       .. " " .. vertical    .. " ".. rotate)
-		if slide ~= 0.0 or straight ~= 0.0 or vertical ~= 0.0 or rotate ~= 0.0 then
-			d.move(slide, straight, vertical, rotate)
-			--print(d.log_command())
+		print("[PID] Move ".. pitch    .. " " .. roll       .. " " .. vertical    .. " ".. rotate)
+		if roll ~= 0.0 or pitch ~= 0.0 or vertical ~= 0.0 or rotate ~= 0.0 then
+			d.move(roll, pitch, vertical, rotate)
+			d.stay()
 		else
 			return 1
 		end
-		d.stay()
-		--print(d.log_command())
 
 		for k,v in pairs(diff) do
 			prev_diff[k]=v

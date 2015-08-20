@@ -43,7 +43,7 @@ static const struct jakopter_frame_processing frame_process = {
 	.callback = video_display_process,
 	.init     = video_display_init,
 	.clean    = video_display_destroy,
-	.set_callback = NULL
+	.set_callback = video_display_set_process
 #endif
 };
 

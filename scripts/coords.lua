@@ -12,10 +12,10 @@ drone_coords = function ()
 		t_x = 0.0,
 		t_y = 0.0,
 		t_z = d.cc_read_int(1, 4),
-		--Rotations in degrees from -180 to 180, clockwise
-		r_x = d.cc_read_float(1, 8) / 1000,
-		r_y = d.cc_read_float(1, 12) / 1000,
-		r_z = d.cc_read_float(1, 16) / 1000
+		--Rotations in degrees from -pi to pi, clockwise
+		r_x = math.rad(d.cc_read_float(1, 8) / 1000),
+		r_y = math.rad(d.cc_read_float(1, 12) / 1000),
+		r_z = math.rad(d.cc_read_float(1, 16) / 1000)
 	}
 end
 
@@ -25,10 +25,10 @@ global_coords = function ()
 		t_x = d.cc_read_float(5, 0),
 		t_y = d.cc_read_float(5, 4),
 		t_z = d.cc_read_float(5, 8),
--- Rotations in degree from -180 to 180, 0 is aligned with positive y axis, clockwise
-		r_x = math.deg(d.cc_read_float(5, 12)),
-		r_y = math.deg(d.cc_read_float(5, 16)),
-		r_z = -math.deg(d.cc_read_float(5, 20))
+-- Rotations in degree from -pi to pi, 0 is aligned with positive y axis, clockwise
+		r_x = d.cc_read_float(5, 12),
+		r_y = d.cc_read_float(5, 16),
+		r_z = -d.cc_read_float(5, 20)
 	}
 end
 
@@ -40,8 +40,8 @@ function local_distance(start_point, coords)
 			t[key] = math.abs(value - start_point[key])
 		elseif string.find(key,"^r_") then
 			local angle = math.abs(value - start_point[key])
-			if angle > 180 then
-				angle = 360 - angle
+			if angle > math.pi then
+				angle = 2*math.pi - angle
 			end
 			t[key] = angle
 		end
@@ -50,7 +50,7 @@ function local_distance(start_point, coords)
 end
 
 -- Compute the coordinates in a local origin in angle-coordinates metrics.
--- Angles are comprised between -180 and 180, clockwise from the camera
+-- Angles are comprised between -pi and pi, clockwise from the camera
 function local_coords(start_point, coords)
 	local loc = {}
 	for key, value in pairs(coords) do

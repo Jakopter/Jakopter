@@ -24,7 +24,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define CMDFILENAME "/tmp/jakopter_cmd.txt"
+#define CMDFILENAME "/tmp/jakopter_user_input.sock"
 
 int main(){
 	char c;
