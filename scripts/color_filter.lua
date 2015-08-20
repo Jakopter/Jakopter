@@ -1,7 +1,7 @@
 -- package.cpath = package.cpath .. ";?.dylib"
 d = require("libjakopter")
 
-if l.use_visp() then
+if d.use_visp() then
 	print("ViSP callback doesn't handle yet filtering")
 	os.exit()
 end
