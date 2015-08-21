@@ -104,9 +104,10 @@ function complete_pid(prev_diff_, gain_, p_coeff_, i_coeff_, d_coeff_)
 	end
 end
 
-function simple_pid(start_point_, prev_diff_, p_coeff_)
+function simple_pid(start_point_, prev_diff_, p_coeff_, d_coeff_)
 	local prev_diff = prev_diff_
 	local p_coeff = p_coeff_
+	local d_coeff = d_coeff_
 	local start_point = start_point_
 	return function(goal)
 		--Take account of rotation on the goal
@@ -140,14 +141,33 @@ function simple_pid(start_point_, prev_diff_, p_coeff_)
 			rotate = 0.0
 		end
 
-		local pitch = p_coeff["t_y"]*diff["t_y"]
-		local roll = p_coeff["t_x"]*diff["t_x"]
+		local d_pitch = d_coeff["t_y"]*(diff["t_y"] - prev_diff["t_y"])
+		if d_pitch > 0.0 then
+			d_pitch = 0.0
+		end
+		print("Pitch d "..d_pitch)
+		local d_roll = d_coeff["t_x"]*(diff["t_x"] - prev_diff["t_x"])
+		if d_roll > 0.0 then
+			d_roll = 0.0
+		end
+		print("Roll d "..d_roll)
+		local pitch = p_coeff["t_y"]*diff["t_y"] + d_pitch
+		local roll = p_coeff["t_x"]*diff["t_x"] + d_roll
 
 		if roll < 0.03 and roll > -0.03 then
+			print("Bound roll "..diff["t_x"])
 			roll = 0.0
 		end
 		if pitch < 0.03 and pitch > -0.03 then
+			print("Bound pitch "..diff["t_y"])
 			pitch = 0.0
+		end
+
+		if roll > 0.5 or roll < -0.5 then
+			roll = 0.5
+		end
+		if pitch > 0.5 or pitch < -0.5 then
+			pitch = 0.5
 		end
 
 		print("coords "    ..coords["t_y"].. " " ..coords["t_x"].. " " ..coords["t_z"].. " ".. coords["r_z"])
@@ -158,22 +178,113 @@ function simple_pid(start_point_, prev_diff_, p_coeff_)
 			d.move(roll, pitch, vertical, rotate)
 			d.stay()
 		else
-			return 1
+			if diff["t_y"] < 250 and diff["t_y"] > -250
+			and diff["t_x"] < 250 and diff["t_x"] > -250
+			then
+				return 1
+			end
 		end
 
 		for k,v in pairs(diff) do
-			prev_diff[k]=v
+			prev_diff[k] = v
 		end
 
 		return 0
 	end
 end
 
-function simple_pid(start_point_, prev_diff_, p_coeff_)
-	local prev_diff = prev_diff_
+function rotation_pid(p_coeff, error_dist)
+	if error_dist < -math.pi then
+		error_dist = error_dist["r_z"] + 2*math.pi
+	elseif error_dist > math.pi then
+		error_dist = error_dist - 2*math.pi
+	end
+
+	local rotate = p_coeff*error_dist
+
+	if rotate < 0.1 and rotate > -0.1 then
+		d.stay()
+		return 1
+	else
+		d.move(0.0, 0.0, 0.0, rotate)
+		print("[PID] Turn ".. rotate)
+	end
+	return 0
+end
+
+function vertical_pid(p_coeff, error)
+	local vertical = p_coeff*error
+	if vertical < 0.02 and vertical > -0.02 then
+		d.stay()
+		return 1
+	else
+		d.move(0.0, 0.0, vertical, 0.0)
+		print("[PID] Up ".. vertical)
+	end
+	return 0
+end
+
+function horizontal_pid(p_coeff, error)
+	local pitch = p_coeff["t_y"]*error["t_y"]
+	local roll = p_coeff["t_x"]*error["t_x"]
+
+	if roll < 0.03 and roll > -0.03 then
+		roll = 0.0
+	end
+	if pitch < 0.03 and pitch > -0.03 then
+		pitch = 0.0
+	end
+
+	if roll ~= 0.0 or pitch ~= 0.0 then
+		d.move(roll, pitch, 0.0, 0.0)
+		d.stay()
+		print("[PID] Go ".. pitch .. " " .. roll)
+	else
+		return 1
+	end
+	return 0
+end
+
+function careful_pid(start_point_, prev_error_, p_coeff_)
+	local prev_error = prev_error_
 	local p_coeff = p_coeff_
 	local start_point = start_point_
 	return function(goal)
+		-- Compute position of the drone with the start point as origin
+		local reference = local_coords(start_point, global_coords())
+		-- Compute position of the goal with the current position as origin
+		local error_dist = local_coords(global_coords(), goal)
 
+		-- Take account of rotation to compute the error
+		local old_t_x = error_dist["t_x"]
+		error_dist["t_x"] = error_dist["t_x"]*math.cos(reference["r_z"])
+					- error_dist["t_y"]*math.sin(reference["r_z"])
+		error_dist["t_y"] = - old_t_x*math.sin(reference["r_z"])
+					+ error_dist["t_y"]*math.cos(reference["r_z"])
+
+		--[[local ret = rotation_pid(p_coeff["r_z"], error_dist["r_z"])
+		if ret == 1 then
+			ret = vertical_pid(p_coeff["t_z"], error_dist["t_z"])
+			if ret == 1 then
+				ret = horizontal_pid(p_coeff, error_dist)
+				if ret == 1 then
+					print("[PID] Reached")
+					return 1
+				end
+			end
+		end]]--
+		local ret = rotation_pid(p_coeff["r_z"], error_dist["r_z"])
+		ret = vertical_pid(p_coeff["t_z"], error_dist["t_z"])
+		ret = horizontal_pid(p_coeff, error_dist)
+		if ret == 3 then
+			print("[PID] Reached")
+			return 1
+		end
+		print("[PID] Going")
+		for key,val in pairs(error_dist) do
+			prev_error[key] = val
+		end
+
+		return 0
 	end
 end

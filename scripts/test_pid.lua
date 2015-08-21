@@ -21,17 +21,10 @@ goal = {
 	t_z = 700.0,
 	r_x = 0.0,
 	r_y = 0.0,
-	r_z = start_point["r_z"]+math.pi
+	r_z = start_point["r_z"]
 }
 
-prev_diff = {
-	t_x = 0,
-	t_y = 0,
-	t_z = 0,
-	r_x = 0,
-	r_y = 0,
-	r_z = 0
-}
+prev_diff = local_coords(global_coords(), goal)
 
 p_coeff = {}
 for v in iterator(axis) do
@@ -40,9 +33,18 @@ end
 p_coeff["t_x"] = 0.00015
 p_coeff["t_y"] = 0.0001
 p_coeff["t_z"] = 0.00075
-p_coeff["r_z"] = 0.2
+p_coeff["r_z"] = 0.3
 
-my_pid = simple_pid(start_point, prev_diff, p_coeff)
+d_coeff = {}
+for v in iterator(axis) do
+	d_coeff[v] = 0
+end
+d_coeff["t_x"] = 0.0005
+d_coeff["t_y"] = 0.0005
+d_coeff["t_z"] = 0.0
+d_coeff["r_z"] = 0.0
+
+my_pid = simple_pid(start_point, prev_diff, p_coeff, d_coeff)
 step = 0
 
 while true do
