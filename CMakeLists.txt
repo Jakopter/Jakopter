@@ -122,7 +122,6 @@ set(
 	src/com_master.c
 	src/user_input.c
 	src/coords.c
-	src/utils.c
 )
 
 set(
@@ -154,6 +153,11 @@ set(
 set(
 	VICON_SRC_FILES
 	src/vicon.cpp
+)
+
+set(
+	VIRTUAL_VICON_SRC_FILES
+	src/virtual_vicon.cpp
 )
 
 set(
@@ -232,13 +236,14 @@ endif()
 if(VICON_FOUND)
 	message(STATUS "Compiling with vicon motion capture support")
 	include_directories(${VICON_INCLUDE_DIRS})
-
-	set(WITH_COORDS ON)
 else()
 	message(STATUS "WITHOUT: vicon motion capture support")
-	set(WITH_COORDS OFF)
 endif()
 
+message(STATUS "Compiling with vicon emulation for virtual drone")
+include_directories(${VIRTUAL_VICON_INCLUDE_DIRS})
+
+set(WITH_COORDS ON)
 
 if(CURSES_FOUND)
 	message(STATUS "Compiling keyboard command interface")
@@ -310,6 +315,11 @@ if(WITH_COORDS AND VICON_FOUND)
 	)
 endif()
 
+add_executable(
+	jakopter-virtual-vicon
+	${VIRTUAL_VICON_SRC_FILES}
+)
+
 if(CURSES_FOUND)
 	add_executable(
 		jakopter-keyboard
@@ -364,6 +374,8 @@ if(WITH_COORDS AND VICON_FOUND)
 	target_link_libraries(jakopter-vicon ${CMAKE_THREAD_LIBS_INIT} ${VICON_LIBRARIES})
 endif()
 
+target_link_libraries(jakopter-virtual-vicon ${CMAKE_THREAD_LIBS_INIT} ${VIRTUAL_VICON_LIBRARIES})
+
 if(USE_DOXYGEN AND DOXYGEN_FOUND)
 	message(STATUS "Configure doc for Doxygen (run then 'doxygen doc/config-doxygen')")
 	configure_file("${CMAKE_SOURCE_DIR}/doc/config-doxygen.in"
@@ -386,6 +398,9 @@ endif()
 if(WITH_COORDS AND VICON_FOUND)
 	install(TARGETS jakopter-vicon jakopter-keyboard DESTINATION ${BINARY_OUTPUT_PATH})
 endif()
+
+install(TARGETS jakopter-virtual-vicon jakopter-keyboard DESTINATION ${BINARY_OUTPUT_PATH})
+
 if(CURSES_FOUND)
 	install(DIRECTORY include/ DESTINATION ${INCLUDE_OUTPUT_PATH} FILES_MATCHING PATTERN "*.h")
 endif()
