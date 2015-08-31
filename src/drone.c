@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-//#include <time.h>
 
 #include "common.h"
 #include "drone.h"
@@ -41,6 +40,7 @@ static char command_args[ARGS_MAX][ARG_LEN];
 
 /** Waiting time spend by command function */
 static struct timespec cmd_wait = {0, NAVDATA_ATTEMPT*TIMEOUT_CMD};
+static struct timespec cmd_move = {0, 10*TIMEOUT_CMD};
 
 /** Thread which send regularly commands to keep the connection.*/
 pthread_t cmd_thread;
@@ -374,7 +374,7 @@ JAKO_EXPORT int jakopter_takeoff()
 	int attempt = 0;
 
 	//wait navdata start
-	while(no_sq == 0 && attempt < NAVDATA_ATTEMPT) {
+	while (no_sq == 0 && attempt < NAVDATA_ATTEMPT) {
 		nanosleep(&cmd_wait, NULL);
 		no_sq = navdata_no_sq();
 		attempt++;
@@ -382,8 +382,8 @@ JAKO_EXPORT int jakopter_takeoff()
 
 	attempt = 0;
 
-	while(attempt < NAVDATA_ATTEMPT &&
-		(!jakopter_is_flying() || jakopter_height() < HEIGHT_THRESHOLD))
+	while (attempt < NAVDATA_ATTEMPT &&
+		(!jakopter_is_hovering() || jakopter_height() < HEIGHT_THRESHOLD))
 	{
 		nanosleep(&cmd_wait, NULL);
 		attempt++;
@@ -445,7 +445,7 @@ JAKO_EXPORT int jakopter_emergency()
 
 JAKO_EXPORT int jakopter_stay()
 {
-	char * args[5] = {"0","0","0","0","0"};
+	char * args[5] = {"1","0","0","0","0"};
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
@@ -550,6 +550,7 @@ JAKO_EXPORT int jakopter_move(float l_to_r, float b_to_f, float vertical_speed, 
 	char buf2[INT_LEN];
 	snprintf(buf2, INT_LEN, "%d", *((int *) &b_to_f));
 	args[2] = buf2;
+	printf("[!]Move %s (%.3f), %s (%.3f)\n", buf2, b_to_f, buf, l_to_r);
 
 	char buf3[INT_LEN];
 	snprintf(buf3, INT_LEN, "%d", *((int *) &vertical_speed));
@@ -562,7 +563,7 @@ JAKO_EXPORT int jakopter_move(float l_to_r, float b_to_f, float vertical_speed, 
 	if (set_cmd(HEAD_PCMD, args, 5) < 0)
 		return -1;
 
-	nanosleep(&cmd_wait, NULL);
+	nanosleep(&cmd_move, NULL);
 
 	return 0;
 }

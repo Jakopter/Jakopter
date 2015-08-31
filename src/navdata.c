@@ -263,6 +263,17 @@ JAKO_EXPORT int jakopter_is_flying()
 	return flyState;
 }
 
+JAKO_EXPORT int jakopter_is_hovering()
+{
+	int hover = -1;
+	if (data.raw.options[0].tag != TAG_DEMO && data.raw.sequence < 1) {
+		fprintf(stderr, "[~][navdata] Current tag does not match TAG_DEMO.");
+		return hover;
+	}
+	hover = (data.demo.ctrl_state << 16) == HOVER;
+	return hover;
+}
+
 JAKO_EXPORT int jakopter_battery()
 {
 	int battery = -1;

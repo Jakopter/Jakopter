@@ -298,7 +298,7 @@ set_target_properties(jakopter PROPERTIES VERSION ${JAKOPTER_VERSION_STRING} SOV
 
 if(LEAP_FOUND)
 	add_executable(
-		leap
+		jakopter-leap
 		${LEAP_SRC_FILES}
 	)
 endif()
@@ -353,7 +353,7 @@ if(CURSES_FOUND)
 endif()
 
 if(LEAP_FOUND)
-	target_link_libraries(leap ${LEAP_LIBRARIES})
+	target_link_libraries(jakopter-leap ${LEAP_LIBRARIES})
 endif()
 
 if(VRPN_FOUND)
@@ -383,12 +383,16 @@ install(TARGETS jakopter DESTINATION ${LIBRARY_OUTPUT_PATH})
 if(LUA_FOUND)
 	install(TARGETS jakopter DESTINATION ${LIBRARY_OUTPUT_PATH}/lua/${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR}/)
 endif()
-if(WITH_COORDS AND VICON_FOUND)
-	install(TARGETS jakopter-vicon jakopter-keyboard DESTINATION ${BINARY_OUTPUT_PATH})
-endif()
 if(CURSES_FOUND)
-	install(DIRECTORY include/ DESTINATION ${INCLUDE_OUTPUT_PATH} FILES_MATCHING PATTERN "*.h")
+	install(TARGETS jakopter-keyboard DESTINATION ${BINARY_OUTPUT_PATH})
 endif()
+if(WITH_COORDS AND VICON_FOUND)
+	install(TARGETS jakopter-vicon DESTINATION ${BINARY_OUTPUT_PATH})
+endif()
+if(LEAP_FOUND)
+	install(TARGETS jakopter-leap DESTINATION ${BINARY_OUTPUT_PATH})
+endif()
+install(DIRECTORY include/ DESTINATION ${INCLUDE_OUTPUT_PATH} FILES_MATCHING PATTERN "*.h")
 
 
 
