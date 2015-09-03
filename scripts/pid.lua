@@ -230,8 +230,8 @@ function compute_pid(diff, prev_diff, p_coeff, d_coeff)
 		or (prev_diff < diff and diff < 0) then
 		d_value = 0.0
 	end
-	assert(d_value < 1.0, "d_value > 1.0: "..d_value)
-	assert(d_value > -1.0, "d_value < -1.0: "..d_value)
+	if d_value > 1.0 then print("d_value > 1.0: "..d_value) end
+	if d_value < -1.0 then print("d_value < -1.0: "..d_value) end
 
 	return p_coeff*diff + d_value
 end
@@ -251,8 +251,8 @@ function rotation_pid(diff, prev_diff, p_coeff, d_coeff)
 	if rotate < 0.2 and rotate > -0.2 then
 		rotate = 0.0
 	end
-	assert(rotate < 1.0,"rotate > 1.0: "..rotate)
-	assert(rotate > -1.0,"rotate < -1.0: "..rotate)
+	if rotate > 1.0 then print("rotate > 1.0: "..rotate) end
+	if rotate < -1.0 then print("rotate < -1.0: "..rotate) end
 	return rotate
 end
 
@@ -261,8 +261,8 @@ function vertical_pid(diff, prev_diff, p_coeff, d_coeff)
 	if vertical < 0.02 and vertical > -0.02 then
 		vertical = 0.0
 	end
-	assert(vertical < 1.0, "vertical > 1.0")
-	assert(vertical > -1.0, "vertical < -1.0")
+	if vertical > 1.0 then print("vertical > 1.0") end
+	if vertical < -1.0 then print("vertical < -1.0") end
 	return vertical
 end
 
@@ -271,10 +271,10 @@ function horizontal_pid(diff, prev_diff, p_coeff, d_coeff)
 	local pitch = compute_pid(diff["t_y"], prev_diff["t_y"], p_coeff["t_y"], d_coeff["t_y"])
 	local roll = compute_pid(diff["t_x"], prev_diff["t_x"], p_coeff["t_x"], d_coeff["t_x"])
 
-	assert(pitch < 1.0, "pitch > 1.0: "..pitch)
-	assert(pitch > -1.0, "pitch < -1.0: "..pitch)
-	assert(roll < 1.0, "pitch > 1.0: "..roll)
-	assert(roll > -1.0, "pitch < -1.0: "..roll)
+	if pitch > 1.0  then print("pitch > 1.0: "..pitch) end
+	if pitch < -1.0 then print("pitch < -1.0: "..pitch) end
+	if roll > 1.0   then print("pitch > 1.0: "..roll) end
+	if roll < -1.0  then print("pitch < -1.0: "..roll) end
 
 	if roll < 0.03 and roll > -0.03 then
 		roll = 0.0
@@ -370,17 +370,17 @@ function careful_pid(start_point_, prev_diff_, p_coeff_, d_coeff_, mode)
 			pitch, roll = horizontal_pid(diff, prev_diff, p_coeff, d_coeff)
 		end
 
-		--print("point "     .. point["t_y"].. " " .. point["t_x"].. " " .. point["t_z"].. " ".. point["r_z"])
-		--print("diff "      .. diff["t_y"] .. " " .. diff["t_x"] .. " " .. diff["t_z"] .. " ".. diff["r_z"])
-		--print("[PID] Move ".. pitch       .. " " .. roll        .. " " .. vertical    .. " ".. rotate)
+		print("point "     .. point["t_y"].. " " .. point["t_x"].. " " .. point["t_z"].. " ".. point["r_z"])
+		print("diff "      .. diff["t_y"] .. " " .. diff["t_x"] .. " " .. diff["t_z"] .. " ".. diff["r_z"])
+		print("[PID] Move ".. pitch       .. " " .. roll        .. " " .. vertical    .. " ".. rotate)
 		if roll ~= 0.0 or pitch ~= 0.0 or vertical ~= 0.0 or rotate ~= 0.0 then
 			d.move(roll, pitch, vertical, rotate)
 			d.stay()
-			print("coords "    ..coords["t_y"].. " " ..coords["t_x"].. " " ..coords["t_z"].. " ".. coords["r_z"])
-			print("DT : "..dt)
-			print("Velocities : "..pitch_velocity..", "..roll_velocity)
-			print("Angles "..angle_1..","..angle_2)
-			print("D_diff "..d_diff1..","..d_diff2)
+			--print("coords "    ..coords["t_y"].. " " ..coords["t_x"].. " " ..coords["t_z"].. " ".. coords["r_z"])
+			--print("DT : "..dt)
+			--print("Velocities : "..pitch_velocity..", "..roll_velocity)
+			--print("Angles "..angle_1..","..angle_2)
+			--print("D_diff "..d_diff1..","..d_diff2)
 		else
 			-- if we are close to the goal we stop, else drone uses its inertia to move
 			if diff["t_y"] < 250 and diff["t_y"] > -250

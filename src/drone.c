@@ -382,7 +382,7 @@ JAKO_EXPORT int jakopter_takeoff()
 
 	attempt = 0;
 
-	while (attempt < NAVDATA_ATTEMPT &&
+	while (attempt < 2*NAVDATA_ATTEMPT &&
 		(!jakopter_is_hovering() || jakopter_height() < HEIGHT_THRESHOLD))
 	{
 		nanosleep(&cmd_wait, NULL);
