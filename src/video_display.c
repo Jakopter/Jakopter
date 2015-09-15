@@ -949,9 +949,9 @@ int count_blue_px(uint8_t* frame, int width, int height, int size)
 	int cr_v = (param > -1 && param <= 256) ? param : 127;
 
 	int h = 0;
-	int w = 0;
 	float count = 0.0;
 	while (h < height) {
+		int w = 0;
 		while (w < width) {
 			int y = *(frame + (h * width + w));
 			int u = *(frame + ((h / 2) * (width / 2) + (w / 2) + y_size));
