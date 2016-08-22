@@ -903,6 +903,8 @@ void rotate_point(SDL_Point* point, const SDL_Point* center, float angle)
 }
 /** \brief Save the current frame in a file called screen_%d.yuv with %d a number incremented
   * each screenshot.
+  * To transform in a readable format:
+  * ffmpeg -f rawvideo -pix_fmt yuv420p -s:v 640x360 -r 25 -i screen_0.yuv -c:v png output.png
   * \param frame current frame
   * \param size in bytes
   */

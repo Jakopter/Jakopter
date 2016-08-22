@@ -1,3 +1,7 @@
+mass_outdoor = 380
+-- indoor estimated
+mass_indoor  = 600
+
 drone_velocity = function ()
 	return {
 		vx = d.cc_read_float(1, 20) / 1000,
@@ -12,7 +16,7 @@ drone_coords = function ()
 		t_x = 0.0,
 		t_y = 0.0,
 		t_z = d.cc_read_int(1, 4),
-		--Rotations in degrees from -pi to pi, clockwise
+		--Rotations in radiant from -pi to pi, clockwise, 0 on the camera
 		r_x = math.rad(d.cc_read_float(1, 8) / 1000),
 		r_y = math.rad(d.cc_read_float(1, 12) / 1000),
 		r_z = math.rad(d.cc_read_float(1, 16) / 1000)
@@ -25,7 +29,7 @@ global_coords = function ()
 		t_x = d.cc_read_float(5, 0),
 		t_y = d.cc_read_float(5, 4),
 		t_z = d.cc_read_float(5, 8),
--- Rotations in degree from -pi to pi, 0 is aligned with positive y axis, clockwise
+-- Rotations in radiant from -pi to pi, 0 is aligned with positive y axis, clockwise
 		r_x = d.cc_read_float(5, 12),
 		r_y = d.cc_read_float(5, 16),
 		r_z = -d.cc_read_float(5, 20)

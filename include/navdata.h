@@ -194,6 +194,10 @@ int navdata_disconnect();
   */
 int jakopter_is_flying();
 /**
+  * \return a boolean
+  */
+int jakopter_is_hovering();
+/**
   * \return the battery charge in percentage or -1 if navdata are not received
   */
 int jakopter_battery();

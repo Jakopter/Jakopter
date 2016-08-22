@@ -49,6 +49,8 @@ find_package(VRPN)
 find_package(Vicon)
 find_package(CURL)
 find_package(Doxygen)
+find_package(CMocka)
+
 
 # Import the default install directories
 find_file(GNU_INSTALL_DIRS_FROM_CMAKE NAMES GNUInstallDirs.cmake PATHS ${CMAKE_ROOT}/Modules)
@@ -171,6 +173,16 @@ set(
 	src/lua_bindings.c
 )
 
+# set(
+# 	UNIT_TEST_FILES
+# 	tests/test_cmocka.c
+# )
+
+# set(
+# 	MOCK_DRONE_FILES
+# 	tests/fake_drone.c
+# )
+
 set(
 	SRC_FILES
 	${CORE_SRC_FILES}
@@ -195,6 +207,7 @@ else()
 endif()
 
 if(AVCODEC_FOUND AND VISP_FOUND AND USE_VISP)
+	message(STATUS "${VISP_LIBRARY}")
 	message(STATUS "Compiling with libvisp")
 	include_directories(${VISP_INCLUDE_DIR})
 	set(
@@ -239,7 +252,6 @@ else()
 	set(WITH_COORDS OFF)
 endif()
 
-
 if(CURSES_FOUND)
 	message(STATUS "Compiling keyboard command interface")
 	include_directories(${CURSES_INCLUDE_DIRS})
@@ -267,6 +279,22 @@ if(CURL_FOUND)
 else()
 	message(STATUS "WITHOUT: curl network interface")
 	set(WITH_NETWORK OFF)
+endif()
+
+if(CMOCKA_FOUND)
+	message(STATUS "Compiling tests")
+	include_directories(${CMOCKA_INCLUDE_DIR})
+	set(
+		SRC_FILES
+		${SRC_FILES}
+		# ${UNIT_TEST_FILES}
+	#	${MOCK_DRONE_FILES}
+	)
+
+	set(TESTS ON)
+else()
+	message(STATUS "WITHOUT: tests")
+	set(TESTS OFF)
 endif()
 
 if(LUA_FOUND AND LUA_VERSION_MAJOR EQUAL 5 AND
@@ -298,7 +326,7 @@ set_target_properties(jakopter PROPERTIES VERSION ${JAKOPTER_VERSION_STRING} SOV
 
 if(LEAP_FOUND)
 	add_executable(
-		leap
+		jakopter-leap
 		${LEAP_SRC_FILES}
 	)
 endif()
@@ -317,13 +345,19 @@ if(CURSES_FOUND)
 	)
 endif()
 
-if(VRPN_FOUND)
-	# link_directories(~/vrpn/install/lib/)
-	add_executable(
-		vrpn_client
-		${VRPN_SRC_FILES}
-	)
-endif()
+# if(VRPN_FOUND)
+# 	# link_directories(~/vrpn/install/lib/)
+# 	add_executable(
+# 		vrpn_client
+# 		${VRPN_SRC_FILES}
+# 	)
+# endif()
+# if(CMOCKA_FOUND)
+# 	add_executable(
+# 		testsuite
+# 		${UNIT_TEST_FILES}
+# 	)
+# endif()
 ## Linking libraries ##
 
 target_link_libraries(jakopter ${CMAKE_THREAD_LIBS_INIT})
@@ -353,16 +387,20 @@ if(CURSES_FOUND)
 endif()
 
 if(LEAP_FOUND)
-	target_link_libraries(leap ${LEAP_LIBRARIES})
+	target_link_libraries(jakopter-leap ${LEAP_LIBRARIES})
 endif()
 
-if(VRPN_FOUND)
-	target_link_libraries(vrpn_client ${VRPN_LIBRARIES})
-endif()
+# if(VRPN_FOUND)
+# 	target_link_libraries(vrpn_client ${VRPN_LIBRARIES})
+# endif()
 
 if(WITH_COORDS AND VICON_FOUND)
 	target_link_libraries(jakopter-vicon ${CMAKE_THREAD_LIBS_INIT} ${VICON_LIBRARIES})
 endif()
+
+# if(CMOCKA_FOUND)
+# 	target_link_libraries(testsuite ${CMAKE_THREAD_LIBS_INIT} ${CMOCKA_LIBRARIES})
+# endif()
 
 if(USE_DOXYGEN AND DOXYGEN_FOUND)
 	message(STATUS "Configure doc for Doxygen (run then 'doxygen doc/config-doxygen')")
@@ -383,12 +421,16 @@ install(TARGETS jakopter DESTINATION ${LIBRARY_OUTPUT_PATH})
 if(LUA_FOUND)
 	install(TARGETS jakopter DESTINATION ${LIBRARY_OUTPUT_PATH}/lua/${LUA_VERSION_MAJOR}.${LUA_VERSION_MINOR}/)
 endif()
-if(WITH_COORDS AND VICON_FOUND)
-	install(TARGETS jakopter-vicon jakopter-keyboard DESTINATION ${BINARY_OUTPUT_PATH})
-endif()
 if(CURSES_FOUND)
-	install(DIRECTORY include/ DESTINATION ${INCLUDE_OUTPUT_PATH} FILES_MATCHING PATTERN "*.h")
+	install(TARGETS jakopter-keyboard DESTINATION ${BINARY_OUTPUT_PATH})
 endif()
+if(WITH_COORDS AND VICON_FOUND)
+	install(TARGETS jakopter-vicon DESTINATION ${BINARY_OUTPUT_PATH})
+endif()
+if(LEAP_FOUND)
+	install(TARGETS jakopter-leap DESTINATION ${BINARY_OUTPUT_PATH})
+endif()
+install(DIRECTORY include/ DESTINATION ${INCLUDE_OUTPUT_PATH} FILES_MATCHING PATTERN "*.h")
 
 
 
