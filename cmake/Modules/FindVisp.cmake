@@ -33,8 +33,8 @@ find_path(VISP_INCLUDE_DIR
 	/opt
 )
 
-find_library(VISP_LIBRARY
-	NAMES visp
+find_library(VISP_CORE
+	NAMES visp_core
 	HINTS $ENV{VISPLIBDIR}
 	PATH_SUFFIXES lib lib64 lib32
 	PATHS
@@ -45,4 +45,45 @@ find_library(VISP_LIBRARY
 	/opt/csw
 	/opt
 )
+
+find_library(VISP_DETECTION
+	NAMES visp_detection
+	HINTS $ENV{VISPLIBDIR}
+	PATH_SUFFIXES lib lib64 lib32
+	PATHS
+	/usr
+	/usr/local
+	/sw
+	/opt/local
+	/opt/csw
+	/opt
+)
+
+find_library(VISP_BLOB
+	NAMES visp_blob
+	HINTS $ENV{VISPLIBDIR}
+	PATH_SUFFIXES lib lib64 lib32
+	PATHS
+	/usr
+	/usr/local
+	/sw
+	/opt/local
+	/opt/csw
+	/opt
+)
+
+find_library(VISP_GUI
+	NAMES visp_gui
+	HINTS $ENV{VISPLIBDIR}
+	PATH_SUFFIXES lib lib64 lib32
+	PATHS
+	/usr
+	/usr/local
+	/sw
+	/opt/local
+	/opt/csw
+	/opt
+)
+set(VISP_LIBRARY ${VISP_CORE} ${VISP_BLOB} ${VISP_DETECTION} ${VISP_GUI})
+
 find_package_handle_standard_args(VISP REQUIRED_VARS VISP_LIBRARY VISP_INCLUDE_DIR)

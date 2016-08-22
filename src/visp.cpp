@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
-#include <visp/vpDisplayOpenCV.h>
-#include <visp/vpDisplayX.h>
-#include <visp/vpDetectorFace.h>
-#include <visp/vpDetectorQRCode.h>
-#include <visp/vpDot2.h>
+#include <visp3/gui/vpDisplayOpenCV.h>
+#include <visp3/gui/vpDisplayX.h>
+#include <visp3/detection/vpDetectorFace.h>
+#include <visp3/detection/vpDetectorQRCode.h>
+#include <visp3/blob/vpDot2.h>
 
 #include "visp.h"
 
