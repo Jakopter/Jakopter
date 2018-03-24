@@ -78,7 +78,10 @@ int video_init_decoder() {
 static int video_alloc_frame_buffer() {
 	if (tempBuffer != NULL)
 		free(tempBuffer);
-	tempBufferSize = avpicture_get_size(AV_PIX_FMT_YUV420P, current_frame->width, current_frame->height);
+	// align linesize should be to 1, otherwise use av_image_get_linesize
+	tempBufferSize = av_image_get_buffer_size(AV_PIX_FMT_YUV420P, current_frame->width, current_frame->height, 1);
+	if (tempBufferSize == -1)
+		return -1;
 	tempBuffer = calloc(tempBufferSize, 1);
 	if (tempBuffer == NULL)
 		return -1;
@@ -96,7 +99,7 @@ Returns:
 */
 int video_decode_packet(uint8_t* buffer, int buf_size, jakopter_video_frame_t* result) {
 	//number of bytes processed by the frame parser and the decoder
-	int parsedLen = 0, decodedLen = 0;
+	int parsedLen = 0; // decodedLen = 0;
 	//do we have a whole frame ?
 	int complete_frame = 0;
 	//how many frames have we decoded ?
@@ -117,15 +120,25 @@ int video_decode_packet(uint8_t* buffer, int buf_size, jakopter_video_frame_t* r
 		frameOffset += parsedLen;
 
 		//3. do we have a frame to decode ?
-		if (video_packet.size > 0) {
-			//printf("Packet size : %d\n", video_packet.size);
-			decodedLen = avcodec_decode_video2(context, current_frame, &complete_frame, &video_packet);
-			if (decodedLen < 0) {
+		// check if the size of video packet parsed is larger than read bytes in order
+		// to avoid a reader to read over the end
+		//printf("Packet size : %d\n", video_packet.size);
+		if (video_packet.size >= AV_INPUT_BUFFER_PADDING_SIZE + buf_size) {
+			// video_packet.data >= AV_INPUT_BUFFER_PADDING_SIZE + buf_size
+			// decodedLen = avcodec_decode_video2(context, current_frame, &complete_frame, &video_packet);
+			// if (decodedLen < 0) {
+			// 	fprintf(stderr, "[~][decode] couldn't decode frame.\n");
+			// 	return 0;
+			// }
+			// send packet to the decoder
+			if (avcodec_send_packet (context, (const AVPacket *)&video_packet) < 0) {
 				fprintf(stderr, "[~][decode] couldn't decode frame.\n");
 				return 0;
 			}
+			//receive frame from the decoder
+			complete_frame = avcodec_receive_frame(context, current_frame);
 			//If we get there, we should've decoded a frame.
-			if (complete_frame) {
+			if (complete_frame == 0) {
 				nb_frames++;
 				//check if the video size has changed
 				if (current_frame->width != current_width || current_frame->height != current_height)
@@ -134,8 +147,11 @@ int video_decode_packet(uint8_t* buffer, int buf_size, jakopter_video_frame_t* r
 						return -1;
 					}
 				//write the raw frame data in our temporary buffer
-				int picsize = avpicture_layout((const AVPicture*)current_frame, current_frame->format,
-					current_frame->width, current_frame->height, tempBuffer, tempBufferSize);
+				int picsize = av_image_copy_to_buffer(tempBuffer, tempBufferSize,
+                                   					  (const uint8_t**) current_frame->data, 
+                                   					  current_frame->linesize,
+                                   					  current_frame->format, current_frame->width, 
+                                   					  current_frame->height, 1);
 				//write the final result in the output structure
 				result->pixels = tempBuffer;
 				result->w = current_frame->width;

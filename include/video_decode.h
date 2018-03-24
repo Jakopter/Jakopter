@@ -19,6 +19,7 @@
 #define JAKOPTER_VIDEO_DECODE_H
 
 #include <libavcodec/avcodec.h>
+#include <libavutil/imgutils.h>
 #include "video.h"
 
 /*The actual size of the buffer that will receive video data through TCP.
