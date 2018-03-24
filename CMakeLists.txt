@@ -76,10 +76,29 @@ if(USE_CLANG)
 endif()
 
 add_definitions("-Wall") # Not compatible with MSVC
+# Useful flags from https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc/
+add_definitions("-D_FORTIFY_SOURCE=2") # Run-time buffer overflow detection
+add_definitions("-D_GLIBCXX_ASSERTIONS") # Run-time bounds checking for C++ strings and containers
+add_definitions("-fasynchronous-unwind-tables") # Increased reliability of backtraces
+add_definitions("-fexceptions") # Enable table-based thread cancellation
+add_definitions("-fpie -Wl,-pie") # Full ASLR for executables
+add_definitions("-fpic -shared") # No text relocations for shared libraries (Jakopter is shared so it's ok)
+add_definitions("-fstack-protector-all") # Stack smashing protector
+add_definitions("-g") # Generate debugging information
+add_definitions("-grecord-gcc-switches") # Store compiler flags in debugging information
+add_definitions("-pipe") # Avoid temporary files, speeding up builds
+add_definitions("-Werror=format-security") # Reject potentially unsafe format string arguents
+add_definitions("-Wl,-z,defs") # Detect and reject underlinking
+add_definitions("-Wl,-z,now") # Disable lazy binding
+add_definitions("-Wl,-z,relro") #  	Read-only segments after relocation
+add_definitions("-O2") #  Optimization level
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftest-coverage -fprofile-arcs")
 
+# Set C99 and Reject missing function prototypes
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Werror=implicit-function-declaration")
+# Check test coverage
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcet -fcf-protection") # Control flow integrity protection
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-clash-protection") # Increased reliability of stack overflow detection
 ### C++11 ###
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_CXX11)
